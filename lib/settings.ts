@@ -45,7 +45,7 @@ export const DEFAULT_SETTINGS: AllSettings = {
   app: {
     name: 'FormCraft',
     tagline: 'The developer-first, self-hosted form builder.',
-    accent: 'indigo',
+    accent: 'wine',
     logoUrl: '',
     publicUrl: '',
     footerText: '',
