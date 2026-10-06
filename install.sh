@@ -116,8 +116,14 @@ if [ -f .env ] && grep -q '^FC_DB_PROVIDER=' .env && [ "$ASSUME_YES" = 0 ]; then
   if ! yesno "Reconfigure it? (No just rebuilds and restarts with the current settings)" n; then
     [ "$DRY_RUN" = 1 ] && exit 0
     info "Updating and starting FormCraft with the existing configuration…"
-    docker compose pull && docker compose up -d
-    ok "Done."
+    if ! docker compose pull; then
+      warn "Couldn't download the FormCraft image — it may still be publishing, or the registry is unreachable."
+      printf '  Try again in a few minutes:  %scd %s && docker compose pull && docker compose up -d%s
+' "$B" "$(pwd)" "$N"
+      exit 1
+    fi
+    docker compose up -d || die "Docker Compose couldn't start FormCraft — see the messages above."
+    ok "FormCraft is up to date and running on http://localhost:$(grep -E '^FC_PORT=' .env | cut -d= -f2 || echo 3000)"
     exit 0
   fi
 fi
