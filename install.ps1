@@ -207,6 +207,13 @@ if ($DryRun) { Warn 'Dry run - not starting Docker.'; return }
 # ---------- start ----------
 Info "Pulling $Image and starting FormCraft..."
 & docker compose pull
+if ($LASTEXITCODE -ne 0) {
+  Warn "Couldn't download the FormCraft image ($Image)."
+  Write-Host '  This usually means the image is still being published or the registry is unreachable.'
+  Write-Host "  Your settings are saved - once the image is available, run:`n"
+  Write-Host "    cd `"$(Get-Location)`"; docker compose pull; docker compose up -d`n" -ForegroundColor White
+  return
+}
 & docker compose up -d
 if ($LASTEXITCODE -ne 0) { Die 'docker compose failed - see the output above.' }
 
