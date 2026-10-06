@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FormCraft — self-hosted form builder</title>
+<meta name="description" content="FormCraft is a self-hosted form builder: drag-and-drop forms, templates and quizzes, submissions with charts and CSV export, roles, email and Telegram alerts, multilingual forms with Arabic RTL, dark mode and full backups. One-line Docker install.">
+<link rel="canonical" href="https://shatheitguy.github.io/formcraft/">
+<meta name="theme-color" content="#9b1b22">
+<meta property="og:title" content="FormCraft — self-hosted form builder">
+<meta property="og:description" content="Drag-and-drop forms, submissions and insights, roles, multilingual forms and dark mode. Your server, your data. One-line Docker install.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://shatheitguy.github.io/formcraft/">
+<meta property="og:image" content="https://shatheitguy.github.io/formcraft/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="img/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"FormCraft","applicationCategory":"BusinessApplication","operatingSystem":"Linux, Windows, macOS (Docker)","description":"Self-hosted form builder with drag-and-drop builder, submissions, roles, multilingual forms and dark mode.","url":"https://shatheitguy.github.io/formcraft/","downloadUrl":"https://github.com/shatheitguy/formcraft","license":"https://opensource.org/licenses/MIT","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Sha The IT Guy","url":"https://shatheitguy.in/"}}
+</script>
+<style>
+:root{--ground:#eceef1;--panel:#f7f8fa;--panel-2:#fdfdfe;--rule:#c9ced6;--rule-soft:#dde1e6;--text:#15171b;--text-2:#4b515b;--text-3:#737a85;--accent:#9b1b22;--accent-2:#7f151b;--accent-soft:rgba(155,27,34,.08);--ok:#1f6e46;--code:#14161a;--code-text:#e8eaee;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--ground:#0f1115;--panel:#161920;--panel-2:#1c2028;--rule:#2b3038;--rule-soft:#22262d;--text:#eef0f3;--text-2:#a9b0ba;--text-3:#7f8792;--accent:#ff6b6f;--accent-2:#ff9a9c;--accent-soft:rgba(255,107,111,.12);--ok:#4fb98a;--code:#0b0d10;--code-text:#e8eaee;color-scheme:dark}}
+:root[data-theme=dark]{--ground:#0f1115;--panel:#161920;--panel-2:#1c2028;--rule:#2b3038;--rule-soft:#22262d;--text:#eef0f3;--text-2:#a9b0ba;--text-3:#7f8792;--accent:#ff6b6f;--accent-2:#ff9a9c;--accent-soft:rgba(255,107,111,.12);--ok:#4fb98a;--code:#0b0d10;--code-text:#e8eaee;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ground);color:var(--text);font:16px/1.65 Archivo,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+img{max-width:100%;display:block}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+/* nav */
+.nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--ground) 86%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule-soft)}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:800;letter-spacing:-.02em;font-size:18px}
+.brand img{width:30px;height:30px}
+.nav .links{display:flex;gap:4px;margin-inline-start:auto;flex-wrap:wrap}
+.nav .links a{color:var(--text-2);text-decoration:none;font-size:14px;font-weight:500;padding:6px 10px;border-radius:8px}
+.nav .links a:hover{color:var(--text);background:var(--panel)}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:10px 16px;font-weight:600;font-size:15px;text-decoration:none;border:1px solid var(--rule);color:var(--text);background:var(--panel-2);cursor:pointer;transition:.15s}
+.btn:hover{border-color:var(--text-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.icon-btn{background:none;border:1px solid var(--rule);border-radius:8px;color:var(--text-2);width:34px;height:34px;cursor:pointer;display:grid;place-items:center}
+/* hero */
+.hero{padding:72px 0 40px}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{font-size:clamp(38px,6vw,68px);line-height:1.02;letter-spacing:-.035em;margin:14px 0 18px;font-weight:800;max-width:15ch}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{font-size:clamp(17px,2vw,20px);color:var(--text-2);max-width:62ch;margin:0 0 28px}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}
+.install{background:var(--code);color:var(--code-text);border-radius:14px;padding:6px;max-width:760px;border:1px solid var(--rule)}
+.tabs{display:flex;gap:4px;padding:4px}
+.tabs button{background:none;border:0;color:#9aa1ab;font:600 12px "IBM Plex Mono",monospace;padding:7px 12px;border-radius:8px;cursor:pointer;letter-spacing:.04em}
+.tabs button[aria-selected=true]{background:#232730;color:#fff}
+.cmd{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.cmd code{flex:1;font:500 14px/1.5 "IBM Plex Mono",monospace;overflow-x:auto;white-space:nowrap;scrollbar-width:thin}
+.cmd code::before{content:"$ ";color:#ff8a8d}
+.copy{background:#232730;border:1px solid #333944;color:#e8eaee;border-radius:8px;padding:6px 10px;font:600 12px "IBM Plex Mono",monospace;cursor:pointer;flex:none}
+.hero-shot{margin-top:48px;border-radius:16px;border:1px solid var(--rule);overflow:hidden;box-shadow:0 30px 80px -40px rgba(0,0,0,.45);background:var(--panel)}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.badge{font:500 12px "IBM Plex Mono",monospace;color:var(--text-2);border:1px solid var(--rule);border-radius:999px;padding:4px 10px;background:var(--panel)}
+/* sections */
+section.reg{padding:72px 0;border-top:1px solid var(--rule-soft)}
+h2{font-size:clamp(28px,4vw,42px);letter-spacing:-.03em;line-height:1.08;margin:10px 0 14px;font-weight:800}
+.sub{color:var(--text-2);max-width:66ch;margin:0 0 34px;font-size:17px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:var(--panel);border:1px solid var(--rule-soft);border-radius:14px;padding:22px}
+.card h3{margin:10px 0 6px;font-size:18px;letter-spacing:-.01em}
+.card p{margin:0;color:var(--text-2);font-size:15px}
+.card .ico{width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.card .ico svg{width:20px;height:20px}
+.shots{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+figure{margin:0;background:var(--panel);border:1px solid var(--rule-soft);border-radius:14px;overflow:hidden}
+figure button{all:unset;cursor:zoom-in;display:block}
+figure img{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid var(--rule-soft)}
+figcaption{padding:14px 16px;font-size:14px;color:var(--text-2)}
+figcaption b{display:block;color:var(--text);font-size:15px;margin-bottom:2px}
+.split{display:grid;gap:36px;grid-template-columns:1.05fr .95fr;align-items:center}
+@media (max-width:900px){.split{grid-template-columns:1fr}}
+.list{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.list li{display:flex;gap:12px;align-items:flex-start;color:var(--text-2)}
+.list li b{color:var(--text)}
+.dot{flex:none;width:22px;height:22px;border-radius:6px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:700 12px "IBM Plex Mono",monospace;margin-top:2px}
+.frame{border-radius:14px;border:1px solid var(--rule);overflow:hidden;background:var(--panel)}
+.db{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.db .card{position:relative}
+.tag{position:absolute;top:16px;inset-inline-end:16px;font:600 11px "IBM Plex Mono",monospace;color:var(--ok);border:1px solid currentColor;border-radius:999px;padding:2px 8px}
+pre{background:var(--code);color:var(--code-text);border-radius:12px;padding:18px;overflow:auto;font:13.5px/1.6 "IBM Plex Mono",monospace;border:1px solid var(--rule);margin:0}
+pre .c{color:#7d8590}
+table{width:100%;border-collapse:collapse;font-size:15px;background:var(--panel);border:1px solid var(--rule-soft);border-radius:12px;overflow:hidden}
+th,td{text-align:start;padding:11px 14px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+th{font:600 12px "IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);background:var(--panel-2)}
+td code{font:500 13px "IBM Plex Mono",monospace;background:var(--accent-soft);color:var(--accent-2);padding:2px 6px;border-radius:6px}
+.steps{counter-reset:s;display:grid;gap:14px}
+.steps li{list-style:none;counter-increment:s;display:flex;gap:14px}
+.steps li::before{content:counter(s);flex:none;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font:700 13px "IBM Plex Mono",monospace}
+.steps{padding:0;margin:0}
+.steps li,.steps li>div,.split>div{min-width:0}
+.steps li>div{flex:1}
+footer{border-top:1px solid var(--rule-soft);padding:36px 0 50px;color:var(--text-3);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+footer a{color:var(--text-2)}
+.credit a{color:var(--accent);font-weight:700;text-decoration:none}
+dialog{border:0;padding:0;background:transparent;max-width:min(1400px,96vw)}
+dialog::backdrop{background:rgba(0,0,0,.75)}
+dialog img{border-radius:12px;max-height:90vh;width:auto}
+@media (max-width:640px){.nav .links a:not(.gh){display:none}.hero{padding-top:48px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="img/icon.png" alt="">FormCraft</a>
+    <div class="links">
+      <a href="#screens">Screens</a>
+      <a href="#features">Features</a>
+      <a href="#languages">Languages</a>
+      <a href="#database">Database</a>
+      <a href="#install">Install</a>
+      <a class="gh" href="https://github.com/shatheitguy/formcraft">GitHub</a>
+    </div>
+    <button class="icon-btn" id="theme" aria-label="Toggle light or dark">◐</button>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="kicker">Self-hosted · Open source · MIT</div>
+    <h1>Forms you own. <em>Answers you keep.</em></h1>
+    <p class="lede">FormCraft is a self-hosted form builder. Build forms by drag-and-drop, share a link or a QR code, and read every response in a table with charts. It runs on your server, in English, Arabic and Tamil, light or dark.</p>
+    <div class="cta">
+      <a class="btn primary" href="#install">Install in one line</a>
+      <a class="btn" href="https://github.com/shatheitguy/formcraft">View on GitHub</a>
+    </div>
+    <div class="install" role="region" aria-label="Install command">
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-cmd="curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash">Linux / macOS</button>
+        <button role="tab" aria-selected="false" data-cmd="irm https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.ps1 | iex">Windows</button>
+        <button role="tab" aria-selected="false" data-cmd="docker run -d -p 3000:3000 -v formcraft-data:/app/data --name formcraft ghcr.io/shatheitguy/formcraft:latest">Docker</button>
+      </div>
+      <div class="cmd"><code id="cmd">curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash</code><button class="copy" data-copy="#cmd">Copy</button></div>
+    </div>
+    <div class="badges">
+      <span class="badge">Docker · amd64 + arm64</span>
+      <span class="badge">SQLite or PostgreSQL</span>
+      <span class="badge">EN · العربية · தமிழ்</span>
+      <span class="badge">Light + dark</span>
+      <span class="badge">Unraid template</span>
+    </div>
+    <div class="hero-shot"><img src="img/dashboard.png" alt="FormCraft dashboard with form cards, response counts and sparklines" width="1440" height="900"></div>
+  </div>
+</header>
+
+<section class="reg" id="screens">
+  <div class="wrap">
+    <div class="kicker">The product</div>
+    <h2>What you actually get.</h2>
+    <p class="sub">Every screen below is the real app, not a mock-up.</p>
+    <div class="shots">
+      <figure><button data-full="img/builder.png"><img src="img/builder.png" alt="Form builder" loading="lazy"></button><figcaption><b>Drag-and-drop builder</b>Ten field types, a properties panel, autosave, undo and a live preview.</figcaption></figure>
+      <figure><button data-full="img/submissions.png"><img src="img/submissions.png" alt="Submissions table" loading="lazy"></button><figcaption><b>Submissions table</b>Search, filter by date or by answer, sort any column, open a response, export CSV.</figcaption></figure>
+      <figure><button data-full="img/insights.png"><img src="img/insights.png" alt="Insights charts" loading="lazy"></button><figcaption><b>Insights</b>Answer distributions, rating histograms and an automatic Net Promoter Score.</figcaption></figure>
+      <figure><button data-full="img/share.png"><img src="img/share.png" alt="Share dialog" loading="lazy"></button><figcaption><b>Share</b>A unique link, a dedicated port with a built-in port test, a custom domain and a QR code.</figcaption></figure>
+      <figure><button data-full="img/translate.png"><img src="img/translate.png" alt="Translation editor" loading="lazy"></button><figcaption><b>Translate</b>Every text side by side with the original, with progress per language.</figcaption></figure>
+      <figure><button data-full="img/dashboard-dark-tamil.png"><img src="img/dashboard-dark-tamil.png" alt="Dashboard in Tamil, dark mode" loading="lazy"></button><figcaption><b>Dark mode, in Tamil</b>The whole app follows the device's theme, or the one each user chooses.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="reg" id="features">
+  <div class="wrap">
+    <div class="kicker">Features</div>
+    <h2>Everything a form needs, nothing it doesn't.</h2>
+    <p class="sub">Built for teams who want Google-Forms simplicity without sending their data to someone else.</p>
+    <div class="grid">
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg></div><h3>Builder and templates</h3><p>Text, paragraph, email, phone, choices, dropdown, date, rating and scale. Start from contact, feedback, event or quiz templates.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/></svg></div><h3>Quizzes with scoring</h3><p>Mark the correct answers, give each one points, and show respondents their score when they submit.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>Submissions and insights</h3><p>A filterable table, per-question charts, NPS and CSV export. Choice answers are stored the same way in every language.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 11l2 2 4-4"/></svg></div><h3>Users and roles</h3><p>Admins, editors and viewers. Give each person all forms or only the ones they need, read-only or editable.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></div><h3>Email and Telegram alerts</h3><p>SMTP (with Gmail and Outlook presets) and your own Telegram bot. Each user picks where alerts go and for which forms.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></div><h3>Links, ports, domains</h3><p>Every form gets a unique link and its own port, served without a restart. Point a Cloudflare Tunnel at it and add a QR code.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/><path d="M12 22a10 10 0 1 1 10-10"/></svg></div><h3>Branding</h3><p>Workspace name, logo and accent colour, plus a logo, cover image and colour for each form. Your own footer text, too.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><h3>Full system backups</h3><p>One file with every table and uploaded image. Restore previews the file, takes a safety snapshot first, and also moves SQLite to PostgreSQL.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>Private by design</h3><p>Hashed passwords, throttled logins, secrets kept server-side, uploads checked by file signature. No telemetry, no cloud.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="reg" id="languages">
+  <div class="wrap split">
+    <div>
+      <div class="kicker">Languages</div>
+      <h2>One form, two languages. Switch at any time.</h2>
+      <p class="sub">The app is fully translated into English, Arabic and Tamil, and Arabic turns every screen right-to-left. Forms can be offered in several languages at once.</p>
+      <ul class="list">
+        <li><span class="dot">1</span><span><b>Pick the languages</b> in the form settings, then fill in the Translate tab. Anything you leave empty falls back to the original.</span></li>
+        <li><span class="dot">2</span><span><b>Respondents switch language while filling in.</b> Their answers stay, and the errors and confirmation follow the new language.</span></li>
+        <li><span class="dot">3</span><span><b>Reports stay consistent.</b> Every response records its language, and choice answers group together whichever language they were given in.</span></li>
+        <li><span class="dot">4</span><span><b>Set a language in the link</b> with <span class="mono">?lang=ar</span>. Otherwise the visitor's browser language is used.</span></li>
+      </ul>
+    </div>
+    <div class="frame"><img src="img/form-arabic.png" alt="A registration form shown in Arabic, right-to-left" loading="lazy"></div>
+  </div>
+</section>
+
+<section class="reg" id="database">
+  <div class="wrap">
+    <div class="kicker">Database</div>
+    <h2>Bring your own. Or don't.</h2>
+    <p class="sub">The installer asks. The tables build themselves on first start and update themselves on every upgrade.</p>
+    <div class="db">
+      <div class="card"><span class="tag">recommended</span><h3>Install PostgreSQL for me</h3><p>A separate <span class="mono">postgres:16</span> container with its own volume. The password is generated unless you type one. Adminer is optional.</p></div>
+      <div class="card"><h3>Use my own PostgreSQL</h3><p>Enter host, port, database, user and password. The installer tests the connection before it writes anything.</p></div>
+      <div class="card"><h3>Embedded SQLite</h3><p>One container and one file on a volume. Nothing else to run, which suits personal use and small teams.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="reg" id="install">
+  <div class="wrap">
+    <div class="kicker">Install</div>
+    <h2>One line, then open your browser.</h2>
+    <p class="sub">The installer checks Docker and asks three questions: database, ports and demo data. It writes <span class="mono">.env</span>, pulls the image and starts FormCraft. Open the address and create your admin account; there is no default password.</p>
+    <div class="split" style="align-items:start">
+      <div>
+        <ol class="steps">
+          <li><div><b>Linux or macOS</b><pre style="margin-top:8px">curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash</pre></div></li>
+          <li><div><b>Windows (PowerShell)</b><pre style="margin-top:8px">irm https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.ps1 | iex</pre></div></li>
+          <li><div><b>Update later</b><pre style="margin-top:8px">docker compose pull &amp;&amp; docker compose up -d</pre></div></li>
+        </ol>
+      </div>
+      <div>
+        <table>
+          <thead><tr><th>Image tag</th><th>Use it for</th></tr></thead>
+          <tbody>
+            <tr><td><code>latest</code></td><td>SQLite build, following main. What the installer uses.</td></tr>
+            <tr><td><code>postgres</code></td><td>PostgreSQL build, following main.</td></tr>
+            <tr><td><code>1.0.0</code> · <code>1.0.0-postgres</code></td><td>Pinning a known-good release in production.</td></tr>
+          </tbody>
+        </table>
+        <p style="color:var(--text-2);font-size:15px;margin:16px 0 0"><b style="color:var(--text)">Unraid:</b> add the template from <span class="mono">unraid/formcraft.xml</span>. It uses SQLite in <span class="mono">/mnt/user/appdata/formcraft</span> with PUID 99 and PGID 100.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>FormCraft · MIT licence · <a href="https://github.com/shatheitguy/formcraft">Source</a> · <a href="https://github.com/shatheitguy/formcraft/issues">Issues</a></div>
+    <div class="credit">Powered by <a href="https://shatheitguy.in/" target="_blank" rel="noopener">Sha The IT Guy</a></div>
+  </div>
+</footer>
+
+<dialog id="viewer"><img alt=""></dialog>
+
+<script>
+(() => {
+  const cmd = document.getElementById('cmd');
+  document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+    cmd.textContent = b.dataset.cmd;
+  }));
+  document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(document.querySelector(b.dataset.copy).textContent); b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy'), 1500); } catch {}
+  }));
+  const dlg = document.getElementById('viewer');
+  document.querySelectorAll('[data-full]').forEach((b) => b.addEventListener('click', () => { dlg.querySelector('img').src = b.dataset.full; dlg.showModal(); }));
+  dlg.addEventListener('click', () => dlg.close());
+  const root = document.documentElement;
+  try { const t = localStorage.getItem('fc-site-theme'); if (t) root.dataset.theme = t; } catch {}
+  document.getElementById('theme').addEventListener('click', () => {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem('fc-site-theme', root.dataset.theme); } catch {}
+  });
+})();
+</script>
+</body>
+</html>

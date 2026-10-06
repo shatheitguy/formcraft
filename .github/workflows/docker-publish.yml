@@ -1,0 +1,89 @@
+name: Build and publish Docker image
+
+# Builds the FormCraft images and pushes them to GitHub Container Registry (ghcr.io)
+# on every push to main and on version tags (v1.0.0 etc). Pull requests only build
+# (to catch a broken Dockerfile) — they never push.
+#
+# Two variants, because the Prisma database provider is compiled in:
+#   ghcr.io/shatheitguy/formcraft:latest     SQLite      (also 1.2.3, 1.2, <sha>)
+#   ghcr.io/shatheitguy/formcraft:postgres   PostgreSQL  (also 1.2.3-postgres, …)
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: shatheitguy/formcraft
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: sqlite
+            channel: latest
+            suffix: ""
+          - variant: postgresql
+            channel: postgres
+            suffix: "-postgres"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # VERSION and package.json must agree — the version is shown in the app.
+      - name: Check the version sources agree
+        run: |
+          v_file=$(tr -d '[:space:]' < VERSION)
+          v_pkg=$(node -p "require('./package.json').version")
+          echo "VERSION=$v_file package.json=$v_pkg"
+          test "$v_file" = "$v_pkg"
+
+      # QEMU lets the amd64 runner build the arm64 image too, so the installer works on
+      # Apple Silicon and a Raspberry Pi, not just x86.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: latest=false
+          # ":latest" / ":postgres" follow main, so a plain pull always brings the current build.
+          tags: |
+            type=raw,value=${{ matrix.channel }},enable={{is_default_branch}}
+            type=semver,pattern={{version}},suffix=${{ matrix.suffix }}
+            type=semver,pattern={{major}}.{{minor}},suffix=${{ matrix.suffix }}
+            type=sha,prefix=,suffix=${{ matrix.suffix }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          build-args: DB_PROVIDER=${{ matrix.variant }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.variant }}

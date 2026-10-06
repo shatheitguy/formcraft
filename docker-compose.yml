@@ -1,0 +1,46 @@
+# FormCraft — base service.
+#
+# Easiest: run the installer, which asks which database to use and writes .env:
+#   curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash
+#   irm https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.ps1 | iex
+#
+# Without the installer this starts a single container with an embedded SQLite database:
+#   docker compose up -d
+#
+# Optional overlays (the installer selects them via COMPOSE_FILE in .env):
+#   docker-compose.db.yml     bundled PostgreSQL container (+ optional Adminer UI)
+#   docker-compose.ports.yml  dedicated per-form ports
+#
+# Updating:  docker compose pull && docker compose up -d
+# Keep this folder's .env with these files — together they are your configuration.
+
+services:
+  formcraft:
+    # Published image. FC_IMAGE_TAG: "latest" (SQLite) or "postgres" (PostgreSQL build);
+    # pin a release with e.g. 1.0.0 / 1.0.0-postgres. To build from a source checkout
+    # instead, comment `image:` out and uncomment `build:`.
+    image: ghcr.io/shatheitguy/formcraft:${FC_IMAGE_TAG:-latest}
+    # build:
+    #   context: .
+    #   args:
+    #     DB_PROVIDER: ${FC_DB_PROVIDER:-sqlite}
+    container_name: formcraft
+    restart: unless-stopped
+    ports:
+      - "${FC_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: ${FC_DATABASE_URL:-file:/app/data/formcraft.db}
+      SEED_DEMO_DATA: ${FC_SEED_DEMO:-true}
+      # Only docker-compose.ports.yml enables this, because it also publishes the ports.
+      FORM_PORT_RANGE: ""
+    volumes:
+      # SQLite database (when used), uploaded logos / cover images and restore snapshots.
+      - formcraft-data:/app/data
+    extra_hosts:
+      # Lets the container reach a database running on this machine via host.docker.internal.
+      - "host.docker.internal:host-gateway"
+
+# Named explicitly so a different folder name doesn't create new, empty volumes.
+volumes:
+  formcraft-data:
+    name: formcraft-data

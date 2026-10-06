@@ -1,0 +1,12 @@
+# Overlay: dedicated per-form ports.
+# Every new form is auto-assigned the next free port in FC_FORM_PORTS and served there at "/"
+# without restarting the container. Point a Cloudflare Tunnel / reverse-proxy hostname at a
+# form's port to give it its own domain. The whole range is published up front because Docker
+# can't add port mappings to a running container.
+
+services:
+  formcraft:
+    ports:
+      - "${FC_FORM_PORTS:-4001-4050}:${FC_FORM_PORTS:-4001-4050}"
+    environment:
+      FORM_PORT_RANGE: ${FC_FORM_PORTS:-4001-4050}

@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// The Docker build swaps this to "postgresql" when built with DB_PROVIDER=postgresql.
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Form {
+  id          String       @id @default(cuid())
+  title       String
+  description String       @default("")
+  category    String       @default("General")
+  /// JSON-encoded string[]
+  tags        String       @default("[]")
+  /// "DRAFT" | "ACTIVE"
+  status      String       @default("DRAFT")
+  /// JSON-encoded FormSchema (fields + settings)
+  schema      String
+  // Uniqueness of the three link fields is enforced in lib/form-links.ts and the forms API,
+  // so `prisma db push` can add them to existing databases without a data-loss prompt.
+  /// Public link: /f/<slug>
+  slug         String?
+  /// Dedicated listener port that serves only this form at "/"
+  port         Int?
+  /// Hostname a reverse proxy (e.g. Cloudflare Tunnel) routes to `port`
+  customDomain String?
+  createdById String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  submissions Submission[]
+  access      FormAccess[]
+
+  @@index([updatedAt])
+  @@index([slug])
+}
+
+model Submission {
+  id        String   @id @default(cuid())
+  formId    String
+  form      Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  /// JSON-encoded answers keyed by field id
+  data      String
+  score     Int?
+  maxScore  Int?
+  /// Language the respondent filled the form in
+  language  String?
+  createdAt DateTime @default(now())
+
+  @@index([formId, createdAt])
+}
+
+model User {
+  id                    String       @id @default(cuid())
+  username              String       @unique
+  email                 String       @unique
+  name                  String       @default("")
+  /// Profile photo (/api/uploads/…)
+  avatarUrl             String?
+  /// UI language: en | ar | ta (null = follow browser / workspace default)
+  language              String?
+  /// system | light | dark
+  theme                 String?
+  passwordHash          String
+  /// "ADMIN" | "EDITOR" | "VIEWER"
+  role                  String       @default("VIEWER")
+  /// "ALL" | "SELECTED" (ignored for admins)
+  formScope             String       @default("ALL")
+  active                Boolean      @default(true)
+  /// Overrides the account email for notifications.
+  notifyEmail           String?
+  telegramChatId        String?
+  emailNotifications    Boolean      @default(false)
+  telegramNotifications Boolean      @default(false)
+  notifyAllForms        Boolean      @default(true)
+  /// JSON-encoded string[] of form ids (when notifyAllForms is false)
+  notifyFormIds         String       @default("[]")
+  lastLoginAt           DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  sessions              Session[]
+  formAccess            FormAccess[]
+}
+
+model Session {
+  /// sha256 of the cookie token
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model FormAccess {
+  userId String
+  formId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  form   Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@id([userId, formId])
+}
+
+model Setting {
+  key       String   @id
+  /// JSON-encoded value
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  /// "email" | "telegram"
+  channel   String
+  target    String
+  subject   String
+  /// "sent" | "failed"
+  status    String
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model AppMeta {
+  key   String @id
+  value String
+}

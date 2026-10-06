@@ -1,0 +1,47 @@
+# Overlay: bundled PostgreSQL container for FormCraft.
+# Selected by the installer ("Install a PostgreSQL database for me"), or manually:
+#   docker compose -f docker-compose.yml -f docker-compose.db.yml up -d --build
+# Requires FC_DB_PROVIDER=postgresql, FC_DATABASE_URL and POSTGRES_* in .env.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: formcraft-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-formcraft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (the installer generates one)}
+      POSTGRES_DB: ${POSTGRES_DB:-formcraft}
+    volumes:
+      - formcraft-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Not published to the host by default. Uncomment to connect with psql/DBeaver/pgAdmin.
+    # ports:
+    #   - "5432:5432"
+
+  formcraft:
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Optional database web UI — enabled with COMPOSE_PROFILES=tools (installer asks).
+  # Open http://localhost:${ADMINER_PORT:-8080} · System: PostgreSQL · Server: db
+  adminer:
+    image: adminer:4
+    container_name: formcraft-adminer
+    profiles: ["tools"]
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+
+volumes:
+  formcraft-db:
+    name: formcraft-db

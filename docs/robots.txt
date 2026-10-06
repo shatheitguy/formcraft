@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://shatheitguy.github.io/formcraft/sitemap.xml
