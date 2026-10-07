@@ -12,7 +12,7 @@
   <Overview>
     FormCraft is a self-hosted form builder: a drag-and-drop builder with 10 field types and templates, quizzes with scoring, a submissions table with filters, charts and CSV export, users and roles, email and Telegram alerts, multilingual forms (English, Arabic, Tamil) with right-to-left support, light and dark themes, and full system backups.&#xD;
 &#xD;
-    DATABASE: this template uses the built-in SQLite database, stored in the Data folder below. Nothing else to install. To use PostgreSQL instead, change Repository to ghcr.io/shatheitguy/formcraft:postgres and set Database URL to postgresql://USER:PASSWORD@HOST:5432/DBNAME?schema=public (create the empty database first; the tables build themselves on first start).&#xD;
+    DATABASE: this template uses the built-in SQLite database, stored in the Data folder below. Nothing else to install. To use PostgreSQL instead, set Database URL to postgresql://USER:PASSWORD@HOST:5432/DBNAME?schema=public (create the empty database first; the tables build themselves on first start).&#xD;
 &#xD;
     First run: open the WebUI and create your admin account. There is no default password.&#xD;
   </Overview>
@@ -38,7 +38,7 @@
           Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/formcraft</Config>
 
   <Config Name="Database URL" Target="DATABASE_URL" Default="file:/app/data/formcraft.db" Mode=""
-          Description="Leave as is for SQLite. For PostgreSQL use the :postgres image and postgresql://user:pass@host:5432/formcraft?schema=public"
+          Description="Leave as is for SQLite. For PostgreSQL use postgresql://user:pass@host:5432/formcraft?schema=public"
           Type="Variable" Display="always" Required="true" Mask="true">file:/app/data/formcraft.db</Config>
 
   <Config Name="Demo data" Target="SEED_DEMO_DATA" Default="true|false" Mode=""

@@ -235,8 +235,8 @@ fi
   echo "COMPOSE_PATH_SEPARATOR=:"
   [ "$ADMINER" = 1 ] && echo "COMPOSE_PROFILES=tools"
   echo "FC_DB_PROVIDER=$FC_DB_PROVIDER"
-  # Published image variant for this database engine (pin a release with e.g. 1.0.0 / 1.0.0-postgres).
-  echo "FC_IMAGE_TAG=$([ "$FC_DB_PROVIDER" = postgresql ] && echo postgres || echo latest)"
+  # Published image (one image for every database engine); pin a release with e.g. 1.0.0.
+  echo "FC_IMAGE_TAG=latest"
   echo "FC_DATABASE_URL='$FC_DATABASE_URL'"
   echo "FC_PORT=$FC_PORT"
   echo "FC_FORM_PORTS=$FC_FORM_PORTS"

@@ -195,7 +195,7 @@ $lines = @($keep) + @(
 if ($adminer) { $lines += 'COMPOSE_PROFILES=tools' }
 $lines += @(
   "FC_DB_PROVIDER=$provider",
-  "FC_IMAGE_TAG=$(if ($provider -eq 'postgresql') { 'postgres' } else { 'latest' })",
+  "FC_IMAGE_TAG=latest",
   "FC_DATABASE_URL='$dbUrl'",
   "FC_PORT=$fcPort",
   "FC_FORM_PORTS=$formPorts",
