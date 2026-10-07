@@ -74,6 +74,10 @@ RUN rm -rf node_modules/.prisma && mkdir node_modules/.prisma \
 
 COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
+# Locked-out recovery: `docker exec -it formcraft reset-password <user> <new-password> [--disable-2fa]`
+COPY --from=builder /app/scripts/reset-password.js ./scripts/reset-password.js
+COPY --chmod=755 scripts/docker-reset-password.sh /usr/local/bin/reset-password
+
 EXPOSE 3000 4001-4050
 VOLUME ["/app/data"]
 
