@@ -118,6 +118,16 @@ If you expose ports directly instead of through a tunnel, restrict the range wit
 
 To remove everything, including data: `docker compose down -v`.
 
+### Locked out? Reset a password
+
+The sign-in page shows *Forgot password?* only when email (SMTP) is set up. Otherwise, another admin can set a new password in **Settings → Users**. If no admin can sign in, reset it from the server:
+
+```bash
+docker exec -it formcraft reset-password <username-or-email> <new-password>
+```
+
+Add `--disable-2fa` if the account's authenticator app or recovery codes are also lost. The user is signed out everywhere. From a source checkout, run `node scripts/reset-password.js` with the same arguments.
+
 ---
 
 ## ✨ Features
