@@ -2,11 +2,15 @@ name: Build and publish Docker image
 
 # Builds the FormCraft image and pushes it to GitHub Container Registry (ghcr.io)
 # on every push to main and on version tags (v1.0.0 etc). Pull requests only build
-# (to catch a broken Dockerfile) — they never push.
+# and test — they never push.
 #
 # One image for SQLite and PostgreSQL — it picks the engine from DATABASE_URL on start:
 #   ghcr.io/shatheitguy/formcraft:latest   (also 1.2.3, 1.2, <sha>)
 # ":postgres" stays as an alias of the same image so older installs keep updating.
+#
+# Each architecture builds on its own native runner (no QEMU emulation, which crashed
+# and hung on npm and Next.js), is smoke-tested against both databases, and is pushed
+# by digest; the merge job then publishes one multi-arch tag over both.
 on:
   push:
     branches: ["main"]
@@ -30,10 +34,18 @@ env:
   IMAGE_NAME: shatheitguy/formcraft
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    # A normal multi-arch build takes ~15 minutes; don't let a stuck one run for hours.
-    timeout-minutes: 45
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    # A native build takes ~5 minutes; don't let a stuck one run for hours.
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -50,16 +62,102 @@ jobs:
           echo "VERSION=$v_file package.json=$v_pkg"
           test "$v_file" = "$v_pkg"
 
-      # QEMU lets the amd64 runner build the arm64 image too, so the installer works on
-      # Apple Silicon and a Raspberry Pi, not just x86.
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: Platform slug
+        run: echo "ARCH=${PLATFORM#linux/}" >> "$GITHUB_ENV"
+        env:
+          PLATFORM: ${{ matrix.platform }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build for this runner and start it against both databases, so a broken image
+      # is never published.
+      - name: Build test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          load: true
+          tags: formcraft:test
+          cache-from: type=gha,scope=formcraft-${{ env.ARCH }}
+          cache-to: type=gha,mode=max,scope=formcraft-${{ env.ARCH }}
+
+      - name: Smoke test (SQLite and PostgreSQL)
+        run: |
+          docker network create fc
+          docker run -d --name pg --network fc -e POSTGRES_PASSWORD=smoke -e POSTGRES_DB=formcraft postgres:16-alpine
+          docker run -d --name app-sqlite -p 3001:3000 formcraft:test
+          docker run -d --name app-pg --network fc -p 3002:3000 \
+            -e DATABASE_URL='postgresql://postgres:smoke@pg:5432/formcraft?schema=public' formcraft:test
+          for app in sqlite:3001 pg:3002; do
+            name=app-${app%%:*}; port=${app##*:}; ok=0
+            for i in $(seq 60); do
+              if curl -fs "http://localhost:$port/api/health" && curl -fs -o /dev/null "http://localhost:$port/login"; then ok=1; break; fi
+              sleep 2
+            done
+            echo; docker logs "$name"
+            [ "$ok" = 1 ] || { echo "::error::$name did not become healthy on ${{ matrix.platform }}"; exit 1; }
+          done
+
+      - name: Push by digest
+        if: github.event_name != 'pull_request'
+        id: push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=formcraft-${{ env.ARCH }}
+
+      - name: Export digest
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${DIGEST#sha256:}"
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+
+      - name: Upload digest
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ env.ARCH }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -80,40 +178,12 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=
 
-      # Build for this runner first and start it against both databases, so a broken image
-      # is never published (the same image serves SQLite and PostgreSQL).
-      - name: Build test image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          load: true
-          tags: formcraft:test
-          cache-from: type=gha,scope=formcraft
-
-      - name: Smoke test (SQLite and PostgreSQL)
+      - name: Publish the multi-arch tags
+        working-directory: /tmp/digests
         run: |
-          docker network create fc
-          docker run -d --name pg --network fc -e POSTGRES_PASSWORD=smoke -e POSTGRES_DB=formcraft postgres:16-alpine
-          docker run -d --name app-sqlite -p 3001:3000 formcraft:test
-          docker run -d --name app-pg --network fc -p 3002:3000 \
-            -e DATABASE_URL='postgresql://postgres:smoke@pg:5432/formcraft?schema=public' formcraft:test
-          for app in sqlite:3001 pg:3002; do
-            name=app-${app%%:*}; port=${app##*:}; ok=0
-            for i in $(seq 60); do
-              if curl -fs "http://localhost:$port/api/health" && curl -fs -o /dev/null "http://localhost:$port/login"; then ok=1; break; fi
-              sleep 2
-            done
-            echo; docker logs "$name"
-            [ "$ok" = 1 ] || { echo "::error::$name did not become healthy"; exit 1; }
-          done
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
 
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=formcraft
-          cache-to: type=gha,mode=max,scope=formcraft
+      - name: Inspect
+        run: docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
