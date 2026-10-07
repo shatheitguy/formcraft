@@ -6,24 +6,35 @@ RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# ---------- deps ----------
+# ---------- deps (image architecture: Prisma CLI + engines) ----------
 FROM base AS deps
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 RUN if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
 
-# ---------- build ----------
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+# ---------- prisma clients (image architecture) ----------
 # One image for both databases: the Prisma provider is compiled into the client, so generate
 # a client for each (the query engine is shared) and let the entrypoint pick by DATABASE_URL.
-RUN npx prisma generate && npx next build \
+FROM deps AS prisma
+RUN npx prisma generate \
  && mkdir -p prisma-clients \
  && cp -r node_modules/.prisma/client prisma-clients/sqlite \
  && sed 's/provider = "sqlite"/provider = "postgresql"/' prisma/schema.prisma > prisma/schema.postgresql.prisma \
  && npx prisma generate --schema prisma/schema.postgresql.prisma \
  && cp -r node_modules/.prisma/client prisma-clients/postgresql
+
+# ---------- build (native build machine) ----------
+# The Next.js output is plain JavaScript, so build it natively instead of under QEMU
+# emulation for arm64, which is slow and crashes (SIGILL) intermittently.
+FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
+RUN apk add --no-cache openssl libc6-compat
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma
+RUN if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+COPY . .
+RUN npx prisma generate && npx next build
 
 # ---------- runtime ----------
 FROM base AS runner
@@ -51,11 +62,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Prisma clients (SQLite + PostgreSQL), engines and CLI (used to sync the schema on start).
+# These come from the image-architecture stages so the native engines match the image.
 # node_modules/.prisma/client is a symlink the entrypoint points at the matching client.
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma-clients ./prisma-clients
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=prisma /app/prisma ./prisma
+COPY --from=prisma /app/prisma-clients ./prisma-clients
+COPY --from=deps /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=deps /app/node_modules/prisma ./node_modules/prisma
 RUN rm -rf node_modules/.prisma && mkdir node_modules/.prisma \
  && ln -s /app/prisma-clients/sqlite node_modules/.prisma/client \
  && chown -h nextjs:nodejs node_modules/.prisma node_modules/.prisma/client
