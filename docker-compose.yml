@@ -16,14 +16,12 @@
 
 services:
   formcraft:
-    # Published image. FC_IMAGE_TAG: "latest" (SQLite) or "postgres" (PostgreSQL build);
-    # pin a release with e.g. 1.0.0 / 1.0.0-postgres. To build from a source checkout
-    # instead, comment `image:` out and uncomment `build:`.
+    # Published image — one image for SQLite and PostgreSQL (picked from DATABASE_URL).
+    # Pin a release with FC_IMAGE_TAG=1.0.0. To build from a source checkout instead,
+    # comment `image:` out and uncomment `build:`.
     image: ghcr.io/shatheitguy/formcraft:${FC_IMAGE_TAG:-latest}
     # build:
     #   context: .
-    #   args:
-    #     DB_PROVIDER: ${FC_DB_PROVIDER:-sqlite}
     container_name: formcraft
     restart: unless-stopped
     ports:

@@ -30,9 +30,9 @@ irm https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.ps1 | i
 
 The installer downloads only the compose files and pulls the published image `ghcr.io/shatheitguy/formcraft`, so you don't need git or a source build. You can also run it from a checkout: `./install.sh` or `.\install.ps1`.
 
-**Image tags:** `latest` is the SQLite build and `postgres` is the PostgreSQL build; both follow `main` and are multi-arch (amd64 and arm64). Pin a release with `1.0.0` / `1.0.0-postgres` via `FC_IMAGE_TAG` in `.env`.
+**Image tag:** `latest` follows `main`, is multi-arch (amd64 and arm64) and works with both SQLite and PostgreSQL; it picks the engine from `DATABASE_URL` on start. Pin a release with e.g. `1.0.0` via `FC_IMAGE_TAG` in `.env`. (`postgres` is kept as an alias of the same image for older installs.)
 
-**Unraid:** add `https://raw.githubusercontent.com/shatheitguy/formcraft/main/unraid/formcraft.xml` as a template. It uses SQLite in `/mnt/user/appdata/formcraft` with PUID 99 and PGID 100.
+**Unraid:** the template lives in [shatheitguy/unraid-templates](https://github.com/shatheitguy/unraid-templates) with my other Unraid templates (`https://raw.githubusercontent.com/shatheitguy/unraid-templates/main/formcraft.xml`). It uses SQLite in `/mnt/user/appdata/formcraft` with PUID 99 and PGID 100.
 
 ### What the installer asks
 
@@ -67,14 +67,14 @@ Re-run the installer at any time to change the database or ports. Choosing **No*
 
 ```bash
 # bundled PostgreSQL (needs FC_DB_PROVIDER=postgresql, FC_DATABASE_URL and POSTGRES_PASSWORD in .env)
-docker compose -f docker-compose.yml -f docker-compose.db.yml up -d   # with FC_IMAGE_TAG=postgres
+docker compose -f docker-compose.yml -f docker-compose.db.yml up -d
 # add dedicated per-form ports
 docker compose -f docker-compose.yml -f docker-compose.ports.yml up -d
 ```
 
 | Variable (`.env`) | Default | Description |
 | --- | --- | --- |
-| `FC_DB_PROVIDER` | `sqlite` | `sqlite` or `postgresql`. The image is built for this engine. |
+| `FC_DB_PROVIDER` | `sqlite` | `sqlite` or `postgresql` (informational; the image picks the engine from `FC_DATABASE_URL`). |
 | `FC_DATABASE_URL` | `file:/app/data/formcraft.db` | Connection string, e.g. `postgresql://user:pass@host:5432/formcraft?schema=public` (URL-encode special characters in the password) |
 | `FC_PORT` | `3000` | Dashboard port on the host |
 | `FC_FORM_PORTS` | `4001-4050` | Per-form port pool (used by `docker-compose.ports.yml`) |
@@ -206,7 +206,7 @@ Next.js 14 (App Router, React 18, TypeScript)
 ```
 
 - **Storage:** Prisma with SQLite or PostgreSQL (chosen at install time). A form's schema (fields and settings) is stored as JSON, so new field types never need a migration.
-- **Container:** a multi-stage Alpine image, built for the chosen database engine (`DB_PROVIDER` build arg), running Next.js `standalone` output as a non-root user. On start, `prisma db push` creates or updates the schema.
+- **Container:** a multi-stage Alpine image with a Prisma client for both SQLite and PostgreSQL (the entrypoint picks one from `DATABASE_URL`), running Next.js `standalone` output as a non-root user. On start, `prisma db push` creates or updates the schema.
 - **Drag and drop:** dnd-kit. **Search:** Fuse.js. **Icons:** lucide. **Styling:** Tailwind CSS.
 
 ---

@@ -1,12 +1,12 @@
 name: Build and publish Docker image
 
-# Builds the FormCraft images and pushes them to GitHub Container Registry (ghcr.io)
+# Builds the FormCraft image and pushes it to GitHub Container Registry (ghcr.io)
 # on every push to main and on version tags (v1.0.0 etc). Pull requests only build
 # (to catch a broken Dockerfile) — they never push.
 #
-# Two variants, because the Prisma database provider is compiled in:
-#   ghcr.io/shatheitguy/formcraft:latest     SQLite      (also 1.2.3, 1.2, <sha>)
-#   ghcr.io/shatheitguy/formcraft:postgres   PostgreSQL  (also 1.2.3-postgres, …)
+# One image for SQLite and PostgreSQL — it picks the engine from DATABASE_URL on start:
+#   ghcr.io/shatheitguy/formcraft:latest   (also 1.2.3, 1.2, <sha>)
+# ":postgres" stays as an alias of the same image so older installs keep updating.
 on:
   push:
     branches: ["main"]
@@ -17,7 +17,6 @@ on:
       - "install.sh"
       - "install.ps1"
       - "README.md"
-      - "unraid/**"
   pull_request:
     branches: ["main"]
 
@@ -33,19 +32,11 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    # A normal multi-arch build takes ~15 minutes; don't let a stuck one run for hours.
+    timeout-minutes: 45
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - variant: sqlite
-            channel: latest
-            suffix: ""
-          - variant: postgresql
-            channel: postgres
-            suffix: "-postgres"
 
     steps:
       - name: Checkout
@@ -81,21 +72,48 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: latest=false
-          # ":latest" / ":postgres" follow main, so a plain pull always brings the current build.
+          # ":latest" follows main, so a plain pull always brings the current build.
           tags: |
-            type=raw,value=${{ matrix.channel }},enable={{is_default_branch}}
-            type=semver,pattern={{version}},suffix=${{ matrix.suffix }}
-            type=semver,pattern={{major}}.{{minor}},suffix=${{ matrix.suffix }}
-            type=sha,prefix=,suffix=${{ matrix.suffix }}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=postgres,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=
+
+      # Build for this runner first and start it against both databases, so a broken image
+      # is never published (the same image serves SQLite and PostgreSQL).
+      - name: Build test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: formcraft:test
+          cache-from: type=gha,scope=formcraft
+
+      - name: Smoke test (SQLite and PostgreSQL)
+        run: |
+          docker network create fc
+          docker run -d --name pg --network fc -e POSTGRES_PASSWORD=smoke -e POSTGRES_DB=formcraft postgres:16-alpine
+          docker run -d --name app-sqlite -p 3001:3000 formcraft:test
+          docker run -d --name app-pg --network fc -p 3002:3000 \
+            -e DATABASE_URL='postgresql://postgres:smoke@pg:5432/formcraft?schema=public' formcraft:test
+          for app in sqlite:3001 pg:3002; do
+            name=app-${app%%:*}; port=${app##*:}; ok=0
+            for i in $(seq 60); do
+              if curl -fs "http://localhost:$port/api/health" && curl -fs -o /dev/null "http://localhost:$port/login"; then ok=1; break; fi
+              sleep 2
+            done
+            echo; docker logs "$name"
+            [ "$ok" = 1 ] || { echo "::error::$name did not become healthy"; exit 1; }
+          done
 
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          build-args: DB_PROVIDER=${{ matrix.variant }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.variant }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.variant }}
+          cache-from: type=gha,scope=formcraft
+          cache-to: type=gha,mode=max,scope=formcraft
