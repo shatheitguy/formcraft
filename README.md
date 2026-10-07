@@ -32,7 +32,7 @@ The installer downloads only the compose files and pulls the published image `gh
 
 **Image tag:** `latest` follows `main`, is multi-arch (amd64 and arm64) and works with both SQLite and PostgreSQL; it picks the engine from `DATABASE_URL` on start. Pin a release with e.g. `1.0.0` via `FC_IMAGE_TAG` in `.env`. (`postgres` is kept as an alias of the same image for older installs.)
 
-**Unraid:** add `https://raw.githubusercontent.com/shatheitguy/formcraft/main/unraid/formcraft.xml` as a template. It uses SQLite in `/mnt/user/appdata/formcraft` with PUID 99 and PGID 100.
+**Unraid:** the template lives in [shatheitguy/unraid-templates](https://github.com/shatheitguy/unraid-templates) with my other Unraid templates (`https://raw.githubusercontent.com/shatheitguy/unraid-templates/main/formcraft.xml`). It uses SQLite in `/mnt/user/appdata/formcraft` with PUID 99 and PGID 100.
 
 ### What the installer asks
 

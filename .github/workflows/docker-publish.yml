@@ -17,7 +17,6 @@ on:
       - "install.sh"
       - "install.ps1"
       - "README.md"
-      - "unraid/**"
   pull_request:
     branches: ["main"]
 
