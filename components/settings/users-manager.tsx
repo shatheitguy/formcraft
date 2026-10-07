@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Eye, KeyRound, Pencil, Plus, Search, Shield, ShieldCheck, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
+import { Check, Eye, KeyRound, Pencil, Plus, Search, Shield, ShieldCheck, ShieldOff, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { PasswordInput } from '@/components/auth/password-input';
@@ -24,6 +24,8 @@ export interface ManagedUser {
   formIds: string[];
   active: boolean;
   lastLoginAt: string | null;
+  /** Has an authenticator app or email codes turned on. */
+  twoFactor: boolean;
   createdAt: string;
 }
 
@@ -42,6 +44,7 @@ export function UsersManager({ users, forms, meId }: { users: ManagedUser[]; for
   const t = useT();
   const [editing, setEditing] = useState<ManagedUser | 'new' | null>(null);
   const [deleting, setDeleting] = useState<ManagedUser | null>(null);
+  const [resetting2fa, setResetting2fa] = useState<ManagedUser | null>(null);
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState('');
   const formTitle = useMemo(() => new Map(forms.map((f) => [f.id, f.title])), [forms]);
@@ -57,6 +60,17 @@ export function UsersManager({ users, forms, meId }: { users: ManagedUser[]; for
     setDeleting(null);
     if (!r.ok) return toast(t(r.error!), 'error');
     toast(t('User deleted'));
+    router.refresh();
+  }
+
+  async function resetTwoFactor() {
+    if (!resetting2fa) return;
+    setBusy(true);
+    const r = await sendJson(`/api/admin/users/${resetting2fa.id}`, 'PATCH', { resetTwoFactor: true });
+    setBusy(false);
+    setResetting2fa(null);
+    if (!r.ok) return toast(t(r.error!), 'error');
+    toast(t('Two-factor sign-in turned off'));
     router.refresh();
   }
 
@@ -113,6 +127,11 @@ export function UsersManager({ users, forms, meId }: { users: ManagedUser[]; for
                     <span className="truncate text-sm font-semibold text-slate-900">{u.name || u.username}</span>
                     {u.id === meId && <span className="rounded bg-slate-100 px-1.5 text-[10px] font-semibold uppercase text-slate-500">{t('You')}</span>}
                     {!u.active && <span className="rounded bg-rose-50 px-1.5 text-[10px] font-semibold uppercase text-rose-600">{t('Disabled')}</span>}
+                    {u.twoFactor && (
+                      <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 text-[10px] font-semibold uppercase text-emerald-700" title={t('Two-factor sign-in is on')}>
+                        <ShieldCheck className="h-3 w-3" /> {t('2FA')}
+                      </span>
+                    )}
                   </div>
                   <div className="truncate text-xs text-slate-500">
                     @{u.username} · {u.email}
@@ -134,6 +153,7 @@ export function UsersManager({ users, forms, meId }: { users: ManagedUser[]; for
                   }
                   items={[
                     { label: t('Edit user & access'), icon: <Pencil />, onClick: () => setEditing(u) },
+                    ...(u.twoFactor ? [{ label: t('Reset two-factor'), icon: <ShieldOff />, onClick: () => setResetting2fa(u) }] : []),
                     ...(u.id !== meId ? [{ label: t('Delete user'), icon: <Trash2 />, onClick: () => setDeleting(u), danger: true, divider: true }] : []),
                   ]}
                 />
@@ -166,6 +186,17 @@ export function UsersManager({ users, forms, meId }: { users: ManagedUser[]; for
         title={t('Delete user?')}
         description={rich(t('{name} will lose access immediately. Their forms and responses are kept.'), {
           name: <strong className="text-slate-900">{deleting?.name || deleting?.username}</strong>,
+        })}
+      />
+      <ConfirmDialog
+        open={!!resetting2fa}
+        onClose={() => setResetting2fa(null)}
+        onConfirm={resetTwoFactor}
+        loading={busy}
+        title={t('Reset two-factor sign-in?')}
+        confirmLabel={t('Reset two-factor')}
+        description={rich(t('{name} will sign in with just their password until they turn two-factor on again. Use this when they lose their phone or recovery codes.'), {
+          name: <strong className="text-slate-900">{resetting2fa?.name || resetting2fa?.username}</strong>,
         })}
       />
     </div>

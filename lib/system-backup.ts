@@ -17,7 +17,7 @@ export const BACKUP_VERSION = 1;
 
 // Columns per table. Restores pick only these, so backups from older/newer versions still load.
 const TABLES = {
-  user: ['id', 'username', 'email', 'name', 'avatarUrl', 'language', 'theme', 'passwordHash', 'role', 'formScope', 'active', 'notifyEmail', 'telegramChatId', 'emailNotifications', 'telegramNotifications', 'notifyAllForms', 'notifyFormIds', 'lastLoginAt', 'createdAt', 'updatedAt'],
+  user: ['id', 'username', 'email', 'name', 'avatarUrl', 'language', 'theme', 'passwordHash', 'role', 'formScope', 'active', 'notifyEmail', 'telegramChatId', 'emailNotifications', 'telegramNotifications', 'notifyAllForms', 'notifyFormIds', 'lastLoginAt', 'totpSecret', 'totpEnabled', 'totpLastStep', 'emailOtpEnabled', 'recoveryCodes', 'createdAt', 'updatedAt'],
   form: ['id', 'title', 'description', 'category', 'tags', 'status', 'schema', 'slug', 'port', 'customDomain', 'createdById', 'createdAt', 'updatedAt'],
   formAccess: ['userId', 'formId'],
   submission: ['id', 'formId', 'data', 'score', 'maxScore', 'language', 'createdAt'],

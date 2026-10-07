@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // Edge middleware only checks that a session cookie is present; the session itself
 // is validated (and permissions enforced) in each page and API route.
-const PUBLIC = [/^\/login\/?$/, /^\/setup\/?$/, /^\/f\//, /^\/api\/auth\//, /^\/api\/health\/?$/, /^\/api\/uploads\/[^/]+$/];
+const PUBLIC = [/^\/login\/?$/, /^\/forgot\/?$/, /^\/setup\/?$/, /^\/f\//, /^\/api\/auth\//, /^\/api\/health\/?$/, /^\/api\/uploads\/[^/]+$/];
 const PUBLIC_SUBMIT = /^\/api\/forms\/[^/]+\/submissions\/?$/;
 
 export function middleware(req: NextRequest) {
