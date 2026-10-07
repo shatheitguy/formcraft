@@ -4,6 +4,7 @@ import auth from './auth';
 import builder from './builder';
 import core from './core';
 import hub from './hub';
+import security from './security';
 import settings from './settings';
 import submissions from './submissions';
 
@@ -13,7 +14,8 @@ export interface AreaDict {
   ta: Dict;
 }
 
-const AREAS: AreaDict[] = [core, auth, hub, builder, submissions, settings];
+// security goes first so an area's own wording wins for shared words like 'Copy' or 'Back'.
+const AREAS: AreaDict[] = [security, core, auth, hub, builder, submissions, settings];
 
 export const DICTIONARIES: Record<'ar' | 'ta', Dict> = {
   ar: Object.assign({}, ...AREAS.map((a) => a.ar)),

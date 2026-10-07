@@ -55,9 +55,30 @@ async function deliver(channel: Channel, target: string, subject: string, send: 
 function emailLayout(appName: string, title: string, body: string) {
   return `<!doctype html><html><body style="margin:0;background:#f8fafc;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a">
 <div style="max-width:560px;margin:24px auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden">
-<div style="height:6px;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div>
+<div style="height:6px;background:linear-gradient(90deg,#b8262d,#7f151b)"></div>
 <div style="padding:24px 28px"><div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em">${esc(appName)}</div>
 <h1 style="font-size:18px;margin:6px 0 16px">${title}</h1>${body}</div></div></body></html>`;
+}
+
+const CODE_COPY = {
+  reset: { subject: 'Your password reset code', title: 'Reset your password', intro: 'Use this code to choose a new password.' },
+  login: { subject: 'Your sign-in code', title: 'Your sign-in code', intro: 'Use this code to finish signing in.' },
+  'email-setup': { subject: 'Confirm two-factor sign-in', title: 'Confirm your email', intro: 'Use this code to turn on email two-factor sign-in.' },
+} as const;
+
+/** Emails a one-time code (password reset, sign-in or two-factor setup). */
+export async function sendCodeEmail(smtp: SmtpSettings, appName: string, to: string, purpose: keyof typeof CODE_COPY, code: string, minutes: number) {
+  const c = CODE_COPY[purpose];
+  const subject = `${c.subject} · ${appName}`;
+  const html = emailLayout(
+    appName,
+    c.title,
+    `<p style="font-size:14px;color:#334155;margin:0 0 16px">${c.intro}</p>
+<div style="font-size:32px;font-weight:700;letter-spacing:.3em;font-family:ui-monospace,Menlo,Consolas,monospace;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;text-align:center">${code}</div>
+<p style="font-size:13px;color:#64748b;margin:16px 0 0">It expires in ${minutes} minutes. Never share it with anyone. If you didn't ask for it, you can ignore this email.</p>`,
+  );
+  const text = `${c.title}\n\n${c.intro}\n\n${code}\n\nIt expires in ${minutes} minutes. Never share it with anyone. If you didn't ask for it, you can ignore this email.`;
+  return deliver('email', to, c.subject, () => sendEmail(smtp, to, subject, html, text));
 }
 
 /** Sends new-submission alerts to every subscribed user who can see the form. Never throws. */
@@ -93,11 +114,11 @@ export async function notifySubmission({ formId, answers, origin }: { formId: st
 
     const html = emailLayout(
       settings.app.name,
-      `New response on <span style="color:#4f46e5">${esc(form.title)}</span>`,
+      `New response on <span style="color:#9b1b22">${esc(form.title)}</span>`,
       `<table style="width:100%;border-collapse:collapse;font-size:14px">${rows
         .map((r) => `<tr><td style="padding:8px 0;color:#64748b;vertical-align:top;width:40%;border-bottom:1px solid #f1f5f9">${esc(r.label)}</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9">${esc(r.value)}</td></tr>`)
         .join('')}</table>
-<a href="${esc(link)}" style="display:inline-block;margin-top:20px;background:#4f46e5;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600">View submissions</a>`,
+<a href="${esc(link)}" style="display:inline-block;margin-top:20px;background:#9b1b22;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600">View submissions</a>`,
     );
     const text = `New response on ${form.title}\n\n${rows.map((r) => `${r.label}: ${r.value}`).join('\n')}\n\n${link}`;
     const tg = `📥 <b>New response</b> · ${esc(form.title)}\n\n${rows.map((r) => `<b>${esc(r.label)}:</b> ${esc(r.value)}`).join('\n')}\n\n<a href="${esc(link)}">View submissions</a>`;

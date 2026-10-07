@@ -16,6 +16,7 @@ import { ROLE_INFO, type Role } from '@/lib/roles';
 import { cn, formatDate } from '@/lib/utils';
 import { TelegramIcon } from './notification-settings';
 import { Field, SettingsCard, sendJson } from './settings-ui';
+import { TwoFactorCard, type TwoFactorStatus } from './two-factor-card';
 
 interface Profile {
   name: string;
@@ -37,11 +38,13 @@ export function ProfileSettings({
   forms,
   channels,
   isAdmin,
+  twoFactor,
 }: {
   profile: Profile;
   forms: { id: string; title: string; category: string }[];
   channels: { email: boolean; telegram: boolean };
   isAdmin: boolean;
+  twoFactor: TwoFactorStatus;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -172,6 +175,8 @@ export function ProfileSettings({
           </Field>
         </div>
       </SettingsCard>
+
+      <TwoFactorCard status={twoFactor} emailAvailable={channels.email} email={profile.email} />
 
       <SettingsCard
         title={t('Notifications')}

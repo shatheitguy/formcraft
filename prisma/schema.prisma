@@ -78,9 +78,20 @@ model User {
   /// JSON-encoded string[] of form ids (when notifyAllForms is false)
   notifyFormIds         String       @default("[]")
   lastLoginAt           DateTime?
+  /// Two-factor sign-in. totpSecret is base32; the pending one waits for a first valid code.
+  totpSecret            String?
+  totpPendingSecret     String?
+  totpEnabled           Boolean      @default(false)
+  /// Last TOTP time step accepted, so a code can't be replayed.
+  totpLastStep          Int?
+  emailOtpEnabled       Boolean      @default(false)
+  /// JSON-encoded string[] of sha256 hashes of unused recovery codes
+  recoveryCodes         String       @default("[]")
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
   sessions              Session[]
+  otpCodes              OtpCode[]
+  loginChallenges       LoginChallenge[]
   formAccess            FormAccess[]
 }
 
@@ -92,6 +103,36 @@ model Session {
   userAgent String?
   expiresAt DateTime
   createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Emailed one-time codes: password reset and confirming email two-factor.
+model OtpCode {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "reset" | "email-setup"
+  purpose   String
+  codeHash  String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, purpose])
+}
+
+/// A sign-in that passed the password and is waiting for its second factor.
+model LoginChallenge {
+  /// sha256 of the fc_2fa cookie token
+  id            String    @id
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts      Int       @default(0)
+  emailCodeHash String?
+  emailSentAt   DateTime?
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
 
   @@index([userId])
 }

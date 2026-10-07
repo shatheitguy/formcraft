@@ -16,6 +16,17 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
   const body = await req.json().catch(() => ({}));
+
+  // Lost phone or inbox: turn off every second factor so the user can sign in with the password.
+  if (body.resetTwoFactor === true) {
+    await prisma.user.update({
+      where: { id: target.id },
+      data: { totpEnabled: false, totpSecret: null, totpPendingSecret: null, totpLastStep: null, emailOtpEnabled: false, recoveryCodes: '[]' },
+    });
+    await prisma.loginChallenge.deleteMany({ where: { userId: target.id } });
+    return NextResponse.json({ ok: true });
+  }
+
   const { data, error } = validateUserInput(body, { partial: true });
   if (error) return NextResponse.json({ error }, { status: 400 });
   const clash = await uniquenessProblem(data.username, data.email, target.id);

@@ -4,6 +4,7 @@ import { ProfileSettings } from '@/components/settings/profile-settings';
 import { formWhere, notifyFormIds, requireUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getSettings } from '@/lib/settings';
+import { recoveryCodesLeft } from '@/lib/two-factor';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
@@ -41,6 +42,7 @@ export default async function ProfilePage() {
         telegram: settings.telegram.enabled && !!settings.telegram.botToken,
       }}
       isAdmin={me.role === 'ADMIN'}
+      twoFactor={{ totp: user.totpEnabled, email: user.emailOtpEnabled, recoveryLeft: recoveryCodesLeft(user.recoveryCodes) }}
     />
   );
 }

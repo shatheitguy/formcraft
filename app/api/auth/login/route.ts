@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { clearLoginFailures, createSession, loginBlocked, recordLoginFailure, verifyPassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { emailAvailable, hasTwoFactor, maskEmail, sendChallengeEmail, startChallenge } from '@/lib/two-factor';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,20 @@ export async function POST(req: Request) {
   if (!user.active) return NextResponse.json({ error: 'This account has been disabled. Contact an administrator.' }, { status: 403 });
 
   clearLoginFailures(key);
+
+  // Two-factor: the password alone doesn't sign in. Start a challenge and ask for a code.
+  if (hasTwoFactor(user)) {
+    const challenge = await startChallenge(user.id);
+    const email = user.emailOtpEnabled && (await emailAvailable());
+    const methods = [...(user.totpEnabled ? ['totp'] : []), ...(email ? ['email'] : []), 'recovery'];
+    // Email-only accounts get their code straight away.
+    let emailError: string | null = null;
+    if (email && !user.totpEnabled) emailError = await sendChallengeEmail(challenge, user.email);
+    return NextResponse.json({
+      twoFactor: { methods, emailTo: email ? maskEmail(user.email) : null, emailSent: email && !user.totpEnabled && !emailError, emailError },
+    });
+  }
+
   await createSession(user.id);
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
   return NextResponse.json({ ok: true });

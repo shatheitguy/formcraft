@@ -27,6 +27,7 @@ export default async function UsersPage() {
     formIds: u.formAccess.map((a) => a.formId),
     active: u.active,
     lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
+    twoFactor: u.totpEnabled || u.emailOtpEnabled,
     createdAt: u.createdAt.toISOString(),
   }));
   return <UsersManager users={data} forms={forms} meId={me.id} />;

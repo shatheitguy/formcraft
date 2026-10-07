@@ -164,6 +164,8 @@ Or start from a **blank form**.
 - **Viewer**: read-only access to submissions and insights, plus CSV export
 - Each editor or viewer can be limited to **all forms** or **selected forms only**. Forms an editor creates are added to their access automatically
 - Admins can reset passwords (which signs the user out everywhere) and disable accounts. The last active admin can't be removed
+- **Forgot password by email:** with email set up, the sign-in page offers *Forgot password?*, which emails a 6-digit code (10 minutes, 5 tries) to set a new password and signs the account out everywhere. It answers the same whether or not the account exists
+- **Two-factor sign-in for every user** (*My profile → Two-factor sign-in*): an authenticator app (TOTP: Google/Microsoft Authenticator, 1Password, Authy…), a code by email, or both, plus 10 single-use recovery codes. Codes can't be replayed, wrong codes are limited, and turning a method off asks for the password. Admins can *Reset two-factor* for someone who lost their phone
 
 ### ⚙️ Settings
 - **Per-form logo & title** (top of the builder's form settings): upload a form logo, choose its size (small/medium/large) and placement (above or beside the title), align the header left or center, and hide the title when the logo already shows the name.
