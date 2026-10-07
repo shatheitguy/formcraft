@@ -80,7 +80,18 @@ printf '\n%s  ███████╗ FormCraft installer%s\n%s  The self-hoste
 if [ "$DRY_RUN" = 0 ]; then
   command -v docker > /dev/null || die "Docker is not installed. Get it from https://docs.docker.com/get-docker/ and re-run."
   docker compose version > /dev/null 2>&1 || die "Docker Compose v2 is required ('docker compose'). Update Docker and re-run."
-  docker info > /dev/null 2>&1 || die "Docker is installed but not running (or you need sudo / the docker group)."
+  if ! docker info > /dev/null 2>&1; then
+    # Usually "permission denied" on the Docker socket: re-run the whole installer with sudo.
+    if [ "$(id -u)" != 0 ] && command -v sudo > /dev/null && [ -z "${FC_SUDO_RETRY:-}" ]; then
+      info "Docker needs root on this machine — re-running the installer with sudo…"
+      if [ -f "$0" ] && grep -q "FormCraft installer" "$0" 2>/dev/null; then
+        exec sudo FC_SUDO_RETRY=1 FORMCRAFT_DIR="$INSTALL_DIR" bash "$0" "$@"
+      fi
+      # Piped from curl: fetch the script again for the sudo run.
+      exec sudo FC_SUDO_RETRY=1 FORMCRAFT_DIR="$INSTALL_DIR" bash -c "curl -fsSL '$RAW_URL/install.sh' | bash -s -- $*"
+    fi
+    die "Docker is installed but not running (start it with: sudo systemctl start docker), or your user can't reach it (add it to the docker group: sudo usermod -aG docker \$USER, then log out and back in)."
+  fi
   ok "Docker $(docker version --format '{{.Server.Version}}' 2>/dev/null || echo '') with Compose $(docker compose version --short 2>/dev/null || echo '')"
 fi
 
@@ -105,8 +116,14 @@ if [ -f .env ] && grep -q '^FC_DB_PROVIDER=' .env && [ "$ASSUME_YES" = 0 ]; then
   if ! yesno "Reconfigure it? (No just rebuilds and restarts with the current settings)" n; then
     [ "$DRY_RUN" = 1 ] && exit 0
     info "Updating and starting FormCraft with the existing configuration…"
-    docker compose pull && docker compose up -d
-    ok "Done."
+    if ! docker compose pull; then
+      warn "Couldn't download the FormCraft image — it may still be publishing, or the registry is unreachable."
+      printf '  Try again in a few minutes:  %scd %s && docker compose pull && docker compose up -d%s
+' "$B" "$(pwd)" "$N"
+      exit 1
+    fi
+    docker compose up -d || die "Docker Compose couldn't start FormCraft — see the messages above."
+    ok "FormCraft is up to date and running on http://localhost:$(grep -E '^FC_PORT=' .env | cut -d= -f2 || echo 3000)"
     exit 0
   fi
 fi
@@ -238,8 +255,19 @@ if [ "$DRY_RUN" = 1 ]; then warn "Dry run — not starting Docker."; exit 0; fi
 
 # ---------- start ----------
 info "Pulling $IMAGE and starting FormCraft…"
-docker compose pull
-docker compose up -d
+if ! docker compose pull; then
+  warn "Couldn't download the FormCraft image ($IMAGE)."
+  printf '  This usually means the image is still being published or the registry is unreachable.
+'
+  printf '  Your settings are saved — once the image is available, run:
+
+'
+  printf '    %scd %s && docker compose pull && docker compose up -d%s
+
+' "$B" "$(pwd)" "$N"
+  exit 1
+fi
+docker compose up -d || die "Docker Compose couldn't start FormCraft — see the messages above (docker compose logs -f formcraft)."
 
 info "Waiting for FormCraft to become healthy…"
 for _ in $(seq 1 90); do

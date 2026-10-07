@@ -35,6 +35,6 @@ export function accentVars(key: string | undefined): Record<string, string> | un
 
 /** CSS custom properties consumed by the `brand-*` Tailwind colors. */
 export function accentCss(key: string) {
-  const palette = ACCENTS[(key in ACCENTS ? key : 'indigo') as AccentKey];
+  const palette = ACCENTS[(key in ACCENTS ? key : 'wine') as AccentKey];
   return `:root{${SHADES.map((s, i) => `--brand-${s}:${rgb(palette[i])};`).join('')}}`;
 }

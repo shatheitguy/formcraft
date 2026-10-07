@@ -85,7 +85,11 @@ if ((Test-Path .env) -and (Select-String -Path .env -Pattern '^FC_DB_PROVIDER=' 
   if (-not (YesNo "Reconfigure it? (No just rebuilds and restarts with the current settings)" 'n')) {
     if ($DryRun) { return }
     Info "Updating and starting FormCraft with the existing configuration..."
-    & docker compose pull; & docker compose up -d; Ok "Done."; return
+    & docker compose pull
+    if ($LASTEXITCODE -ne 0) { Warn "Couldn't download the FormCraft image - it may still be publishing. Try again in a few minutes: docker compose pull; docker compose up -d"; return }
+    & docker compose up -d
+    if ($LASTEXITCODE -ne 0) { Die 'docker compose failed - see the output above.' }
+    Ok 'FormCraft is up to date and running.'; return
   }
 }
 
@@ -207,6 +211,13 @@ if ($DryRun) { Warn 'Dry run - not starting Docker.'; return }
 # ---------- start ----------
 Info "Pulling $Image and starting FormCraft..."
 & docker compose pull
+if ($LASTEXITCODE -ne 0) {
+  Warn "Couldn't download the FormCraft image ($Image)."
+  Write-Host '  This usually means the image is still being published or the registry is unreachable.'
+  Write-Host "  Your settings are saved - once the image is available, run:`n"
+  Write-Host "    cd `"$(Get-Location)`"; docker compose pull; docker compose up -d`n" -ForegroundColor White
+  return
+}
 & docker compose up -d
 if ($LASTEXITCODE -ne 0) { Die 'docker compose failed - see the output above.' }
 

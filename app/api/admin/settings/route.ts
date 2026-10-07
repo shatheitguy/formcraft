@@ -40,7 +40,7 @@ export async function PUT(req: Request) {
     const next: AllSettings['app'] = {
       name: str(value.name, 40) || 'FormCraft',
       tagline: str(value.tagline, 120),
-      accent: (ACCENT_KEYS.includes(value.accent) ? value.accent : 'indigo') as AccentKey,
+      accent: (ACCENT_KEYS.includes(value.accent) ? value.accent : 'wine') as AccentKey,
       logoUrl,
       publicUrl,
       footerText: str(value.footerText, 120),

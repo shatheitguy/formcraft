@@ -11,6 +11,13 @@ on:
   push:
     branches: ["main"]
     tags: ["v*.*.*"]
+    # The image doesn't contain these, so changing them shouldn't rebuild it.
+    paths-ignore:
+      - "docs/**"
+      - "install.sh"
+      - "install.ps1"
+      - "README.md"
+      - "unraid/**"
   pull_request:
     branches: ["main"]
 
