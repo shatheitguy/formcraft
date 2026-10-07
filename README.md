@@ -79,6 +79,7 @@ docker compose -f docker-compose.yml -f docker-compose.ports.yml up -d
 | `FC_PORT` | `3000` | Dashboard port on the host |
 | `FC_FORM_PORTS` | `4001-4050` | Per-form port pool (used by `docker-compose.ports.yml`) |
 | `FC_SEED_DEMO` | `true` | Load demo forms into an empty database |
+| `FC_UPDATE_CHECK` | `true` | Check GitHub every 6 hours for a newer FormCraft and notify admins under the bell. `false` turns it off (nothing else is sent) |
 | `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | `formcraft` / `formcraft` / required | Credentials for the bundled PostgreSQL container |
 | `COOKIE_SECURE` | auto | `true` forces secure cookies; `false` disables them. By default this follows `X-Forwarded-Proto`. |
 
@@ -166,6 +167,7 @@ Or start from a **blank form**.
 - Admins can reset passwords (which signs the user out everywhere) and disable accounts. The last active admin can't be removed
 - **Forgot password by email:** with email set up, the sign-in page offers *Forgot password?*, which emails a 6-digit code (10 minutes, 5 tries) to set a new password and signs the account out everywhere. It answers the same whether or not the account exists
 - **Two-factor sign-in for every user** (*My profile → Two-factor sign-in*): an authenticator app (TOTP: Google/Microsoft Authenticator, 1Password, Authy…), a code by email, or both, plus 10 single-use recovery codes. Codes can't be replayed, wrong codes are limited, and turning a method off asks for the password. Admins can *Reset two-factor* for someone who lost their phone
+- **Notification bell** in the top bar for every user: forms published, moved back to draft, created or deleted (by you or a teammate), new responses grouped per form ("12 new responses on …"), and — for admins — a notice when a newer FormCraft version is out, with the update command. Unread badge, mark as read, clear; updates every minute and in each user's language
 
 ### ⚙️ Settings
 - **Per-form logo & title** (top of the builder's form settings): upload a form logo, choose its size (small/medium/large) and placement (above or beside the title), align the header left or center, and hide the title when the logo already shows the name.

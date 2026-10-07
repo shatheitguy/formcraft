@@ -7,6 +7,7 @@ import { useApp } from './app-context';
 import { useT } from './i18n';
 import { Logo } from './icons';
 import { buttonClass } from './ui';
+import { NotificationBell } from './notification-bell';
 import { LanguageSwitch } from './preferences';
 import { UserMenu } from './user-menu';
 
@@ -24,6 +25,7 @@ export function AppHeader({ children }: { children?: ReactNode }) {
         <div className="ms-auto flex items-center gap-2">
           {children}
           <LanguageSwitch />
+          {user && <NotificationBell />}
           {user?.role === 'ADMIN' && (
             <Link href="/settings/general" className={buttonClass('ghost', 'sm', 'px-2')} title={t('Settings')} aria-label={t('Settings')}>
               <Settings className="h-4 w-4" />

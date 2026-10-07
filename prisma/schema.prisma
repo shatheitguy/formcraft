@@ -92,6 +92,7 @@ model User {
   sessions              Session[]
   otpCodes              OtpCode[]
   loginChallenges       LoginChallenge[]
+  notifications         Notification[]
   formAccess            FormAccess[]
 }
 
@@ -165,6 +166,22 @@ model NotificationLog {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+/// In-app notifications shown under the bell in the top bar.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// form.published | form.drafted | form.created | form.deleted | submission | update.available
+  type      String
+  /// JSON with the message parts (form title, actor, counts, versions); translated when shown
+  data      String    @default("{}")
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model AppMeta {

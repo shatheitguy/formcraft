@@ -1,5 +1,6 @@
 // Translation dictionaries, split by area so they can be maintained independently.
 // Keys are the exact English source strings passed to t().
+import activity from './activity';
 import auth from './auth';
 import builder from './builder';
 import core from './core';
@@ -15,7 +16,7 @@ export interface AreaDict {
 }
 
 // security goes first so an area's own wording wins for shared words like 'Copy' or 'Back'.
-const AREAS: AreaDict[] = [security, core, auth, hub, builder, submissions, settings];
+const AREAS: AreaDict[] = [security, activity, core, auth, hub, builder, submissions, settings];
 
 export const DICTIONARIES: Record<'ar' | 'ta', Dict> = {
   ar: Object.assign({}, ...AREAS.map((a) => a.ar)),
