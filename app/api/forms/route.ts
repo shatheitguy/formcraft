@@ -5,6 +5,7 @@ import { newFormLinks } from '@/lib/form-links';
 import { isValidSchema, normalizeTags, toFormDTO } from '@/lib/forms';
 import { syncPortListeners } from '@/lib/port-router';
 import { getTemplate } from '@/lib/templates';
+import { notifyFormEvent } from '@/lib/activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,5 +47,6 @@ export async function POST(req: Request) {
     },
   });
   await syncPortListeners();
+  void notifyFormEvent('form.created', me, form);
   return NextResponse.json(toFormDTO(form), { status: 201 });
 }

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { newFormLinks } from '@/lib/form-links';
 import { syncPortListeners } from '@/lib/port-router';
 import { toFormDTO } from '@/lib/forms';
+import { notifyFormEvent } from '@/lib/activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,5 +28,6 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     },
   });
   await syncPortListeners();
+  void notifyFormEvent('form.created', me, copy);
   return NextResponse.json(toFormDTO(copy), { status: 201 });
 }

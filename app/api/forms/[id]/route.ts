@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { DOMAIN_RE, nextFreePort, portRange, SLUG_RE } from '@/lib/form-links';
 import { syncPortListeners } from '@/lib/port-router';
 import { isValidSchema, normalizeTags, sanitizeBranding, toFormDTO } from '@/lib/forms';
+import { formAudience, notifyFormEvent } from '@/lib/activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,8 +77,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
 
   try {
+    const before = data.status ? await prisma.form.findUnique({ where: { id: params.id }, select: { status: true } }) : null;
     const form = await prisma.form.update({ where: { id: params.id }, data });
     if ('port' in data) await syncPortListeners();
+    if (before && before.status !== form.status) void notifyFormEvent(form.status === 'ACTIVE' ? 'form.published' : 'form.drafted', me, form);
     return NextResponse.json(toFormDTO(form));
   } catch {
     return NextResponse.json({ error: 'Form not found' }, { status: 404 });
@@ -89,8 +92,10 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   if (!me) return unauthorized();
   if (!canEditForm(me, params.id)) return forbidden();
   try {
-    await prisma.form.delete({ where: { id: params.id } });
+    const audience = await formAudience(params.id);
+    const form = await prisma.form.delete({ where: { id: params.id } });
     await syncPortListeners();
+    void notifyFormEvent('form.deleted', me, form, audience);
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Form not found' }, { status: 404 });

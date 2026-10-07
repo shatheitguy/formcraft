@@ -31,6 +31,16 @@
   }
 }
 
+/* Notification bell: a short swing when there's something unread. */
+@keyframes bell {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-5deg); }
+  75% { transform: rotate(2deg); }
+}
+
 @layer components {
   .input {
     @apply block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm

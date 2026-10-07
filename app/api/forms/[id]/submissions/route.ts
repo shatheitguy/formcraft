@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { parseSchema, toSubmissionDTO } from '@/lib/forms';
 import { formLanguages } from '@/lib/form-i18n';
 import { notifySubmission } from '@/lib/notify';
+import { notifySubmissionInApp } from '@/lib/activity';
 import { computeScore } from '@/lib/scoring';
 import { validateAnswers } from '@/lib/validation';
 
@@ -52,6 +53,7 @@ export async function POST(req: Request, { params }: Ctx) {
   // Fire-and-forget: alerts must never delay or fail the respondent's submission.
   const origin = `${req.headers.get('x-forwarded-proto') ?? 'http'}://${req.headers.get('x-forwarded-host') ?? req.headers.get('host')}`;
   void notifySubmission({ formId: form.id, answers: clean, origin });
+  void notifySubmissionInApp(form);
 
   return NextResponse.json(
     { id: submission.id, result: schema.settings.showScore ? result : null },

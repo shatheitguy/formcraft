@@ -29,6 +29,8 @@ services:
     environment:
       DATABASE_URL: ${FC_DATABASE_URL:-file:/app/data/formcraft.db}
       SEED_DEMO_DATA: ${FC_SEED_DEMO:-true}
+      # Checks GitHub every 6 hours for a newer FormCraft and tells admins under the bell.
+      FC_UPDATE_CHECK: ${FC_UPDATE_CHECK:-true}
       # Only docker-compose.ports.yml enables this, because it also publishes the ports.
       FORM_PORT_RANGE: ""
     volumes:

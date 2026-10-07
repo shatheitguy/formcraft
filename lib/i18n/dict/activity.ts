@@ -1,0 +1,51 @@
+import type { AreaDict } from '.';
+
+// Translations for the notification bell: form activity, new responses and update notices.
+const dict: AreaDict = {
+  ar: {
+    'Notifications': 'الإشعارات',
+    'Notifications ({n} unread)': 'الإشعارات ({n} غير مقروءة)',
+    'Mark all as read': 'تحديد الكل كمقروء',
+    'Clear read': 'مسح المقروءة',
+    'Unread': 'غير مقروء',
+    'You’re all caught up': 'لا جديد لديك',
+    'Form changes, new responses and updates show up here.': 'تظهر هنا تغييرات النماذج والردود الجديدة والتحديثات.',
+    'You published “{form}”': 'نشرتَ «{form}»',
+    '{actor} published “{form}”': 'نشر {actor} «{form}»',
+    'You moved “{form}” back to draft': 'أعدتَ «{form}» إلى المسودة',
+    '{actor} moved “{form}” back to draft': 'أعاد {actor} «{form}» إلى المسودة',
+    'You created “{form}”': 'أنشأتَ «{form}»',
+    '{actor} created “{form}”': 'أنشأ {actor} «{form}»',
+    'You deleted “{form}”': 'حذفتَ «{form}»',
+    '{actor} deleted “{form}”': 'حذف {actor} «{form}»',
+    'New response on “{form}”': 'رد جديد على «{form}»',
+    '{n} new responses on “{form}”': '{n} ردود جديدة على «{form}»',
+    'FormCraft {version} is available — you’re on {current}': 'الإصدار {version} من FormCraft متاح — لديك الإصدار {current}',
+    'Update available: {version}': 'تحديث متاح: {version}',
+    'On the server run:': 'نفّذ على الخادم:',
+  },
+  ta: {
+    'Notifications': 'அறிவிப்புகள்',
+    'Notifications ({n} unread)': 'அறிவிப்புகள் ({n} படிக்காதவை)',
+    'Mark all as read': 'அனைத்தையும் படித்ததாகக் குறி',
+    'Clear read': 'படித்தவற்றை அழி',
+    'Unread': 'படிக்காதது',
+    'You’re all caught up': 'புதிதாக எதுவும் இல்லை',
+    'Form changes, new responses and updates show up here.': 'படிவ மாற்றங்கள், புதிய பதில்கள் மற்றும் புதுப்பிப்புகள் இங்கே தோன்றும்.',
+    'You published “{form}”': '“{form}” ஐ வெளியிட்டீர்கள்',
+    '{actor} published “{form}”': '{actor} “{form}” ஐ வெளியிட்டார்',
+    'You moved “{form}” back to draft': '“{form}” ஐ மீண்டும் வரைவுக்கு மாற்றினீர்கள்',
+    '{actor} moved “{form}” back to draft': '{actor} “{form}” ஐ மீண்டும் வரைவுக்கு மாற்றினார்',
+    'You created “{form}”': '“{form}” ஐ உருவாக்கினீர்கள்',
+    '{actor} created “{form}”': '{actor} “{form}” ஐ உருவாக்கினார்',
+    'You deleted “{form}”': '“{form}” ஐ நீக்கினீர்கள்',
+    '{actor} deleted “{form}”': '{actor} “{form}” ஐ நீக்கினார்',
+    'New response on “{form}”': '“{form}” இல் புதிய பதில்',
+    '{n} new responses on “{form}”': '“{form}” இல் {n} புதிய பதில்கள்',
+    'FormCraft {version} is available — you’re on {current}': 'FormCraft {version} கிடைக்கிறது — நீங்கள் {current} பயன்படுத்துகிறீர்கள்',
+    'Update available: {version}': 'புதுப்பிப்பு கிடைக்கிறது: {version}',
+    'On the server run:': 'சர்வரில் இயக்கவும்:',
+  },
+};
+
+export default dict;
