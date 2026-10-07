@@ -51,6 +51,11 @@ function RandPw([int]$Len = 28) {
 function Enc([string]$s) { return [uri]::EscapeDataString($s) }
 function ValidPort($p) { return ($p -match '^\d+$') -and [int]$p -ge 1 -and [int]$p -le 65535 }
 
+function Show-PoweredBy {
+  Write-Host '  Powered by ' -NoNewline -ForegroundColor DarkGray
+  Write-Host 'Sha The IT Guy' -NoNewline -ForegroundColor Red
+  Write-Host ' - https://shatheitguy.in/' -ForegroundColor DarkGray
+}
 function Show-Banner {
   $tag = 'The self-hosted form builder - Docker setup'
   # Block letters spelled in ASCII and decoded here, so the file's encoding can't garble them.
@@ -67,7 +72,7 @@ function Show-Banner {
   try { $wide = -not [Console]::IsOutputRedirected -and [Console]::WindowWidth -ge 80 } catch {}
   if (-not $wide) {
     Write-Host ""; Write-Host "  FormCraft installer" -ForegroundColor White
-    Write-Host "  $tag" -ForegroundColor DarkGray; Write-Host ""; return
+    Write-Host "  $tag" -ForegroundColor DarkGray; Show-PoweredBy; Write-Host ""; return
   }
   $shades = 'Red', 'Red', 'Red', 'DarkRed', 'DarkRed', 'DarkRed'   # wine red, light to dark
   Write-Host ""
@@ -78,7 +83,7 @@ function Show-Banner {
   }
   Write-Host ""; Write-Host "  " -NoNewline
   foreach ($c in $tag.ToCharArray()) { Write-Host $c -NoNewline -ForegroundColor DarkGray; Start-Sleep -Milliseconds 12 }
-  Write-Host ""; Write-Host ""
+  Write-Host ""; Show-PoweredBy; Write-Host ""
   # A form filling itself in.
   Write-Host "  " -NoNewline
   foreach ($s in 'Fields', 'Logic', 'Branding', 'Submit') {

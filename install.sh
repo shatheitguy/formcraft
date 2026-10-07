@@ -87,7 +87,8 @@ banner() {
   )
   # Plain text when the output is a log rather than a terminal, or too narrow for the art.
   if [ ! -t 1 ] || [ -n "${NO_COLOR:-}" ] || [ "$(tput cols 2>/dev/null || echo 80)" -lt 80 ]; then
-    printf '\n%s  FormCraft installer%s\n%s  %s%s\n\n' "$B" "$N" "$D" "$tag" "$N"
+    printf '\n%s  FormCraft installer%s\n%s  %s%s\n' "$B" "$N" "$D" "$tag" "$N"
+    printf '%s  Powered by %s%s%s · https://shatheitguy.in/%s\n\n' "$D" "$N$B" 'Sha The IT Guy' "$N$D" "$N"
     return
   fi
   local shades=(217 210 174 167 131 88) i s   # wine red, light to dark
@@ -99,7 +100,8 @@ banner() {
   done
   printf '\n  %s' "$D"
   for ((i = 0; i < ${#tag}; i++)); do printf '%s' "${tag:i:1}"; sleep 0.012; done
-  printf '%s\n\n  ' "$N"
+  printf '%s\n' "$N"
+  printf '  %sPowered by%s \e[1;38;5;167mSha The IT Guy\e[0m %s· https://shatheitguy.in/%s\n\n  ' "$D" "$N" "$D" "$N"
   # A form filling itself in.
   local steps=('Fields' 'Logic' 'Branding' 'Submit')
   for s in "${steps[@]}"; do printf '\e[38;5;245m▢ %s\e[0m   ' "$s"; done
