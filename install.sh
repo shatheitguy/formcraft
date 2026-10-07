@@ -74,7 +74,41 @@ urlencode() { # percent-encode everything except unreserved characters
 }
 valid_port() { [[ "$1" =~ ^[0-9]+$ ]] && [ "$1" -ge 1 ] && [ "$1" -le 65535 ]; }
 
-printf '\n%s  ███████╗ FormCraft installer%s\n%s  The self-hosted form builder · Docker setup%s\n\n' "$B" "$N" "$D" "$N"
+# ---------- banner ----------
+banner() {
+  local tag='The self-hosted form builder · Docker setup'
+  local rows=(
+    '███████╗ ██████╗ ██████╗ ███╗   ███╗ ██████╗██████╗  █████╗ ███████╗████████╗'
+    '██╔════╝██╔═══██╗██╔══██╗████╗ ████║██╔════╝██╔══██╗██╔══██╗██╔════╝╚══██╔══╝'
+    '█████╗  ██║   ██║██████╔╝██╔████╔██║██║     ██████╔╝███████║█████╗     ██║'
+    '██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║██║     ██╔══██╗██╔══██║██╔══╝     ██║'
+    '██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║╚██████╗██║  ██║██║  ██║██║        ██║'
+    '╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝        ╚═╝'
+  )
+  # Plain text when the output is a log rather than a terminal, or too narrow for the art.
+  if [ ! -t 1 ] || [ -n "${NO_COLOR:-}" ] || [ "$(tput cols 2>/dev/null || echo 80)" -lt 80 ]; then
+    printf '\n%s  FormCraft installer%s\n%s  %s%s\n\n' "$B" "$N" "$D" "$tag" "$N"
+    return
+  fi
+  local shades=(217 210 174 167 131 88) i s   # wine red, light to dark
+  printf '\n\e[?25l'                          # hide the cursor while drawing
+  trap 'printf "\e[?25h"' EXIT
+  for i in "${!rows[@]}"; do
+    printf '  \e[1;38;5;%sm%s\e[0m\n' "${shades[$i]}" "${rows[$i]}"
+    sleep 0.05
+  done
+  printf '\n  %s' "$D"
+  for ((i = 0; i < ${#tag}; i++)); do printf '%s' "${tag:i:1}"; sleep 0.012; done
+  printf '%s\n\n  ' "$N"
+  # A form filling itself in.
+  local steps=('Fields' 'Logic' 'Branding' 'Submit')
+  for s in "${steps[@]}"; do printf '\e[38;5;245m▢ %s\e[0m   ' "$s"; done
+  printf '\r  '
+  for s in "${steps[@]}"; do sleep 0.18; printf '\e[1;38;5;167m✓\e[0m %s   ' "$s"; done
+  printf '\n\n\e[?25h'
+}
+# Skip it on the sudo re-run: it was already shown once.
+[ -n "${FC_SUDO_RETRY:-}" ] || banner
 
 # ---------- prerequisites ----------
 if [ "$DRY_RUN" = 0 ]; then

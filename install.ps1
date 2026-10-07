@@ -51,10 +51,43 @@ function RandPw([int]$Len = 28) {
 function Enc([string]$s) { return [uri]::EscapeDataString($s) }
 function ValidPort($p) { return ($p -match '^\d+$') -and [int]$p -ge 1 -and [int]$p -le 65535 }
 
-Write-Host ""
-Write-Host "  FormCraft installer" -ForegroundColor White
-Write-Host "  The self-hosted form builder - Docker setup" -ForegroundColor DarkGray
-Write-Host ""
+function Show-Banner {
+  $tag = 'The self-hosted form builder - Docker setup'
+  # Block letters spelled in ASCII and decoded here, so the file's encoding can't garble them.
+  $rows = @(
+    '#######1 ######1 ######1 ###1   ###1 ######1######1  #####1 #######1########1'
+    '##2====3##2===##1##2==##1####1 ####|##2====3##2==##1##2==##1##2====34==##2==3'
+    '#####1  ##|   ##|######23##2####2##|##|     ######23#######|#####1     ##|'
+    '##2==3  ##|   ##|##2==##1##|4##23##|##|     ##2==##1##2==##|##2==3     ##|'
+    '##|     4######23##|  ##|##| 4=3 ##|4######1##|  ##|##|  ##|##|        ##|'
+    '4=3      4=====3 4=3  4=34=3     4=3 4=====34=3  4=34=3  4=34=3        4=3'
+  )
+  $map = @{ '#' = 0x2588; '=' = 0x2550; '|' = 0x2551; '1' = 0x2557; '2' = 0x2554; '3' = 0x255D; '4' = 0x255A }
+  $wide = $false
+  try { $wide = -not [Console]::IsOutputRedirected -and [Console]::WindowWidth -ge 80 } catch {}
+  if (-not $wide) {
+    Write-Host ""; Write-Host "  FormCraft installer" -ForegroundColor White
+    Write-Host "  $tag" -ForegroundColor DarkGray; Write-Host ""; return
+  }
+  $shades = 'Red', 'Red', 'Red', 'DarkRed', 'DarkRed', 'DarkRed'   # wine red, light to dark
+  Write-Host ""
+  for ($i = 0; $i -lt $rows.Count; $i++) {
+    $line = -join ($rows[$i].ToCharArray() | ForEach-Object { if ($map.ContainsKey([string]$_)) { [char]$map[[string]$_] } else { $_ } })
+    Write-Host "  $line" -ForegroundColor $shades[$i]
+    Start-Sleep -Milliseconds 50
+  }
+  Write-Host ""; Write-Host "  " -NoNewline
+  foreach ($c in $tag.ToCharArray()) { Write-Host $c -NoNewline -ForegroundColor DarkGray; Start-Sleep -Milliseconds 12 }
+  Write-Host ""; Write-Host ""
+  # A form filling itself in.
+  Write-Host "  " -NoNewline
+  foreach ($s in 'Fields', 'Logic', 'Branding', 'Submit') {
+    Start-Sleep -Milliseconds 180
+    Write-Host ([char]0x221A) -NoNewline -ForegroundColor Red; Write-Host " $s   " -NoNewline
+  }
+  Write-Host ""; Write-Host ""
+}
+Show-Banner
 
 # ---------- prerequisites ----------
 if (-not $DryRun) {
