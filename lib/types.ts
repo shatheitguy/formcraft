@@ -8,7 +8,9 @@ export type FieldType =
   | 'select'
   | 'date'
   | 'rating'
-  | 'scale';
+  | 'scale'
+  | 'terms'
+  | 'file';
 
 export interface FieldOption {
   id: string;
@@ -36,6 +38,18 @@ export interface FormField {
   max?: number;
   minLabel?: string;
   maxLabel?: string;
+  /** terms: the terms & conditions text shown in a scrollable box. */
+  terms?: string;
+  /** terms: optional http(s) link to the full terms. */
+  termsUrl?: string;
+  /** terms: text next to the agreement checkbox. */
+  agreeLabel?: string;
+  /** file: allowed kinds ('image' | 'pdf' | 'document' | 'spreadsheet' | 'any'). */
+  fileKinds?: string[];
+  /** file: how many files a respondent may attach (1–10). */
+  maxFiles?: number;
+  /** file: size limit per file in MB (1–25). */
+  maxFileMb?: number;
 }
 
 export interface FormBranding {
@@ -74,6 +88,8 @@ export interface FieldTranslation {
   helpText?: string;
   minLabel?: string;
   maxLabel?: string;
+  terms?: string;
+  agreeLabel?: string;
   /** option id → label */
   options?: Record<string, string>;
 }

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- long-press the app icon: "Change server" -->
+    <shortcut
+        android:shortcutId="change_server"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_change_server_short"
+        android:shortcutLongLabel="@string/shortcut_change_server_long">
+        <intent
+            android:action="in.shatheitguy.formcraft.CHANGE_SERVER"
+            android:targetPackage="in.shatheitguy.formcraft"
+            android:targetClass="in.shatheitguy.formcraft.MainActivity" />
+    </shortcut>
+</shortcuts>

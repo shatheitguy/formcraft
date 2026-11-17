@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import { forbidden, getCurrentUser, unauthorized } from '@/lib/auth';
 import { databaseInfo, dbProvider } from '@/lib/database';
 import { prisma } from '@/lib/db';
+import { parseSchema } from '@/lib/forms';
+import { deleteAnswerFiles } from '@/lib/response-files';
+import type { Answers } from '@/lib/types';
+import { safeJson } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +14,21 @@ async function admin() {
   if (!me) return unauthorized();
   if (me.role !== 'ADMIN') return forbidden();
   return null;
+}
+
+/** Best effort: deletes the files attached to these (already deleted) responses. */
+async function removeAnswerFiles(rows: { formId: string; data: string }[]) {
+  const byForm = new Map<string, Answers[]>();
+  for (const r of rows) byForm.set(r.formId, [...(byForm.get(r.formId) ?? []), safeJson<Answers>(r.data, {})]);
+  if (!byForm.size) return;
+  const forms = await prisma.form.findMany({ where: { id: { in: [...byForm.keys()] } }, select: { id: true, schema: true } }).catch(() => []);
+  for (const f of forms) {
+    try {
+      await deleteAnswerFiles(f.id, parseSchema(f.schema).fields, byForm.get(f.id) ?? []);
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 /** Connection test + statistics. */
@@ -37,7 +56,10 @@ export async function POST(req: Request) {
       if (!Number.isInteger(days) || days < 1) return NextResponse.json({ error: 'Days must be a whole number ≥ 1.' }, { status: 400 });
       const where = { createdAt: { lt: new Date(Date.now() - days * 86_400_000) } };
       if (body.dryRun) return NextResponse.json({ count: await prisma.submission.count({ where }) });
+      // Remember attached files first so they can be removed with the responses.
+      const doomed = await prisma.submission.findMany({ where, select: { formId: true, data: true } });
       const { count } = await prisma.submission.deleteMany({ where });
+      await removeAnswerFiles(doomed);
       return NextResponse.json({ count });
     }
     case 'optimize': {

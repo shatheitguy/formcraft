@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Bell, Database, Palette, UserCircle2, Users } from 'lucide-react';
+import { Bell, Database, Info, Palette, UserCircle2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useT } from '@/components/i18n';
@@ -12,6 +12,7 @@ const WORKSPACE = [
   { href: '/settings/users', label: 'Users & roles', icon: Users },
   { href: '/settings/notifications', label: 'Notifications', icon: Bell },
   { href: '/settings/database', label: 'Database', icon: Database },
+  { href: '/settings/about', label: 'About', icon: Info },
 ];
 
 export function SettingsNav({ isAdmin }: { isAdmin: boolean }) {
@@ -41,9 +42,6 @@ export function SettingsNav({ isAdmin }: { isAdmin: boolean }) {
           })}
         </div>
       ))}
-      <Link href="/" className="hidden items-center gap-2 px-3 text-xs font-medium text-slate-500 hover:text-slate-800 lg:flex">
-        <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" /> {t('Back to dashboard')}
-      </Link>
     </nav>
   );
 }

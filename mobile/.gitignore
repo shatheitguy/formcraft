@@ -1,0 +1,17 @@
+node_modules/
+dist/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Android build output and machine-specific files
+android/.gradle/
+android/.idea/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/local.properties
+android/app/release/
+*.iml
+.DS_Store

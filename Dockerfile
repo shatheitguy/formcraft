@@ -43,6 +43,7 @@ LABEL org.opencontainers.image.source="https://github.com/shatheitguy/formcraft"
       org.opencontainers.image.description="Self-hosted form builder: drag-and-drop forms, submissions, roles, multilingual forms." \
       org.opencontainers.image.licenses="MIT"
 ENV NODE_ENV=production \
+    FC_INSTALL=docker \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
     DATABASE_URL=file:/app/data/formcraft.db \

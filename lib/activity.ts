@@ -6,7 +6,7 @@ import { safeJson } from './utils';
  * In-app notifications (the bell in the top bar). Messages are stored as a type plus
  * data and translated when shown, so each person reads them in their own language.
  */
-export type ActivityType = 'form.published' | 'form.drafted' | 'form.created' | 'form.deleted' | 'submission' | 'update.available';
+export type ActivityType = 'form.published' | 'form.drafted' | 'form.created' | 'form.deleted' | 'submission' | 'update.available' | 'backup.failed';
 
 export interface ActivityData {
   form?: string;
@@ -16,6 +16,7 @@ export interface ActivityData {
   count?: number;
   version?: string;
   current?: string;
+  error?: string;
 }
 
 const KEEP_DAYS = 90;
@@ -35,7 +36,7 @@ async function prune() {
 }
 
 /** Records a form action for everyone who can see the form, the person who did it included. Never throws. */
-export async function notifyFormEvent(type: Exclude<ActivityType, 'submission' | 'update.available'>, actor: SessionUser, form: { id: string; title: string }, audienceIds?: string[]) {
+export async function notifyFormEvent(type: Exclude<ActivityType, 'submission' | 'update.available' | 'backup.failed'>, actor: SessionUser, form: { id: string; title: string }, audienceIds?: string[]) {
   try {
     // The person who acted always sees it too, even with selected-forms access.
     const ids = [...new Set([...(audienceIds ?? (await audience(form.id))), actor.id])];
@@ -110,8 +111,8 @@ export function newerVersion(a: string, b: string) {
 }
 
 /** Asks GitHub for the newest version; tells every admin once per new version. FC_UPDATE_CHECK=false turns it off. */
-export async function checkForUpdate() {
-  if (process.env.FC_UPDATE_CHECK === 'false') return null;
+export async function checkForUpdate(force = false) {
+  if (process.env.FC_UPDATE_CHECK === 'false' && !force) return null;
   try {
     const res = await fetch(VERSION_URL, { signal: AbortSignal.timeout(10_000), cache: 'no-store' });
     if (!res.ok) return null;
@@ -144,4 +145,15 @@ export function startUpdateChecks() {
 export async function latestKnownVersion() {
   const row = await prisma.appMeta.findUnique({ where: { key: 'update.latest' } }).catch(() => null);
   return row?.value ?? null;
+}
+
+/** Tells every active admin that an automatic backup failed. Never throws. */
+export async function notifyBackupFailed(error: string) {
+  try {
+    const admins = await prisma.user.findMany({ where: { active: true, role: 'ADMIN' }, select: { id: true } });
+    const data = JSON.stringify({ error: error.slice(0, 300) } satisfies ActivityData);
+    await prisma.notification.createMany({ data: admins.map((a) => ({ userId: a.id, type: 'backup.failed', data, link: '/settings/database' })) });
+  } catch (err) {
+    console.error('[formcraft] backup failure notification failed', err);
+  }
 }

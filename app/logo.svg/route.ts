@@ -4,7 +4,7 @@ import { ACCENTS, isAccent } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
-/** Favicon / app icon: the Sha mark in the workspace accent colour. */
+/** Favicon / app icon: the FormCraft "Colour bars" mark (fixed colours; see lib/logo-svg.ts). */
 export async function GET() {
   const { app } = await getSettings();
   const p = ACCENTS[isAccent(app.accent) ? app.accent : 'wine'];

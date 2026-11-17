@@ -2,11 +2,13 @@ import nodemailer from 'nodemailer';
 import { formatAnswer } from './answers';
 import { prisma } from './db';
 import { parseSchema } from './forms';
+import { buildReport, REPORT_MIME, reportFileName, type ReportFormat } from './reports';
 import { getSettings, type SmtpSettings } from './settings';
 import type { Answers } from './types';
 import { safeJson } from './utils';
+import { WA_ERRORS, waNumber, waSend, waStatus, type WaDocument } from './whatsapp';
 
-export type Channel = 'email' | 'telegram';
+export type Channel = 'email' | 'telegram' | 'whatsapp';
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
@@ -36,6 +38,13 @@ export async function sendTelegram(botToken: string, chatId: string, html: strin
   });
   const json = (await res.json().catch(() => ({}))) as { ok?: boolean; description?: string };
   if (!res.ok || !json.ok) throw new Error(json.description || `Telegram API error (${res.status})`);
+}
+
+/** Sends over the linked WhatsApp; throws a readable error when it can't. */
+export async function sendWhatsApp(phone: string, text: string, doc?: WaDocument, defaultCountry = '') {
+  const num = waNumber(phone, defaultCountry);
+  const r = await waSend(num, text, doc);
+  if (r !== 'ok') throw new Error(WA_ERRORS[r]);
 }
 
 async function deliver(channel: Channel, target: string, subject: string, send: () => Promise<void>) {
@@ -82,18 +91,33 @@ export async function sendCodeEmail(smtp: SmtpSettings, appName: string, to: str
 }
 
 /** Sends new-submission alerts to every subscribed user who can see the form. Never throws. */
-export async function notifySubmission({ formId, answers, origin }: { formId: string; answers: Answers; origin: string }) {
+export async function notifySubmission({
+  formId,
+  answers,
+  origin,
+  submissionId,
+  score,
+  maxScore,
+}: {
+  formId: string;
+  answers: Answers;
+  origin: string;
+  submissionId?: string;
+  score?: number | null;
+  maxScore?: number | null;
+}) {
   try {
     const settings = await getSettings();
     const emailOn = settings.smtp.enabled && !!settings.smtp.host;
     const tgOn = settings.telegram.enabled && !!settings.telegram.botToken;
-    if (!emailOn && !tgOn) return;
+    const waOn = settings.whatsapp.enabled && waStatus().status === 'on';
+    if (!emailOn && !tgOn && !waOn) return;
 
     const form = await prisma.form.findUnique({ where: { id: formId } });
     if (!form) return;
 
     const users = await prisma.user.findMany({
-      where: { active: true, OR: [{ emailNotifications: true }, { telegramNotifications: true }] },
+      where: { active: true, OR: [{ emailNotifications: true }, { telegramNotifications: true }, { whatsappNotifications: true }] },
       include: { formAccess: { select: { formId: true } } },
     });
     const recipients = users.filter((u) => {
@@ -121,6 +145,30 @@ export async function notifySubmission({ formId, answers, origin }: { formId: st
 <a href="${esc(link)}" style="display:inline-block;margin-top:20px;background:#9b1b22;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600">View submissions</a>`,
     );
     const text = `New response on ${form.title}\n\n${rows.map((r) => `${r.label}: ${r.value}`).join('\n')}\n\n${link}`;
+    const wa = `📥 *New response* · ${form.title}\n\n${rows.map((r) => `*${r.label}:* ${r.value}`).join('\n')}\n\n${link}`;
+    // The response as a file, built once per format that someone asked for.
+    const files = new Map<ReportFormat, Promise<WaDocument | undefined>>();
+    const fileFor = (format: string) => {
+      if (format !== 'pdf' && format !== 'xlsx') return Promise.resolve(undefined);
+      if (!files.has(format)) {
+        files.set(
+          format,
+          buildReport(format, {
+            appName: settings.app.name,
+            formTitle: form.title,
+            fields: schema.fields,
+            quiz: !!schema.settings.quiz,
+            submissions: [{ id: submissionId ?? '', data: answers, score: score ?? null, maxScore: maxScore ?? null, language: null, createdAt: new Date().toISOString() }],
+          })
+            .then((data) => ({ data, fileName: reportFileName(form.title, format, true), mimetype: REPORT_MIME[format] }))
+            .catch((e) => {
+              console.error('[formcraft] report build failed', e);
+              return undefined;
+            }),
+        );
+      }
+      return files.get(format)!;
+    };
     const tg = `📥 <b>New response</b> · ${esc(form.title)}\n\n${rows.map((r) => `<b>${esc(r.label)}:</b> ${esc(r.value)}`).join('\n')}\n\n<a href="${esc(link)}">View submissions</a>`;
 
     await Promise.all(
@@ -132,6 +180,12 @@ export async function notifySubmission({ formId, answers, origin }: { formId: st
         }
         if (tgOn && u.telegramNotifications && u.telegramChatId) {
           jobs.push(deliver('telegram', u.telegramChatId, subject, () => sendTelegram(settings.telegram.botToken, u.telegramChatId!, tg)));
+        }
+        if (waOn && u.whatsappNotifications && u.whatsappNumber) {
+          const to = u.whatsappNumber;
+          jobs.push(
+            fileFor(u.whatsappAttach).then((doc) => deliver('whatsapp', to, subject, () => sendWhatsApp(to, wa, doc, settings.whatsapp.defaultCountryCode))),
+          );
         }
         return jobs;
       }),
@@ -153,8 +207,29 @@ export async function sendTest(channel: Channel, target: string, overrides?: { s
     const html = emailLayout(settings.app.name, 'Email notifications are working ✅', '<p style="font-size:14px;color:#334155">You will receive an email like this whenever a form you follow gets a new response.</p>');
     return deliver('email', target, subject, () => sendEmail(smtp, target, subject, html, 'Email notifications are working.'));
   }
+  if (channel === 'whatsapp') {
+    return deliver('whatsapp', target, subject, () =>
+      sendWhatsApp(target, `✅ *${settings.app.name}*\nWhatsApp notifications are working. You'll get a message here for every new response on forms you follow.`, undefined, settings.whatsapp.defaultCountryCode),
+    );
+  }
   const token = overrides?.botToken ?? settings.telegram.botToken;
   return deliver('telegram', target, subject, () =>
     sendTelegram(token, target, `✅ <b>${esc(settings.app.name)}</b>\nTelegram notifications are working. You'll get a message here for every new response on forms you follow.`),
   );
+}
+
+/**
+ * Sends a one-time code by WhatsApp or Telegram (two-factor sign-in and its setup).
+ * The code is never logged: the delivery log only records the target and a generic subject.
+ */
+export async function sendCodeMessage(channel: 'whatsapp' | 'telegram', target: string, appName: string, purpose: 'login' | 'setup', code: string, minutes: number) {
+  const settings = await getSettings();
+  const what = purpose === 'login' ? 'sign-in code' : 'code to turn on two-factor sign-in';
+  const subject = purpose === 'login' ? 'Sign-in code' : 'Two-factor setup code';
+  if (channel === 'whatsapp') {
+    const text = `🔐 *${appName}* ${what}: ${code} — expires in ${minutes} minutes. Never share it.`;
+    return deliver('whatsapp', target, subject, () => sendWhatsApp(target, text, undefined, settings.whatsapp.defaultCountryCode));
+  }
+  const html = `🔐 <b>${esc(appName)}</b> ${what}: <code>${code}</code>\nExpires in ${minutes} minutes. Never share it.`;
+  return deliver('telegram', target, subject, () => sendTelegram(settings.telegram.botToken, target, html));
 }

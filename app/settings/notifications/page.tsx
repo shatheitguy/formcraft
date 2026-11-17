@@ -16,7 +16,7 @@ export default async function NotificationsPage() {
   const [settings, logs, subscribers] = await Promise.all([
     getSettings(),
     prisma.notificationLog.findMany({ orderBy: { createdAt: 'desc' }, take: 25 }),
-    prisma.user.groupBy({ by: ['emailNotifications', 'telegramNotifications'], where: { active: true }, _count: true }),
+    prisma.user.groupBy({ by: ['emailNotifications', 'telegramNotifications', 'whatsappNotifications'], where: { active: true }, _count: true }),
   ]);
   const r = redactSettings(settings);
   const count = (pick: (s: (typeof subscribers)[number]) => boolean) => subscribers.filter(pick).reduce((n, s) => n + s._count, 0);
@@ -25,8 +25,9 @@ export default async function NotificationsPage() {
     <NotificationSettings
       smtp={r.smtp}
       telegram={r.telegram}
+      whatsapp={r.whatsapp}
       adminEmail={me.email}
-      stats={{ email: count((s) => s.emailNotifications), telegram: count((s) => s.telegramNotifications) }}
+      stats={{ email: count((s) => s.emailNotifications), telegram: count((s) => s.telegramNotifications), whatsapp: count((s) => s.whatsappNotifications) }}
       logs={logs.map((l) => ({ ...l, createdAt: l.createdAt.toISOString() }))}
     />
   );

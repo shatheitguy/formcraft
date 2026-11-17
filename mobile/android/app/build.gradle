@@ -1,0 +1,75 @@
+apply plugin: 'com.android.application'
+
+// versionName = FormCraft's VERSION file (two folders up from mobile/android); FC_VERSION_CODE overrides versionCode
+def fcVersionFile = rootProject.file('../../VERSION')
+def fcVersionName = fcVersionFile.exists() ? fcVersionFile.text.trim() : '1.0.0'
+def fcVersionCode = (System.getenv('FC_VERSION_CODE') ?: '1') as int
+
+// Release signing (optional): FC_KEYSTORE (path), FC_KEYSTORE_PASSWORD, FC_KEY_ALIAS, FC_KEY_PASSWORD
+def fcKeystore = System.getenv('FC_KEYSTORE')
+def fcSigned = fcKeystore && file(fcKeystore).exists()
+
+android {
+    namespace "in.shatheitguy.formcraft"
+    compileSdk rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "in.shatheitguy.formcraft"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode fcVersionCode
+        versionName fcVersionName
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        if (fcSigned) {
+            release {
+                storeFile file(fcKeystore)
+                storePassword System.getenv('FC_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('FC_KEY_ALIAS')
+                keyPassword System.getenv('FC_KEY_PASSWORD') ?: System.getenv('FC_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (fcSigned) signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation "androidx.webkit:webkit:$androidxWebkitVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

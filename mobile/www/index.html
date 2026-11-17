@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>FormCraft</title>
+<style>
+  :root {
+    --page: #f8fafc; --dots: #cbd5e1; --card: #ffffff; --border: #e2e8f0; --input-border: #d8dfe8;
+    --text: #0f172a; --muted: #475569; --faint: #64748b; --label: #334155;
+    --primary: #0f172a; --primary-hover: #1e293b; --on-primary: #ffffff;
+    --ring: rgba(56, 189, 248, .22); --focus: #38bdf8;
+    --err-bg: #fff1f2; --err-text: #be123c; --err-ring: #fecdd3;
+    --link: #0369a1; --chip: #f1f5f9;
+    --shadow: 0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #020617; --dots: #1e293b; --card: #0f172a; --border: #2e3d54; --input-border: #2e3d54;
+      --text: #f8fafc; --muted: #aab6c7; --faint: #8695ab; --label: #d3dbe6;
+      --primary: #f8fafc; --primary-hover: #e2e8f0; --on-primary: #0f172a;
+      --ring: rgba(56, 189, 248, .25); --focus: #38bdf8;
+      --err-bg: #4c0519; --err-text: #fda4af; --err-ring: #881337;
+      --link: #7dd3fc; --chip: #1e293b;
+      --shadow: 0 1px 2px rgba(0,0,0,.3);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    min-height: 100vh; background: var(--page); color: var(--text);
+    background-image: radial-gradient(var(--dots) 1px, transparent 1px); background-size: 18px 18px;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; justify-content: center;
+    padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  }
+  main { width: 100%; max-width: 384px; animation: pop .25s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: none; } }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+  .brand svg { width: 36px; height: 36px; flex-shrink: 0; }
+  .brand span { font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); padding: 24px; }
+  h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.02em; line-height: 1.25; overflow-wrap: anywhere; }
+  .sub { margin: 6px 0 0; font-size: 14px; color: var(--muted); line-height: 1.5; overflow-wrap: anywhere; }
+  form { margin-top: 24px; }
+  label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--label); }
+  .field { position: relative; }
+  .field svg { position: absolute; left: 12px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--faint); pointer-events: none; }
+  input {
+    display: block; width: 100%; height: 44px; padding: 8px 12px 8px 36px; font: inherit; font-size: 16px;
+    color: var(--text); background: var(--card); border: 1px solid var(--input-border); border-radius: 8px;
+    box-shadow: var(--shadow); outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  input::placeholder { color: var(--faint); opacity: .8; }
+  input:focus { border-color: var(--focus); box-shadow: 0 0 0 4px var(--ring); }
+  input.bad { border-color: #fb7185; }
+  .hint { margin: 8px 0 0; font-size: 12px; color: var(--faint); line-height: 1.5; }
+  .error {
+    display: flex; gap: 8px; align-items: flex-start; margin-top: 16px; padding: 10px 12px; border-radius: 8px;
+    background: var(--err-bg); color: var(--err-text); box-shadow: inset 0 0 0 1px var(--err-ring); font-size: 14px; line-height: 1.45;
+  }
+  .error svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+  .btn {
+    display: flex; width: 100%; height: 44px; margin-top: 16px; align-items: center; justify-content: center; gap: 8px;
+    font: inherit; font-size: 14px; font-weight: 600; border: 0; border-radius: 8px; cursor: pointer;
+    background: var(--primary); color: var(--on-primary); box-shadow: var(--shadow); transition: background .15s, opacity .15s;
+  }
+  .btn:active { background: var(--primary-hover); }
+  .btn[disabled] { opacity: .55; cursor: default; }
+  .btn svg { width: 16px; height: 16px; }
+  .link {
+    display: block; margin: 16px auto 0; padding: 8px; background: none; border: 0; font: inherit; font-size: 13px;
+    font-weight: 600; color: var(--link); cursor: pointer;
+  }
+  .server { display: inline-block; max-width: 100%; margin-top: 12px; padding: 4px 10px; border-radius: 999px; background: var(--chip); font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+  .center { text-align: center; }
+  .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin .7s linear infinite; }
+  .big-spinner { width: 28px; height: 28px; margin: 4px auto 16px; color: var(--faint); border-width: 3px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .state-icon { width: 44px; height: 44px; margin: 0 auto 14px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--err-bg); color: var(--err-text); }
+  .state-icon svg { width: 22px; height: 22px; }
+  footer { margin-top: 20px; text-align: center; font-size: 12px; color: var(--faint); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <!-- The app icon (assets/icon.svg) -->
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <rect width="100" height="100" rx="24" fill="#0F172A"/>
+      <rect x="20" y="24" width="60" height="12" rx="6" fill="#22C55E"/>
+      <rect x="20" y="44" width="42" height="12" rx="6" fill="#38BDF8"/>
+      <rect x="20" y="64" width="24" height="12" rx="6" fill="#F59E0B"/>
+      <circle cx="74" cy="70" r="7" fill="#fff"/>
+    </svg>
+    <span>FormCraft</span>
+  </div>
+
+  <!-- 1. Server address (Nextcloud-style) -->
+  <section id="connect" class="card" hidden>
+    <h1>Connect to your server</h1>
+    <p class="sub">Enter the address of your FormCraft server. You'll sign in on the next screen.</p>
+    <form id="form" novalidate>
+      <label for="url">Server address</label>
+      <div class="field">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <input id="url" type="url" inputmode="url" dir="ltr" autocomplete="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="forms.example.com" enterkeyhint="go">
+      </div>
+      <p class="hint">For example https://forms.example.com, or http://192.168.1.20:3000 on your local network.</p>
+      <div id="error" class="error" role="alert" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        <span id="error-text"></span>
+      </div>
+      <button id="go" class="btn" type="submit">
+        <span id="go-label">Connect</span>
+        <svg id="go-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <span id="go-spin" class="spinner" hidden></span>
+      </button>
+    </form>
+  </section>
+
+  <!-- 2. Opening the saved server -->
+  <section id="opening" class="card center" hidden>
+    <div class="spinner big-spinner"></div>
+    <h1>Connecting…</h1>
+    <span class="server" id="opening-server"></span>
+    <button class="link" type="button" data-change>Change server</button>
+  </section>
+
+  <!-- 3. Saved server unreachable -->
+  <section id="offline" class="card center" hidden>
+    <div class="state-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2l20 20M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 5.2-2.8M19 12.9a10 10 0 0 0-2.3-1.6M2 8.8a15 15 0 0 1 4.2-2.6M22 8.8A15 15 0 0 0 11 5M12 20h.01"/></svg>
+    </div>
+    <h1 id="offline-title">Can't reach your server</h1>
+    <p class="sub" id="offline-text"></p>
+    <span class="server" id="offline-server"></span>
+    <button id="retry" class="btn" type="button">
+      <span id="retry-label">Retry</span>
+      <span id="retry-spin" class="spinner" hidden></span>
+    </button>
+    <button class="link" type="button" data-change>Change server</button>
+  </section>
+
+  <footer>Your data stays on your own FormCraft server.</footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var KEY = 'serverUrl';
+  var TIMEOUT = 10000;
+  var cap = window.Capacitor;
+  var native = !!(cap && cap.isNativePlatform && cap.isNativePlatform() && cap.nativePromise);
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---- storage (Capacitor Preferences in the app; localStorage when opened in a browser) ----
+  function getSaved() {
+    if (native) return cap.nativePromise('Preferences', 'get', { key: KEY }).then(function (r) { return r && r.value; }).catch(function () { return null; });
+    try { return Promise.resolve(localStorage.getItem(KEY)); } catch (e) { return Promise.resolve(null); }
+  }
+  function save(url) {
+    try { localStorage.setItem(KEY, url); } catch (e) {}
+    if (native) return cap.nativePromise('Preferences', 'set', { key: KEY, value: url }).catch(function () {});
+    return Promise.resolve();
+  }
+
+  // ---- address handling ----
+  /** "forms.example.com/" -> "https://forms.example.com"; keeps a sub-path, drops query/hash and trailing slashes. */
+  function normalize(raw) {
+    var s = String(raw || '').trim().replace(/\s+/g, '');
+    if (!s) throw new Error('Enter your server address.');
+    if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(s)) s = 'https://' + s;
+    var u;
+    try { u = new URL(s); } catch (e) { throw new Error("That doesn't look like a web address."); }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('The address must start with http:// or https://');
+    if (!u.hostname) throw new Error("That doesn't look like a web address.");
+    var path = u.pathname.replace(/\/+$/, '').replace(/\/(api\/health|login)$/i, '');
+    return u.protocol + '//' + u.host + path;
+  }
+  function pretty(url) { return url.replace(/^https?:\/\//, ''); }
+
+  function timeout(p, ms) {
+    return new Promise(function (resolve, reject) {
+      var t = setTimeout(function () { reject(new Error('timeout')); }, ms);
+      p.then(function (v) { clearTimeout(t); resolve(v); }, function (e) { clearTimeout(t); reject(e); });
+    });
+  }
+
+  function friendly(err, url) {
+    var m = String((err && (err.message || err.errorMessage)) || err || '').toLowerCase();
+    if (/timeout|timed out/.test(m)) return 'The server took too long to answer. Check the address and that the server is running.';
+    if (/resolve host|unknownhost|no address|name not resolved|enotfound/.test(m)) return "Couldn't find " + pretty(url) + '. Check the address for typos.';
+    if (/trust anchor|certificate|ssl|handshake|cert/.test(m)) return "The server's security certificate isn't trusted. If it uses plain http, enter http:// at the start.";
+    if (/cleartext/.test(m)) return 'Plain http is blocked for this address.';
+    if (/refused|failed to connect|failed to fetch|econnrefused|unreachable|network|abort/.test(m)) return "Couldn't connect to " + pretty(url) + '. Make sure the server is running and this phone can reach it (same Wi-Fi or VPN for local addresses).';
+    return "Couldn't connect to " + pretty(url) + '.' + (m ? ' (' + m + ')' : '');
+  }
+
+  /** GET <url>/api/health. Resolves with the server's final base URL (after redirects, e.g. http -> https). */
+  function check(base) {
+    var target = base + '/api/health';
+    var req;
+    if (native) {
+      // native request: no CORS involved, works with http:// LAN servers
+      req = cap.nativePromise('CapacitorHttp', 'request', {
+        url: target, method: 'GET', headers: { Accept: 'application/json' },
+        connectTimeout: TIMEOUT, readTimeout: TIMEOUT, responseType: 'json'
+      }).then(function (r) { return { status: r.status, data: r.data, url: r.url }; });
+    } else {
+      var ctl = window.AbortController ? new AbortController() : null;
+      setTimeout(function () { if (ctl) ctl.abort(); }, TIMEOUT);
+      req = fetch(target, { headers: { Accept: 'application/json' }, signal: ctl && ctl.signal, cache: 'no-store' })
+        .then(function (r) { return r.text().then(function (t) { return { status: r.status, data: t, url: r.url }; }); });
+    }
+    return timeout(req, TIMEOUT + 2000).then(
+      function (r) {
+        var data = r.data;
+        if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { data = null; } }
+        var status = data && data.status;
+        if (r.status === 200 && status === 'ok') {
+          var finalBase = base;
+          if (r.url && /\/api\/health\/?$/.test(r.url)) {
+            try { finalBase = normalize(r.url.replace(/\/api\/health\/?$/, '')); } catch (e) {}
+          }
+          return finalBase;
+        }
+        if (status === 'error') throw { friendly: "The server answered, but its database isn't responding. Ask your admin to check the server." };
+        throw { friendly: pretty(base) + " answered, but it doesn't look like a FormCraft server" + (r.status ? ' (HTTP ' + r.status + ')' : '') + '. Check the address.' };
+      },
+      function (e) { throw { friendly: friendly(e, base) }; }
+    );
+  }
+
+  function go(url) { window.location.replace(url); }
+
+  // ---- screens ----
+  function show(id) {
+    ['connect', 'opening', 'offline'].forEach(function (s) { $(s).hidden = s !== id; });
+  }
+  function setError(msg) {
+    $('error').hidden = !msg;
+    $('error-text').textContent = msg || '';
+    $('url').classList.toggle('bad', !!msg);
+  }
+  function busy(on) {
+    $('go').disabled = on; $('url').readOnly = on;
+    $('go-label').textContent = on ? 'Connecting…' : 'Connect';
+    $('go-arrow').hidden = on; $('go-spin').hidden = !on;
+  }
+
+  var saved = null;
+
+  function showConnect() {
+    show('connect');
+    if (saved && !$('url').value) $('url').value = saved;
+    setTimeout(function () { $('url').focus(); }, 50);
+  }
+
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    setError(null);
+    var base;
+    try { base = normalize($('url').value); } catch (err) { setError(err.message); return; }
+    busy(true);
+    check(base).then(function (finalBase) {
+      return save(finalBase).then(function () { saved = finalBase; go(finalBase + '/login'); });
+    }).catch(function (err) {
+      busy(false);
+      setError(err.friendly || friendly(err, base));
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-change]'), function (b) {
+    b.addEventListener('click', function () { cancelled = true; setError(null); showConnect(); });
+  });
+
+  var cancelled = false;
+  var resumeUrl = null;
+
+  function showOffline(msg) {
+    show('offline');
+    $('offline-title').textContent = "Can't reach " + pretty(saved);
+    $('offline-text').textContent = msg;
+    $('offline-server').textContent = pretty(saved);
+    $('retry').disabled = false; $('retry-label').textContent = 'Retry'; $('retry-spin').hidden = true;
+  }
+
+  function open() {
+    cancelled = false;
+    check(saved).then(function (finalBase) {
+      if (cancelled) return;
+      if (finalBase !== saved) { saved = finalBase; save(finalBase); }
+      go(resumeUrl || saved + '/');
+    }).catch(function (err) {
+      if (cancelled) return;
+      showOffline(err.friendly || friendly(err, saved));
+    });
+  }
+
+  $('retry').addEventListener('click', function () {
+    $('retry').disabled = true; $('retry-label').textContent = 'Retrying…'; $('retry-spin').hidden = false;
+    open();
+  });
+
+  // ---- start ----
+  var params = new URLSearchParams(location.search);
+  getSaved().then(function (value) {
+    saved = value || null;
+    if (!saved || params.has('change')) { showConnect(); return; }
+    var failed = params.get('offline');
+    if (failed !== null) {
+      // the app was showing the server and lost it: resume where the person was, if it is the same server
+      try { if (new URL(failed).host === new URL(saved).host) resumeUrl = failed; } catch (e) {}
+      showOffline("The server didn't respond. Check your connection, then try again.");
+      return;
+    }
+    show('opening');
+    $('opening-server').textContent = pretty(saved);
+    open();
+  });
+})();
+</script>
+</body>
+</html>

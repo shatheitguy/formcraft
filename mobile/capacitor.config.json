@@ -1,0 +1,19 @@
+{
+  "appId": "in.shatheitguy.formcraft",
+  "appName": "FormCraft",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true,
+    "allowNavigation": ["*"]
+  },
+  "android": {
+    "backgroundColor": "#f8fafc",
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "CapacitorHttp": { "enabled": false }
+  }
+}

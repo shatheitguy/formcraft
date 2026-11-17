@@ -21,7 +21,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (body.resetTwoFactor === true) {
     await prisma.user.update({
       where: { id: target.id },
-      data: { totpEnabled: false, totpSecret: null, totpPendingSecret: null, totpLastStep: null, emailOtpEnabled: false, recoveryCodes: '[]' },
+      data: { totpEnabled: false, totpSecret: null, totpPendingSecret: null, totpLastStep: null, emailOtpEnabled: false, whatsappOtpEnabled: false, telegramOtpEnabled: false, recoveryCodes: '[]' },
     });
     await prisma.loginChallenge.deleteMany({ where: { userId: target.id } });
     return NextResponse.json({ ok: true });
@@ -42,7 +42,14 @@ export async function PATCH(req: Request, { params }: Ctx) {
   await prisma.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: target.id },
-      data: { ...rest, ...(password ? { passwordHash: await hashPassword(password) } : {}) },
+      data: {
+        ...rest,
+        ...(password ? { passwordHash: await hashPassword(password) } : {}),
+        // A new WhatsApp number hasn't been confirmed by the user, so sign-in codes stop going there.
+        ...(rest.whatsappNumber !== undefined && rest.whatsappNumber !== target.whatsappNumber && target.whatsappOtpEnabled
+          ? { whatsappOtpEnabled: false, ...(target.totpEnabled || target.emailOtpEnabled || target.telegramOtpEnabled ? {} : { recoveryCodes: '[]' }) }
+          : {}),
+      },
     });
     if (formIds !== undefined) {
       await tx.formAccess.deleteMany({ where: { userId: target.id } });

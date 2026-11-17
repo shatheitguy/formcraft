@@ -57,20 +57,28 @@ export function FormRenderer(props: Props) {
 
   return (
     <I18nProvider locale={isLocale(lang) ? lang : 'en'}>
-      <div dir={dirOf(lang)} lang={lang} className="text-start">
-        {languages.length > 1 && <LanguagePicker languages={languages} value={lang} onChange={changeLanguage} />}
+      <div dir={dirOf(lang)} lang={lang} className="relative text-start">
+        {languages.length > 1 && (
+          <LanguagePicker languages={languages} value={lang} onChange={changeLanguage} onCover={!!props.schema.settings.branding?.coverUrl} />
+        )}
         <FormBody {...props} lang={lang} />
       </div>
     </I18nProvider>
   );
 }
 
-function LanguagePicker({ languages, value, onChange }: { languages: string[]; value: string; onChange: (l: string) => void }) {
+function LanguagePicker({ languages, value, onChange, onCover }: { languages: string[]; value: string; onChange: (l: string) => void; onCover: boolean }) {
   const { t } = useI18n();
   return (
-    <div className="flex justify-end px-6 pt-5 sm:px-10">
-      <div className="inline-flex items-center gap-1 rounded-full bg-slate-100 p-1" role="radiogroup" aria-label={t('Language')}>
-        <Languages className="mx-1 h-3.5 w-3.5 text-slate-400" />
+    // With a cover banner the picker floats on the banner's top corner, so a logo that overlaps
+    // the banner never covers it (cover is h-36 / sm:h-44 in FormFrame).
+    <div className={cn('flex justify-end', onCover ? 'absolute end-3 -top-[8.25rem] z-10 sm:-top-[10.25rem]' : 'px-4 pt-4 sm:px-10 sm:pt-5')}>
+      <div
+        className={cn('inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full p-1', onCover ? 'bg-white/95 shadow-lift ring-1 ring-black/5 backdrop-blur' : 'bg-slate-100')}
+        role="radiogroup"
+        aria-label={t('Language')}
+      >
+        <Languages className="mx-1 h-3.5 w-3.5 shrink-0 text-slate-500" />
         {languages.map((l) => (
           <button
             key={l}
@@ -79,7 +87,7 @@ function LanguagePicker({ languages, value, onChange }: { languages: string[]; v
             aria-checked={l === value}
             lang={l}
             onClick={() => onChange(l)}
-            className={cn('rounded-full px-3 py-1 text-xs font-semibold transition', l === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800')}
+            className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition', l === value ? 'bg-brand-600 text-onaccent shadow-sm' : 'text-slate-700 hover:text-slate-900')}
           >
             {isLocale(l) ? LOCALES[l].native : l}
           </button>
@@ -127,6 +135,10 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setServerError(null);
+    if (document.querySelector('[data-uploading]')) {
+      setServerError(t('Please wait for your files to finish uploading.'));
+      return;
+    }
     const { valid, errors, clean } = validateAnswers(schema.fields, answers);
     setInvalid(new Set(Object.keys(errors)));
     if (!valid) return focusFirst(Object.keys(errors));
@@ -209,14 +221,14 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
 
   const count = invalid.size;
   return (
-    <form onSubmit={onSubmit} noValidate className="px-6 py-8 sm:px-10">
+    <form onSubmit={onSubmit} noValidate className="px-5 py-7 sm:px-10 sm:py-8">
       <FormHeader
         branding={schema.settings.branding}
         title={<h1 className="text-2xl font-bold tracking-tight text-slate-900">{view.title || t('Untitled form')}</h1>}
         description={view.description ? <p className="mt-2 whitespace-pre-line text-slate-600">{view.description}</p> : undefined}
         footer={
           schema.fields.some((f) => f.required) ? (
-            <p className="mt-3 text-xs text-slate-400">
+            <p className="mt-3 text-xs text-slate-500">
               <span className="text-rose-500">*</span> {t('Required')}
             </p>
           ) : undefined
@@ -232,7 +244,7 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
             return (
               <div key={field.id} id={`q-${field.id}`} className="scroll-mt-24">
                 <FieldLabel field={field} htmlFor={`in-${field.id}`} />
-                <FieldInput field={field} value={answers[field.id]} onChange={(v) => setValue(field.id, v)} error={err ?? undefined} />
+                <FieldInput field={field} value={answers[field.id]} onChange={(v) => setValue(field.id, v)} error={err ?? undefined} formId={mode === 'live' ? formId : undefined} />
                 {err && (
                   <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {err}
@@ -250,8 +262,8 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
         </div>
       )}
 
-      <div className="mt-8 flex items-center justify-between gap-4 border-t border-slate-100 pt-6">
-        <Button type="submit" variant="primary" size="md" loading={state === 'submitting'} disabled={schema.fields.length === 0}>
+      <div className="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <Button type="submit" variant="primary" size="md" className="w-full sm:w-auto" loading={state === 'submitting'} disabled={schema.fields.length === 0}>
           {view.schema.settings.submitLabel || t('Submit')}
         </Button>
         {count > 0 && <span className="text-xs text-rose-600">{count === 1 ? t('1 field needs attention') : t('{n} fields need attention', { n: count })}</span>}

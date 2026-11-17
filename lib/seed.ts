@@ -121,6 +121,10 @@ function fakeValue(field: FormField, first: string, last: string, quiz: boolean)
   const opts = field.options ?? [];
   const label = field.label.toLowerCase();
   switch (field.type) {
+    case 'terms':
+      return 'Agreed';
+    case 'file':
+      return undefined;
     case 'text':
       if (label.includes('company')) return pick(COMPANIES);
       return label.includes('your name') ? first : `${first} ${last}`;

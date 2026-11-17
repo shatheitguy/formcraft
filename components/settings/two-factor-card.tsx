@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, Download, LifeBuoy, Mail, ShieldCheck, Smartphone } from 'lucide-react';
+import { Copy, Download, LifeBuoy, Mail, MessageCircle, Send, ShieldCheck, Smartphone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { CodeInput } from '@/components/auth/code-input';
@@ -14,21 +14,71 @@ import { Field, SettingsCard, rich, sendJson } from './settings-ui';
 export interface TwoFactorStatus {
   totp: boolean;
   email: boolean;
+  whatsapp?: boolean;
+  telegram?: boolean;
   recoveryLeft: number;
+  /** The workspace's WhatsApp is enabled and linked / Telegram bot is set up. */
+  whatsappAvailable?: boolean;
+  telegramAvailable?: boolean;
+  /** Masked saved destinations ('' when the user hasn't saved one). */
+  whatsappTo?: string;
+  telegramTo?: string;
+  /** An admin requires two-factor sign-in for this user. */
+  required?: boolean;
 }
 
-type PasswordAction = 'totp-disable' | 'email-disable' | 'recovery';
+type CodeChannel = 'email' | 'whatsapp' | 'telegram';
+type PasswordAction = 'totp-disable' | 'email-disable' | 'whatsapp-disable' | 'telegram-disable' | 'recovery';
 
-/** Profile card: authenticator app (TOTP), email codes and recovery codes. */
+const OFF_TOAST: Record<Exclude<PasswordAction, 'recovery'>, string> = {
+  'totp-disable': 'Authenticator app turned off',
+  'email-disable': 'Email codes turned off',
+  'whatsapp-disable': 'WhatsApp codes turned off',
+  'telegram-disable': 'Telegram codes turned off',
+};
+const ON_TOAST: Record<CodeChannel, string> = { email: 'Email codes turned on', whatsapp: 'WhatsApp codes turned on', telegram: 'Telegram codes turned on' };
+
+/** Scrolls to the Notifications card (right after this one), where the WhatsApp number / Telegram chat ID is saved. */
+function goToNotifications() {
+  const el = document.getElementById('security')?.nextElementSibling;
+  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/** Profile card: authenticator app (TOTP), email / WhatsApp / Telegram codes and recovery codes. */
 export function TwoFactorCard({ status, emailAvailable, email }: { status: TwoFactorStatus; emailAvailable: boolean; email: string }) {
   const router = useRouter();
   const toast = useToast();
   const t = useT();
   const [totpSetup, setTotpSetup] = useState(false);
-  const [emailSetup, setEmailSetup] = useState(false);
+  const [channelSetup, setChannelSetup] = useState<CodeChannel | null>(null);
   const [confirm, setConfirm] = useState<PasswordAction | null>(null);
   const [codes, setCodes] = useState<string[] | null>(null);
-  const on = status.totp || status.email;
+  const on = status.totp || status.email || !!status.whatsapp || !!status.telegram;
+
+  /** Hint + availability for the WhatsApp / Telegram rows. */
+  function messageRow(channel: 'whatsapp' | 'telegram') {
+    const isWa = channel === 'whatsapp';
+    const workspaceOk = isWa ? status.whatsappAvailable : status.telegramAvailable;
+    const to = isWa ? status.whatsappTo : status.telegramTo;
+    const enabled = isWa ? status.whatsapp : status.telegram;
+    let text: ReactNode;
+    if (enabled) text = t(isWa ? 'A 6-digit code is sent to your WhatsApp {to} each time you sign in.' : 'A 6-digit code is sent to your Telegram chat {to} each time you sign in.', { to: to || '—' });
+    else if (!workspaceOk)
+      text = t(isWa ? 'WhatsApp isn’t connected on this workspace. An admin can link it under Settings → Notifications.' : 'Telegram isn’t set up on this workspace. An admin can add a bot under Settings → Notifications.');
+    else if (!to)
+      text = (
+        <>
+          {t(isWa ? 'Save your WhatsApp number first.' : 'Save your Telegram chat ID first.')}{' '}
+          <button type="button" onClick={goToNotifications} className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800">
+            {t('Go to My profile → Notifications')}
+          </button>
+        </>
+      );
+    else text = t(isWa ? 'Get a 6-digit code on WhatsApp ({to}) each time you sign in.' : 'Get a 6-digit code in Telegram ({to}) each time you sign in.', { to });
+    return { available: !!workspaceOk && !!to, text, enabled: !!enabled };
+  }
+  const wa = messageRow('whatsapp');
+  const tg = messageRow('telegram');
 
   function enabled(recoveryCodes: string[] | null | undefined, message: string) {
     toast(t(message));
@@ -37,12 +87,18 @@ export function TwoFactorCard({ status, emailAvailable, email }: { status: TwoFa
   }
 
   return (
+    <div id="security" className="scroll-mt-24">
     <SettingsCard
       title={t('Two-factor sign-in')}
       description={t('Ask for a code after your password, so a stolen password alone can’t get into your account.')}
       icon={<ShieldCheck />}
       aside={<span className={cn('chip', on ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'bg-slate-100 text-slate-500')}>{on ? t('On') : t('Off')}</span>}
     >
+      {status.required && (
+        <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 ring-1 ring-amber-200">
+          {on ? t('Required by your admin: keep at least one method on.') : t('Required by your admin: turn on at least one method to keep using the workspace.')}
+        </p>
+      )}
       <div className="-my-2 divide-y divide-slate-100">
         <Method
           icon={<Smartphone className="h-4 w-4" />}
@@ -72,7 +128,41 @@ export function TwoFactorCard({ status, emailAvailable, email }: { status: TwoFa
                 {t('Turn off')}
               </Button>
             ) : (
-              <Button variant="primary" onClick={() => setEmailSetup(true)} disabled={!emailAvailable}>
+              <Button variant="primary" onClick={() => setChannelSetup('email')} disabled={!emailAvailable}>
+                {t('Turn on')}
+              </Button>
+            )
+          }
+        />
+        <Method
+          icon={<MessageCircle className="h-4 w-4" />}
+          title={t('WhatsApp codes')}
+          text={wa.text}
+          on={wa.enabled}
+          action={
+            wa.enabled ? (
+              <Button variant="secondary" onClick={() => setConfirm('whatsapp-disable')}>
+                {t('Turn off')}
+              </Button>
+            ) : (
+              <Button variant="primary" onClick={() => setChannelSetup('whatsapp')} disabled={!wa.available}>
+                {t('Turn on')}
+              </Button>
+            )
+          }
+        />
+        <Method
+          icon={<Send className="h-4 w-4" />}
+          title={t('Telegram codes')}
+          text={tg.text}
+          on={tg.enabled}
+          action={
+            tg.enabled ? (
+              <Button variant="secondary" onClick={() => setConfirm('telegram-disable')}>
+                {t('Turn off')}
+              </Button>
+            ) : (
+              <Button variant="primary" onClick={() => setChannelSetup('telegram')} disabled={!tg.available}>
                 {t('Turn on')}
               </Button>
             )
@@ -98,7 +188,18 @@ export function TwoFactorCard({ status, emailAvailable, email }: { status: TwoFa
       </div>
 
       {totpSetup && <TotpSetup onClose={() => setTotpSetup(false)} onEnabled={(c) => { setTotpSetup(false); enabled(c, 'Authenticator app turned on'); }} />}
-      {emailSetup && <EmailSetup email={email} onClose={() => setEmailSetup(false)} onEnabled={(c) => { setEmailSetup(false); enabled(c, 'Email codes turned on'); }} />}
+      {channelSetup && (
+        <ChannelSetup
+          channel={channelSetup}
+          to={channelSetup === 'email' ? email : (channelSetup === 'whatsapp' ? status.whatsappTo : status.telegramTo) ?? ''}
+          onClose={() => setChannelSetup(null)}
+          onEnabled={(c) => {
+            const ch = channelSetup;
+            setChannelSetup(null);
+            enabled(c, ON_TOAST[ch]);
+          }}
+        />
+      )}
       {confirm && (
         <PasswordPrompt
           action={confirm}
@@ -106,17 +207,18 @@ export function TwoFactorCard({ status, emailAvailable, email }: { status: TwoFa
           onDone={(c) => {
             setConfirm(null);
             if (confirm === 'recovery') setCodes(c ?? null);
-            else toast(t(confirm === 'totp-disable' ? 'Authenticator app turned off' : 'Email codes turned off'));
+            else toast(t(OFF_TOAST[confirm]));
             router.refresh();
           }}
         />
       )}
       {codes && <RecoveryCodes codes={codes} onClose={() => setCodes(null)} />}
     </SettingsCard>
+    </div>
   );
 }
 
-function Method({ icon, title, text, on, warn, action }: { icon: ReactNode; title: string; text: string; on?: boolean; warn?: boolean; action: ReactNode }) {
+function Method({ icon, title, text, on, warn, action }: { icon: ReactNode; title: string; text: ReactNode; on?: boolean; warn?: boolean; action: ReactNode }) {
   const t = useT();
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
@@ -126,7 +228,7 @@ function Method({ icon, title, text, on, warn, action }: { icon: ReactNode; titl
           {title}
           {on && <span className="rounded bg-emerald-50 px-1.5 text-[10px] font-semibold uppercase text-emerald-700">{t('On')}</span>}
         </div>
-        <p className={cn('text-xs', warn ? 'text-amber-600' : 'text-slate-500')}>{text}</p>
+        <p className={cn('text-xs', warn ? 'text-amber-700' : 'text-slate-600')}>{text}</p>
       </div>
       {action}
     </div>
@@ -209,37 +311,72 @@ function TotpSetup({ onClose, onEnabled }: { onClose: () => void; onEnabled: (co
   );
 }
 
-function EmailSetup({ email, onClose, onEnabled }: { email: string; onClose: () => void; onEnabled: (codes?: string[] | null) => void }) {
+const SETUP_COPY = {
+  email: {
+    title: 'Turn on email codes',
+    intro: 'We’ll send a code to {to} to check it reaches you.',
+    body: 'Each time you sign in, you’ll get a fresh code by email after entering your password.',
+    field: 'Code from the email',
+    hint: 'Didn’t get it? Check your spam folder, or wait a minute and send another.',
+  },
+  whatsapp: {
+    title: 'Turn on WhatsApp codes',
+    intro: 'We’ll send a code to your WhatsApp {to} to check it reaches you.',
+    body: 'Each time you sign in, you’ll get a fresh code on WhatsApp after entering your password.',
+    field: 'Code from WhatsApp',
+    hint: 'Didn’t get it? Check the number in My profile → Notifications, or wait a minute and send another.',
+  },
+  telegram: {
+    title: 'Turn on Telegram codes',
+    intro: 'We’ll send a code to your Telegram chat {to} to check it reaches you.',
+    body: 'Each time you sign in, you’ll get a fresh code in Telegram after entering your password.',
+    field: 'Code from Telegram',
+    hint: 'Didn’t get it? Make sure you started a chat with the workspace bot, or wait a minute and send another.',
+  },
+} as const;
+
+/** Sends a setup code by email, WhatsApp or Telegram and turns the method on once it's entered. */
+function ChannelSetup({ channel, to, onClose, onEnabled }: { channel: CodeChannel; to: string; onClose: () => void; onEnabled: (codes?: string[] | null) => void }) {
   const t = useT();
+  const copy = SETUP_COPY[channel];
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [wait, setWait] = useState(0);
+
+  useEffect(() => {
+    if (wait <= 0) return;
+    const id = setTimeout(() => setWait((w) => w - 1), 1000);
+    return () => clearTimeout(id);
+  }, [wait]);
 
   async function send() {
     setLoading(true);
     setError(null);
-    const r = await sendJson('/api/me/two-factor', 'POST', { action: 'email-send' });
+    const r = await sendJson('/api/me/two-factor', 'POST', { action: `${channel}-send` });
     setLoading(false);
     if (!r.ok) return setError(r.error!);
     setSent(true);
+    setWait(60);
   }
 
   async function enable() {
     setLoading(true);
     setError(null);
-    const r = await sendJson<{ recoveryCodes: string[] | null }>('/api/me/two-factor', 'POST', { action: 'email-enable', code });
+    const r = await sendJson<{ recoveryCodes: string[] | null }>('/api/me/two-factor', 'POST', { action: `${channel}-enable`, code });
     setLoading(false);
     if (!r.ok) return setError(r.error!);
     onEnabled(r.data.recoveryCodes);
   }
 
+  const Icon = channel === 'email' ? Mail : channel === 'whatsapp' ? MessageCircle : Send;
   return (
     <Modal
       open
       onClose={onClose}
-      title={t('Turn on email codes')}
-      description={rich(t('We’ll send a code to {email} to check it reaches you.'), { email: <strong className="text-slate-900">{email}</strong> })}
+      title={t(copy.title)}
+      description={rich(t(copy.intro), { to: <strong className="text-slate-900" dir="ltr">{to}</strong> })}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -251,23 +388,27 @@ function EmailSetup({ email, onClose, onEnabled }: { email: string; onClose: () 
             </Button>
           ) : (
             <Button variant="primary" onClick={send} loading={loading}>
-              <Mail className="h-4 w-4" /> {t('Send code')}
+              <Icon className="h-4 w-4" /> {t('Send code')}
             </Button>
           )}
         </>
       }
     >
       {sent ? (
-        <Field label={t('Code from the email')} hint={t('Didn’t get it? Check your spam folder, or wait a minute and send another.')}>
+        <Field label={t(copy.field)} hint={t(copy.hint)}>
           <CodeInput value={code} onChange={setCode} autoFocus onKeyDown={(e) => e.key === 'Enter' && code.length === 6 && enable()} />
         </Field>
       ) : (
-        <p className="text-sm text-slate-600">{t('Each time you sign in, you’ll get a fresh code by email after entering your password.')}</p>
+        <p className="text-sm text-slate-700">{t(copy.body)}</p>
       )}
-      {error && <p className="mt-3 text-xs text-rose-600">{t(error)}</p>}
+      {error && (
+        <p className="mt-3 text-sm text-rose-700" role="alert">
+          {t(error)}
+        </p>
+      )}
       {sent && (
-        <button type="button" onClick={send} disabled={loading} className="mt-3 text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50">
-          {t('Send a new code')}
+        <button type="button" onClick={send} disabled={loading || wait > 0} className="mt-3 text-xs font-semibold text-brand-700 hover:text-brand-800 disabled:text-slate-500">
+          {wait > 0 ? t('Send a new code in {n}s', { n: wait }) : t('Send a new code')}
         </button>
       )}
     </Modal>
@@ -282,6 +423,8 @@ function PasswordPrompt({ action, onClose, onDone }: { action: PasswordAction; o
   const copy = {
     'totp-disable': { title: 'Turn off the authenticator app?', button: 'Turn off' },
     'email-disable': { title: 'Turn off email codes?', button: 'Turn off' },
+    'whatsapp-disable': { title: 'Turn off WhatsApp codes?', button: 'Turn off' },
+    'telegram-disable': { title: 'Turn off Telegram codes?', button: 'Turn off' },
     recovery: { title: 'Create new recovery codes?', button: 'Create new codes' },
   }[action];
 

@@ -2,6 +2,7 @@
 
 import {
   ArrowDown,
+  ArrowLeft,
   ArrowUp,
   BarChart3,
   CalendarRange,
@@ -9,8 +10,10 @@ import {
   ChevronRight,
   Download,
   ExternalLink,
+  FileText,
   Filter,
   Inbox,
+  Paperclip,
   Pencil,
   Search,
   Table2,
@@ -31,18 +34,31 @@ import { Button, buttonClass, ConfirmDialog, EmptyState, Segmented, StatusBadge 
 import { formatAnswer, sortValue, toCSV } from '@/lib/answers';
 import { categoryStyle } from '@/lib/categories';
 import { isChoice } from '@/lib/fields';
+import { fileRefs, fileUrl, isPreviewableImage } from '@/lib/files';
 import { formLanguages } from '@/lib/form-i18n';
 import { fmtNumber, isLocale, LOCALES } from '@/lib/i18n';
 import type { FormDTO, FormField, SubmissionDTO } from '@/lib/types';
 import { cn, formatDateTime, timeAgo } from '@/lib/utils';
 import { scaleBounds } from '@/lib/validation';
 import { Insights } from './insights';
+import { ReportDialog, type ReportScope, type WhatsAppInfo } from './report-dialog';
+import { WhatsAppIcon } from '@/components/settings/whatsapp-card';
 
 type Range = 'all' | '1' | '7' | '30';
 type SortState = { key: string; dir: 'asc' | 'desc' };
 const PAGE_SIZE = 20;
 
-export function SubmissionsView({ form, submissions: initial, canManage }: { form: FormDTO; submissions: SubmissionDTO[]; canManage: boolean }) {
+export function SubmissionsView({
+  form,
+  submissions: initial,
+  canManage,
+  whatsapp,
+}: {
+  form: FormDTO;
+  submissions: SubmissionDTO[];
+  canManage: boolean;
+  whatsapp: WhatsAppInfo;
+}) {
   const router = useRouter();
   const toast = useToast();
   const { t, locale } = useI18n();
@@ -60,6 +76,7 @@ export function SubmissionsView({ form, submissions: initial, canManage }: { for
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openId, setOpenId] = useState<string | null>(null);
+  const [report, setReport] = useState<{ mode: 'download' | 'whatsapp'; single?: string } | null>(null);
   const [confirm, setConfirm] = useState<string[] | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -152,6 +169,14 @@ export function SubmissionsView({ form, submissions: initial, canManage }: { for
       return next;
     });
 
+  const reportScopes: ReportScope[] = report?.single
+    ? [{ key: 'one', label: t('This response'), ids: [report.single], count: 1 }]
+    : [
+        ...(selected.size ? [{ key: 'selected', label: t('Selected ({n})', { n: selected.size }), ids: [...selected], count: selected.size }] : []),
+        ...(filtersActive && filtered.length ? [{ key: 'filtered', label: t('Matching filters ({n})', { n: filtered.length }), ids: filtered.map((r) => r.id), count: filtered.length }] : []),
+        { key: 'all', label: t('All responses ({n})', { n: rows.length }), ids: null, count: rows.length },
+      ];
+
   function exportCSV() {
     const csv = toCSV(fields, filtered, quiz, multilingual);
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
@@ -201,12 +226,12 @@ export function SubmissionsView({ form, submissions: initial, canManage }: { for
       </AppHeader>
 
       <main className="mx-auto max-w-7xl px-4 pb-20 pt-6 sm:px-6">
-        <nav className="mb-3 flex items-center gap-1.5 text-xs text-slate-500">
-          <Link href="/" className="hover:text-slate-800">
-            {t('Dashboard')}
+        <nav className="mb-4 flex min-w-0 items-center gap-2 text-sm text-slate-600">
+          <Link href="/" className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-800 shrink-0">
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t('Dashboard')}
           </Link>
-          <ChevronRight className="h-3 w-3 rtl:rotate-180" />
-          <span className="truncate text-slate-700">{form.title}</span>
+          <ChevronRight className="h-4 w-4 shrink-0 rtl:rotate-180" />
+          <span className="truncate font-medium text-slate-800">{form.title}</span>
         </nav>
 
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -314,14 +339,20 @@ export function SubmissionsView({ form, submissions: initial, canManage }: { for
                   {t('Clear')}
                 </button>
               )}
-              <div className="ms-auto flex items-center gap-2">
+              <div className="flex w-full flex-wrap items-center gap-2 sm:ms-auto sm:w-auto sm:justify-end">
                 {canManage && selected.size > 0 && (
                   <Button variant="secondary" onClick={() => setConfirm([...selected])} className="!text-rose-600">
                     <Trash2 className="h-4 w-4" /> {t('Delete {n}', { n: selected.size })}
                   </Button>
                 )}
                 <Button onClick={exportCSV} disabled={!filtered.length}>
-                  <Download className="h-4 w-4" /> {t('Export CSV')}
+                  <Download className="h-4 w-4" /> CSV
+                </Button>
+                <Button onClick={() => setReport({ mode: 'download' })} disabled={!rows.length}>
+                  <FileText className="h-4 w-4" /> {t('PDF / Excel')}
+                </Button>
+                <Button onClick={() => setReport({ mode: 'whatsapp' })} disabled={!rows.length} className="!text-emerald-700">
+                  <WhatsAppIcon className="h-4 w-4" /> {t('Send via WhatsApp')}
                 </Button>
               </div>
             </div>
@@ -379,7 +410,7 @@ export function SubmissionsView({ form, submissions: initial, canManage }: { for
                           )}
                           {fields.map((f) => (
                             <td key={f.id} className="max-w-[280px] px-4 py-2.5 text-slate-700">
-                              <Cell field={f} value={formatAnswer(f, r.data[f.id], locale)} />
+                              <Cell field={f} value={formatAnswer(f, r.data[f.id], locale)} count={f.type === 'file' ? fileRefs(r.data[f.id]).length : undefined} />
                             </td>
                           ))}
                         </tr>
@@ -421,6 +452,7 @@ export function SubmissionsView({ form, submissions: initial, canManage }: { for
 
       {openRow && (
         <Drawer
+          formId={form.id}
           row={openRow}
           fields={fields}
           index={openIndex}
@@ -428,8 +460,19 @@ export function SubmissionsView({ form, submissions: initial, canManage }: { for
           onClose={() => setOpenId(null)}
           onNav={(d) => setOpenId(filtered[openIndex + d]?.id ?? openId)}
           onDelete={canManage ? () => setConfirm([openRow.id]) : undefined}
+          onShare={() => setReport({ mode: 'whatsapp', single: openRow.id })}
+          onPdf={() => setReport({ mode: 'download', single: openRow.id })}
         />
       )}
+
+      <ReportDialog
+        open={!!report}
+        onClose={() => setReport(null)}
+        formId={form.id}
+        whatsapp={whatsapp}
+        initialMode={report?.mode}
+        scopes={reportScopes}
+      />
 
       <ConfirmDialog
         open={!!confirm}
@@ -487,8 +530,14 @@ function SortHeader({ label, active, dir, onClick, field, sticky }: { label: str
   );
 }
 
-function Cell({ field, value }: { field: FormField; value: string }) {
+function Cell({ field, value, count }: { field: FormField; value: string; count?: number }) {
   if (!value) return <span className="text-slate-300">—</span>;
+  if (field.type === 'file')
+    return (
+      <span className="inline-flex items-center gap-1 whitespace-nowrap font-medium tabular-nums text-slate-700" title={value}>
+        <Paperclip className="h-3.5 w-3.5 text-slate-500" /> {count ?? 0}
+      </span>
+    );
   if (isChoice(field.type)) {
     return (
       <div className="flex flex-wrap gap-1">
@@ -527,6 +576,7 @@ function ScorePill({ score, max }: { score: number; max: number }) {
 }
 
 function Drawer({
+  formId,
   row,
   fields,
   index,
@@ -534,7 +584,10 @@ function Drawer({
   onClose,
   onNav,
   onDelete,
+  onShare,
+  onPdf,
 }: {
+  formId: string;
   row: SubmissionDTO;
   fields: FormField[];
   index: number;
@@ -542,6 +595,8 @@ function Drawer({
   onClose: () => void;
   onNav: (d: -1 | 1) => void;
   onDelete?: () => void;
+  onShare: () => void;
+  onPdf: () => void;
 }) {
   const { t, locale } = useI18n();
   useEffect(() => {
@@ -596,9 +651,13 @@ function Drawer({
                 <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-500">
                   <Icon className="h-3.5 w-3.5" /> {f.label}
                 </div>
-                <div className={cn('whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm', v ? 'bg-slate-50 text-slate-900' : 'italic text-slate-400')}>
-                  {v || t('No answer')}
-                </div>
+                {f.type === 'file' && v ? (
+                  <FileList formId={formId} value={row.data[f.id]} />
+                ) : (
+                  <div className={cn('whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm', v ? 'bg-slate-50 text-slate-900' : 'italic text-slate-400')}>
+                    {v || t('No answer')}
+                  </div>
+                )}
                 {correct.length > 0 && row.score !== null && (
                   <div className="mt-1 text-[11px] text-slate-500">
                     <WithStrong text={t('Correct: {answers}')} token="{answers}" value={correct.join(', ')} className="font-medium text-emerald-700" as="span" />
@@ -609,15 +668,49 @@ function Drawer({
           })}
           <div className="pt-2 font-mono text-[10px] text-slate-400">{t('ID {id}', { id: row.id })}</div>
         </div>
-        {onDelete && (
-          <div className="border-t border-slate-100 p-4">
+        <div className="space-y-2 border-t border-slate-100 p-4">
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={onPdf}>
+              <FileText className="h-4 w-4" /> {t('PDF / Excel')}
+            </Button>
+            <Button onClick={onShare} className="!text-emerald-700">
+              <WhatsAppIcon className="h-4 w-4" /> {t('WhatsApp')}
+            </Button>
+          </div>
+          {onDelete && (
             <Button variant="secondary" className="w-full !text-rose-600" onClick={onDelete}>
               <Trash2 className="h-4 w-4" /> {t('Delete response')}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </aside>
     </div>,
     document.body,
+  );
+}
+
+function FileList({ formId, value }: { formId: string; value: SubmissionDTO['data'][string] }) {
+  const { t } = useI18n();
+  return (
+    <ul className="space-y-1.5">
+      {fileRefs(value).map((r) => (
+        <li key={r.stored} className="flex items-center gap-2.5 rounded-lg bg-slate-50 px-3 py-2 text-sm ring-1 ring-inset ring-slate-100">
+          {isPreviewableImage(r.stored) ? (
+            <a href={fileUrl(formId, r)} target="_blank" rel="noopener noreferrer" className="shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={fileUrl(formId, r)} alt="" loading="lazy" className="h-10 w-10 rounded-md object-cover ring-1 ring-slate-200" />
+            </a>
+          ) : (
+            <FileText className="h-4 w-4 shrink-0 text-slate-500" />
+          )}
+          <a href={fileUrl(formId, r)} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate font-medium text-brand-700 hover:underline" title={r.name}>
+            {r.name}
+          </a>
+          <a href={fileUrl(formId, r, true)} download={r.name} className="shrink-0 rounded-md p-1.5 text-slate-600 hover:bg-slate-200 hover:text-slate-900" title={t('Download')} aria-label={t('Download {name}', { name: r.name })}>
+            <Download className="h-4 w-4" />
+          </a>
+        </li>
+      ))}
+    </ul>
   );
 }

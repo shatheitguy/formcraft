@@ -19,6 +19,8 @@ export const FIELD_TYPES: FieldTypeMeta[] = [
   { type: 'date', label: 'Date', description: 'Calendar date picker', group: 'Other' },
   { type: 'rating', label: 'Rating', description: 'Star rating (1–5 / 1–10)', group: 'Other' },
   { type: 'scale', label: 'Linear scale', description: 'Numbered scale, e.g. NPS', group: 'Other' },
+  { type: 'terms', label: 'Terms & conditions', description: 'Agreement checkbox with terms text', group: 'Other' },
+  { type: 'file', label: 'File upload', description: 'Let people attach files', group: 'Other' },
 ];
 
 export const FIELD_META: Record<FieldType, FieldTypeMeta> = Object.fromEntries(
@@ -34,6 +36,24 @@ export const isNumeric = (t: FieldType) => NUMERIC_TYPES.includes(t);
 
 export function opt(label: string, extra: { correct?: boolean; points?: number } = {}) {
   return { id: uid('o_'), label, ...extra };
+}
+
+/** Answer value stored when a respondent ticks a terms & conditions checkbox. */
+export const TERMS_AGREED = 'Agreed';
+export const DEFAULT_AGREE_LABEL = 'I have read and agree to the terms and conditions';
+export const DEFAULT_TERMS_TEXT =
+  'By submitting this form you confirm that the information you provide is accurate and complete. ' +
+  'We use your details only to process this request and will not share them with third parties without your consent, unless required by law.';
+
+/** Only http(s) links are allowed for the "Read full terms" link. */
+export function safeTermsUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url.trim());
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : null;
+  } catch {
+    return null;
+  }
 }
 
 export function createField(type: FieldType): FormField {
@@ -68,6 +88,16 @@ export function createField(type: FieldType): FormField {
         minLabel: 'Not likely',
         maxLabel: 'Very likely',
       };
+    case 'terms':
+      return {
+        ...base,
+        label: 'Terms & conditions',
+        required: true,
+        terms: DEFAULT_TERMS_TEXT,
+        agreeLabel: DEFAULT_AGREE_LABEL,
+      };
+    case 'file':
+      return { ...base, label: 'Upload a file', fileKinds: ['image', 'pdf'], maxFiles: 1, maxFileMb: 10 };
   }
 }
 

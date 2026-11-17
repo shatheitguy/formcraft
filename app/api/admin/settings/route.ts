@@ -22,7 +22,7 @@ export async function GET() {
 
 const str = (v: unknown, max = 300) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
-/** PUT { section: 'app' | 'smtp' | 'telegram', value } */
+/** PUT { section: 'app' | 'smtp' | 'telegram' | 'whatsapp' | 'backup' | 'security', value } */
 export async function PUT(req: Request) {
   const denied = await admin();
   if (denied) return denied;
@@ -70,6 +70,32 @@ export async function PUT(req: Request) {
     const next: AllSettings['telegram'] = { enabled: !!value.enabled, botToken: value.clearToken ? '' : token };
     if (next.enabled && !next.botToken) return NextResponse.json({ error: 'A bot token is required to enable Telegram.' }, { status: 400 });
     await saveSettings('telegram', next);
+  } else if (section === 'whatsapp') {
+    const next: AllSettings['whatsapp'] = {
+      enabled: !!value.enabled,
+      defaultCountryCode: str(value.defaultCountryCode, 8).replace(/\D/g, '').slice(0, 4),
+    };
+    await saveSettings('whatsapp', next);
+  } else if (section === 'backup') {
+    const time = str(value.time, 5);
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return NextResponse.json({ error: 'Time must be HH:MM (24-hour).' }, { status: 400 });
+    const keep = Number(value.keep);
+    if (!Number.isInteger(keep) || keep < 1 || keep > 365) return NextResponse.json({ error: 'Keep must be a whole number from 1 to 365.' }, { status: 400 });
+    const weekday = Number(value.weekday);
+    const next: AllSettings['backup'] = {
+      enabled: !!value.enabled,
+      frequency: value.frequency === 'hourly' || value.frequency === 'weekly' ? value.frequency : 'daily',
+      time,
+      weekday: Number.isInteger(weekday) && weekday >= 0 && weekday <= 6 ? weekday : 0,
+      keep,
+      includeUploads: value.includeUploads !== false,
+    };
+    await saveSettings('backup', next);
+  } else if (section === 'security') {
+    const next: AllSettings['security'] = {
+      require2fa: value.require2fa === 'admins' || value.require2fa === 'all' ? value.require2fa : 'off',
+    };
+    await saveSettings('security', next);
   } else {
     return NextResponse.json({ error: 'Unknown section' }, { status: 400 });
   }

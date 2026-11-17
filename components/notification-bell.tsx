@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpCircle, Bell, CheckCheck, FilePlus2, FileX2, Inbox, PencilLine, Rocket } from 'lucide-react';
+import { ArrowUpCircle, Bell, DatabaseBackup, CheckCheck, FilePlus2, FileX2, Inbox, PencilLine, Rocket } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from './app-context';
@@ -10,8 +10,8 @@ import { cn, timeAgo } from '@/lib/utils';
 
 interface Item {
   id: string;
-  type: 'form.published' | 'form.drafted' | 'form.created' | 'form.deleted' | 'submission' | 'update.available';
-  data: { form?: string; actor?: string; actorId?: string; count?: number; version?: string; current?: string };
+  type: 'form.published' | 'form.drafted' | 'form.created' | 'form.deleted' | 'submission' | 'update.available' | 'backup.failed';
+  data: { form?: string; actor?: string; actorId?: string; count?: number; version?: string; current?: string; error?: string };
   link: string | null;
   read: boolean;
   createdAt: string;
@@ -30,6 +30,7 @@ const ICONS = {
   'form.deleted': { icon: FileX2, tone: 'bg-rose-50 text-rose-600' },
   submission: { icon: Inbox, tone: 'bg-sky-50 text-sky-600' },
   'update.available': { icon: ArrowUpCircle, tone: 'bg-violet-50 text-violet-600' },
+  'backup.failed': { icon: DatabaseBackup, tone: 'bg-rose-50 text-rose-600' },
 } as const;
 
 /** Bell in the top bar: form activity, new responses and software updates. Polls once a minute. */
@@ -98,6 +99,8 @@ export function NotificationBell() {
         return v.n === 1 ? t('New response on “{form}”', v) : t('{n} new responses on “{form}”', v);
       case 'update.available':
         return t('FormCraft {version} is available — you’re on {current}', v);
+      case 'backup.failed':
+        return t('Automatic backup failed: {error}', { error: n.data.error ?? '' });
     }
   }
 

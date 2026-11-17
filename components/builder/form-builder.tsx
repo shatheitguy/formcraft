@@ -16,7 +16,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { AlertCircle, ArrowLeft, Check, Eye, Inbox, Languages, Link2, Monitor, MousePointerClick, PenSquare, Rocket, Smartphone, Undo2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Check, Eye, Inbox, Languages, LayoutList, Link2, Monitor, MousePointerClick, PenSquare, PlusSquare, Rocket, SlidersHorizontal, Smartphone, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FormFrame, FormHeader } from '@/components/form/form-frame';
@@ -68,6 +68,9 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mode, setMode] = useState<'build' | 'translate' | 'preview'>('build');
+  // Phones show one builder panel at a time (bottom tab bar); large screens show all three side by side.
+  const [panel, setPanel] = useState<'add' | 'canvas' | 'settings'>('canvas');
+  const isSmall = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches;
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [saveState, setSaveState] = useState<SaveState>('saved');
   const [activeDrag, setActiveDrag] = useState<ActiveDrag>(null);
@@ -279,9 +282,9 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
     <div className="flex h-screen flex-col bg-slate-50">
       {/* Top bar */}
       <header className="z-30 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 sm:gap-3 sm:px-4">
-        <Link href="/" className={buttonClass('ghost', 'sm', 'px-2')} title={t('Back to dashboard')}>
+        <Link href="/" className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-800 shrink-0 !px-2.5 sm:!px-3" title={t('Back to dashboard')} aria-label={t('Back to dashboard')}>
           <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
-          <span className="hidden 2xl:inline">{t('Dashboard')}</span>
+          <span className="hidden sm:inline">{t('Dashboard')}</span>
         </Link>
         <div className="h-6 w-px bg-slate-200" />
         <input
@@ -293,7 +296,7 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
         <StatusBadge status={draft.status} className="hidden sm:inline-flex" />
         <SaveIndicator state={saveState} error={saveError} onRetry={save} />
 
-        <div className="mx-auto hidden rounded-lg bg-slate-100 p-0.5 md:inline-flex">
+        <div className="mx-auto inline-flex shrink-0 rounded-lg bg-slate-100 p-0.5">
           {(
             [
               ['build', 'Build', PenSquare],
@@ -306,23 +309,20 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
               onClick={() => setMode(m)}
               title={t(label)}
               aria-label={t(label)}
-              className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition xl:px-3', mode === m ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800')}
+              className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-semibold transition sm:px-2.5 xl:px-3', mode === m ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900')}
             >
-              <Icon className="h-3.5 w-3.5" /> <span className={cn(mode !== m && 'hidden xl:inline')}>{t(label)}</span>
+              <Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> <span className={cn('hidden', mode === m ? 'sm:inline' : 'xl:inline')}>{t(label)}</span>
             </button>
           ))}
         </div>
 
         <div className="ms-auto flex items-center gap-1.5 md:ms-0">
-          <button onClick={() => setMode(mode === 'build' ? 'preview' : 'build')} className={buttonClass('ghost', 'sm', 'md:hidden')} aria-label={t('Toggle preview')}>
-            {mode === 'build' ? <Eye className="h-4 w-4" /> : <PenSquare className="h-4 w-4" />}
-          </button>
-          <Link href={`/forms/${initial.id}/submissions`} className={buttonClass('ghost', 'sm')} title={t('View submissions')}>
+          <Link href={`/forms/${initial.id}/submissions`} className={buttonClass('ghost', 'sm', 'hidden sm:inline-flex')} title={t('View submissions')}>
             <Inbox className="h-4 w-4" />
             <span className="hidden xl:inline">{t('Submissions')}</span>
             <span className="rounded bg-slate-100 px-1.5 text-[11px] tabular-nums text-slate-600">{responses}</span>
           </Link>
-          <Button onClick={() => setShareOpen(true)} className="hidden sm:inline-flex">
+          <Button onClick={() => setShareOpen(true)} className="!px-2 sm:!px-3" aria-label={t('Share')}>
             <Link2 className="h-4 w-4" /> <span className="hidden xl:inline">{t('Share')}</span>
           </Button>
           <Button variant={draft.status === 'ACTIVE' ? 'secondary' : 'primary'} onClick={toggleStatus}>
@@ -368,12 +368,17 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
       ) : (
         <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => (setActiveDrag(null), setOverId(null))}>
           <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-            <aside className="scrollbar-thin max-h-[38vh] shrink-0 overflow-y-auto border-b border-slate-200 bg-white lg:max-h-none lg:w-64 lg:border-b-0 lg:border-e">
-              <Palette onAdd={(t) => insertField(t)} />
+            <aside className={cn('scrollbar-thin min-h-0 overflow-y-auto bg-white lg:block lg:w-64 lg:shrink-0 lg:border-e lg:border-slate-200', panel === 'add' ? 'flex-1' : 'hidden')}>
+              <Palette
+                onAdd={(t) => {
+                  insertField(t);
+                  setPanel('canvas');
+                }}
+              />
             </aside>
 
-            <main className="scrollbar-thin bg-grid min-w-0 flex-1 overflow-y-auto" onClick={() => setSelectedId(null)}>
-              <div className="mx-auto max-w-2xl px-4 py-8" style={accentVars(branding?.accent)}>
+            <main className={cn('scrollbar-thin bg-grid min-h-0 min-w-0 flex-1 overflow-y-auto lg:block', panel === 'canvas' ? 'block' : 'hidden')} onClick={() => setSelectedId(null)}>
+              <div className="mx-auto max-w-2xl px-3 py-5 sm:px-4 sm:py-8" style={accentVars(branding?.accent)}>
                 {/* Form header card */}
                 <div onClick={(e) => e.stopPropagation()}>
                 <FormFrame branding={branding} category={draft.category} className={cn('mb-4 transition', selectedId === null && 'ring-2 ring-brand-500/20')}>
@@ -417,7 +422,11 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
                             selected={field.id === selectedId}
                             quiz={draft.schema.settings.quiz}
                             dropIndicator={activeDrag?.kind === 'palette' && overId === field.id}
-                            onSelect={() => setSelectedId(field.id)}
+                            onSelect={() => {
+                              // On phones, a second tap on the selected field opens its settings.
+                              if (field.id === selectedId && isSmall()) setPanel('settings');
+                              setSelectedId(field.id);
+                            }}
                             onDuplicate={() => duplicateField(field.id)}
                             onDelete={() => deleteField(field.id)}
                             onMove={(dir) => moveField(field.id, dir)}
@@ -430,14 +439,17 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
               </div>
             </main>
 
-            <aside className="scrollbar-thin shrink-0 overflow-y-auto border-t border-slate-200 bg-white lg:w-[340px] lg:border-s lg:border-t-0">
+            <aside className={cn('scrollbar-thin min-h-0 overflow-y-auto bg-white lg:block lg:w-[340px] lg:shrink-0 lg:border-s lg:border-slate-200', panel === 'settings' ? 'flex-1' : 'hidden')}>
               {selected ? (
                 <FieldInspector
                   key={selected.id}
                   field={selected}
                   quiz={draft.schema.settings.quiz}
                   onChange={(patch) => patchField(selected.id, patch)}
-                  onClose={() => setSelectedId(null)}
+                  onClose={() => {
+                    setSelectedId(null);
+                    if (isSmall()) setPanel('canvas');
+                  }}
                   onDelete={() => deleteField(selected.id)}
                 />
               ) : (
@@ -445,6 +457,28 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
               )}
             </aside>
           </div>
+
+          {/* Phone tab bar: one panel at a time */}
+          <nav className="grid shrink-0 grid-cols-3 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden" aria-label={t('Builder panels')}>
+            {(
+              [
+                ['add', t('Add field'), PlusSquare],
+                ['canvas', t('Form'), LayoutList],
+                ['settings', selected ? t('Field settings') : t('Form settings'), SlidersHorizontal],
+              ] as const
+            ).map(([k, label, Icon]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setPanel(k)}
+                aria-pressed={panel === k}
+                className={cn('flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold transition', panel === k ? 'text-brand-700' : 'text-slate-600')}
+              >
+                <Icon className={cn('h-5 w-5', panel === k ? 'text-brand-600' : 'text-slate-500')} />
+                <span className="max-w-full truncate px-1">{label}</span>
+              </button>
+            ))}
+          </nav>
 
           <DragOverlay dropAnimation={null}>
             {activeDrag?.kind === 'palette' && <PaletteOverlay type={activeDrag.type} />}

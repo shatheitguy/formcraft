@@ -42,7 +42,7 @@ export default async function PublicFormPage({ params, searchParams }: { params:
   const theme = form.schema.settings.theme === 'light' || form.schema.settings.theme === 'dark' ? form.schema.settings.theme : '';
 
   return (
-    <main className={`bg-grid min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:py-14 ${theme}`} style={accentVars(form.schema.settings.branding?.accent)}>
+    <main className={`bg-grid min-h-screen bg-slate-50 px-3 py-4 text-slate-900 sm:px-4 sm:py-14 ${theme}`} style={accentVars(form.schema.settings.branding?.accent)}>
       <div className="mx-auto max-w-2xl">
         {preview && form.status !== 'ACTIVE' && (
           <div className="mb-4 rounded-xl bg-amber-50 px-4 py-2.5 text-center text-sm text-amber-800 ring-1 ring-amber-200" dir={dirOf(lang)}>

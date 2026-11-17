@@ -1,19 +1,30 @@
 import {
   AlignLeft,
+  Briefcase,
   CalendarDays,
   CalendarCheck,
   ChevronDownCircle,
   CircleDot,
+  FileCheck2,
   FilePlus2,
+  Frown,
+  Headset,
   LifeBuoy,
   ListChecks,
   Mail,
   MessageSquareHeart,
+  Paperclip,
   Phone,
+  Plane,
+  ScrollText,
+  ShoppingCart,
   SlidersHorizontal,
+  SmilePlus,
   Star,
   Trophy,
   Type,
+  UserPlus,
+  UserRoundCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { useId } from 'react';
@@ -32,6 +43,8 @@ export const FIELD_ICONS: Record<FieldType, LucideIcon> = {
   date: CalendarDays,
   rating: Star,
   scale: SlidersHorizontal,
+  terms: ScrollText,
+  file: Paperclip,
 };
 
 export const TEMPLATE_ICONS: Record<TemplateId, LucideIcon> = {
@@ -40,6 +53,15 @@ export const TEMPLATE_ICONS: Record<TemplateId, LucideIcon> = {
   feedback: MessageSquareHeart,
   event: CalendarCheck,
   quiz: Trophy,
+  job: Briefcase,
+  registration: UserPlus,
+  order: ShoppingCart,
+  leave: Plane,
+  'it-support': Headset,
+  complaint: Frown,
+  survey: SmilePlus,
+  visitor: UserRoundCheck,
+  consent: FileCheck2,
 };
 
 export function Logo({ className = 'h-8 w-8', src }: { className?: string; src?: string }) {

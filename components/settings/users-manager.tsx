@@ -1,6 +1,7 @@
 'use client';
 
-import { Check, Eye, KeyRound, Pencil, Plus, Search, Shield, ShieldCheck, ShieldOff, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
+import { WhatsAppIcon } from './whatsapp-card';
+import { Check, Eye, KeyRound, Lock, Pencil, Plus, Search, Shield, ShieldCheck, ShieldOff, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { PasswordInput } from '@/components/auth/password-input';
@@ -24,9 +25,13 @@ export interface ManagedUser {
   formIds: string[];
   active: boolean;
   lastLoginAt: string | null;
-  /** Has an authenticator app or email codes turned on. */
+  /** Has an authenticator app or email / WhatsApp / Telegram codes turned on. */
   twoFactor: boolean;
+  /** Admin requires two-factor sign-in for this user (on top of the workspace policy). */
+  require2fa?: boolean;
   createdAt: string;
+  whatsappNumber: string;
+  whatsappNotifications: boolean;
 }
 
 interface FormOption {
@@ -38,7 +43,9 @@ interface FormOption {
 
 const ROLE_ICONS = { ADMIN: ShieldCheck, EDITOR: Pencil, VIEWER: Eye };
 
-export function UsersManager({ users, forms, meId }: { users: ManagedUser[]; forms: FormOption[]; meId: string }) {
+export type TwoFactorPolicy = 'off' | 'admins' | 'all';
+
+export function UsersManager({ users, forms, meId, policy = 'off' }: { users: ManagedUser[]; forms: FormOption[]; meId: string; policy?: TwoFactorPolicy }) {
   const router = useRouter();
   const toast = useToast();
   const t = useT();
@@ -94,6 +101,8 @@ export function UsersManager({ users, forms, meId }: { users: ManagedUser[]; for
         })}
       </div>
 
+      <TwoFactorPolicyCard users={users} meId={meId} policy={policy} />
+
       <SettingsCard
         title={t('Users')}
         description={t('Invite teammates and decide what each person can see and do.')}
@@ -132,10 +141,21 @@ export function UsersManager({ users, forms, meId }: { users: ManagedUser[]; for
                         <ShieldCheck className="h-3 w-3" /> {t('2FA')}
                       </span>
                     )}
+                    {!u.twoFactor && isRequired(u, policy) && (
+                      <span className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 text-[10px] font-semibold uppercase text-amber-800" title={t('Two-factor sign-in is required but not set up yet')}>
+                        <Lock className="h-3 w-3" /> {t('2FA pending')}
+                      </span>
+                    )}
                   </div>
                   <div className="truncate text-xs text-slate-500">
                     @{u.username} · {u.email}
                   </div>
+                  {u.whatsappNumber && (
+                    <div className="mt-0.5 flex items-center gap-1 text-xs text-slate-600" dir="ltr">
+                      <WhatsAppIcon className={cn('h-3.5 w-3.5', u.whatsappNotifications ? 'text-emerald-600' : 'text-slate-400')} />
+                      <span className="truncate">{u.whatsappNumber}</span>
+                    </div>
+                  )}
                 </div>
                 <span className={cn('chip', ROLE_INFO[u.role].tone)}>
                   <Icon className="h-3 w-3" /> {t(ROLE_INFO[u.role].label)}
@@ -234,6 +254,9 @@ function UserDialog({
     formScope: user?.formScope ?? ('SELECTED' as FormScope),
     formIds: user?.formIds ?? [],
     active: user?.active ?? true,
+    whatsappNumber: user?.whatsappNumber ?? '',
+    whatsappNotifications: user?.whatsappNotifications ?? true,
+    require2fa: user?.require2fa ?? false,
   });
   const [q, setQ] = useState('');
   const [saving, setSaving] = useState(false);
@@ -283,6 +306,18 @@ function UserDialog({
               <input className="input" type="email" value={v.email} onChange={(e) => set('email', e.target.value)} placeholder="jane@company.com" dir="ltr" />
             </Field>
           </div>
+          <Field label={t('WhatsApp number')} hint={t('With country code. Used for WhatsApp alerts and as the default number when sending reports.')}>
+            <input className="input" value={v.whatsappNumber} onChange={(e) => set('whatsappNumber', e.target.value)} placeholder="+971 50 123 4567" dir="ltr" inputMode="tel" />
+          </Field>
+          {v.whatsappNumber.trim() && (
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-emerald-50/60 px-4 py-3 ring-1 ring-inset ring-emerald-200">
+              <div>
+                <div className="text-sm font-medium text-slate-800">{t('Send WhatsApp alerts')}</div>
+                <div className="text-xs text-slate-600">{t('A message on every new response to the forms this user can see.')}</div>
+              </div>
+              <Switch checked={v.whatsappNotifications} onChange={(x) => set('whatsappNotifications', x)} label={t('Send WhatsApp alerts')} />
+            </div>
+          )}
           <Field label={user ? t('Reset password') : t('Password')} hint={user ? t('Leave empty to keep the current password. Resetting signs the user out everywhere.') : t('At least 8 characters. Share it with the user securely.')}>
             <div className="flex gap-2">
               <div className="flex-1">
@@ -293,6 +328,17 @@ function UserDialog({
               </Button>
             </div>
           </Field>
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-4 py-3 ring-1 ring-inset ring-slate-200">
+            <div>
+              <div className="text-sm font-medium text-slate-900">{t('Require two-factor for this user')}</div>
+              <div className="text-xs text-slate-600">
+                {isSelf && !user?.twoFactor && v.require2fa
+                  ? t('You haven’t turned on two-factor yet. After saving, you’ll be asked to set it up in My profile before using anything else.')
+                  : t('They must turn on an authenticator app or a code by email, WhatsApp or Telegram before they can use the workspace.')}
+              </div>
+            </div>
+            <Switch checked={v.require2fa} onChange={(x) => set('require2fa', x)} label={t('Require two-factor for this user')} />
+          </div>
           {user && !isSelf && (
             <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3 ring-1 ring-inset ring-slate-100">
               <div>
@@ -387,5 +433,89 @@ function UserDialog({
         </div>
       </div>
     </Modal>
+  );
+}
+
+const isRequired = (u: ManagedUser, policy: TwoFactorPolicy) => !!u.require2fa || policy === 'all' || (policy === 'admins' && u.role === 'ADMIN');
+
+/** Workspace rule: who must use two-factor sign-in. */
+function TwoFactorPolicyCard({ users, meId, policy }: { users: ManagedUser[]; meId: string; policy: TwoFactorPolicy }) {
+  const router = useRouter();
+  const toast = useToast();
+  const t = useT();
+  const [value, setValue] = useState<TwoFactorPolicy>(policy);
+  const [saving, setSaving] = useState(false);
+  const [confirmSelf, setConfirmSelf] = useState(false);
+  const me = users.find((u) => u.id === meId);
+  const pending = users.filter((u) => u.active && !u.twoFactor && isRequired(u, value)).length;
+  const options: { value: TwoFactorPolicy; label: string; text: string }[] = [
+    { value: 'off', label: 'Optional', text: 'Each person decides in My profile.' },
+    { value: 'admins', label: 'Required for admins', text: 'Admins must turn on two-factor sign-in.' },
+    { value: 'all', label: 'Required for everyone', text: 'Every user must turn on two-factor sign-in.' },
+  ];
+
+  async function save(force = false) {
+    // Don't let an admin lock themselves into setup without warning.
+    if (!force && me && !me.twoFactor && value !== 'off' && isRequired({ ...me, require2fa: false }, value)) return setConfirmSelf(true);
+    setConfirmSelf(false);
+    setSaving(true);
+    const r = await sendJson('/api/admin/settings', 'PUT', { section: 'security', value: { require2fa: value } });
+    setSaving(false);
+    if (!r.ok) return toast(t(r.error!), 'error');
+    toast(t('Two-factor rule saved'));
+    router.refresh();
+  }
+
+  return (
+    <SettingsCard
+      title={t('Require two-factor sign-in')}
+      description={t('People who must use it but haven’t set it up can sign in with their password, then only see My profile until they turn it on.')}
+      icon={<Lock />}
+      footer={
+        <Button variant="primary" onClick={() => save()} loading={saving} disabled={value === policy}>
+          {t('Save rule')}
+        </Button>
+      }
+    >
+      <div role="radiogroup" aria-label={t('Require two-factor sign-in')} className="grid gap-2 sm:grid-cols-3">
+        {options.map((o) => {
+          const on = value === o.value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => setValue(o.value)}
+              className={cn(
+                'flex items-start gap-2.5 rounded-lg border p-3 text-start transition',
+                on ? 'border-brand-500 bg-brand-50/60 ring-1 ring-brand-500' : 'border-slate-300 hover:border-slate-400',
+              )}
+            >
+              <span className={cn('mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border', on ? 'border-brand-600 bg-brand-600' : 'border-slate-400')}>
+                {on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-slate-900">{t(o.label)}</span>
+                <span className="block text-xs text-slate-600">{t(o.text)}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-xs text-slate-700">
+        {t('You can also require it for one person in Edit user & access.')}{' '}
+        {pending > 0 && <strong className="font-semibold text-amber-800">{pending === 1 ? t('1 user still needs to set it up.') : t('{n} users still need to set it up.', { n: pending })}</strong>}
+      </p>
+      <ConfirmDialog
+        open={confirmSelf}
+        onClose={() => setConfirmSelf(false)}
+        onConfirm={() => save(true)}
+        loading={saving}
+        title={t('You haven’t turned on two-factor yet')}
+        confirmLabel={t('Save anyway')}
+        description={t('This rule includes you. After saving, you’ll only see My profile until you turn on two-factor sign-in there. You won’t be locked out: you can set it up right away.')}
+      />
+    </SettingsCard>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useT } from '@/components/i18n';
@@ -22,6 +22,18 @@ export function TemplatePicker({ open, onClose }: { open: boolean; onClose: () =
   const previews = useMemo(() => Object.fromEntries(TEMPLATES.map((t) => [t.id, t.build()])), []);
   const current = TEMPLATES.find((t) => t.id === selected)!;
   const schema = previews[selected];
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<string | null>(null);
+  // Category chips: every category used by a template, except the blank canvas.
+  const categories = useMemo(() => [...new Set(TEMPLATES.filter((tpl) => tpl.id !== 'blank').map((tpl) => tpl.category))], []);
+  const q = query.trim().toLowerCase();
+  const visible = TEMPLATES.filter((tpl) => {
+    if (tpl.id === 'blank') return !category && !q;
+    if (category && tpl.category !== category) return false;
+    if (!q) return true;
+    const haystack = [tpl.name, tpl.tagline, tpl.title, tpl.category, t(tpl.name), t(tpl.tagline), t(tpl.category), ...tpl.tags].join(' ').toLowerCase();
+    return q.split(/\s+/).every((word) => haystack.includes(word));
+  });
 
   async function create(id: TemplateId) {
     setCreating(id);
@@ -46,61 +58,108 @@ export function TemplatePicker({ open, onClose }: { open: boolean; onClose: () =
   return (
     <Modal open={open} onClose={onClose} size="xl" title={t('Create a new form')} description={t('Start from a pre-built template or a blank canvas. You can customize everything afterwards.')}>
       <div className="grid gap-0 md:grid-cols-[1fr_320px]">
-        <div className="grid gap-3 p-5 sm:grid-cols-2">
-          {TEMPLATES.map((tpl) => {
-            const Icon = TEMPLATE_ICONS[tpl.id];
-            const style = categoryStyle(tpl.category);
-            const active = selected === tpl.id;
-            const count = previews[tpl.id].fields.length;
-            return (
-              <button
-                key={tpl.id}
-                onClick={() => setSelected(tpl.id)}
-                onDoubleClick={() => create(tpl.id)}
-                className={cn(
-                  'group relative flex flex-col overflow-hidden rounded-xl border bg-white text-start transition',
-                  active ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-slate-200 hover:border-slate-300 hover:shadow-card',
-                  tpl.id === 'blank' && 'sm:col-span-2',
-                )}
-              >
-                <div className={cn('flex items-center gap-3 p-4', tpl.id !== 'blank' && 'pb-3')}>
-                  <div
+        <div className="flex min-w-0 flex-col">
+          <div className="space-y-3 border-b border-slate-100 px-5 pb-3 pt-4">
+            <div className="relative">
+              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                className="input ps-9 pe-9"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t('Search templates…')}
+                aria-label={t('Search templates…')}
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  className="absolute end-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  aria-label={t('Clear search')}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Template categories')}>
+              {[null, ...categories].map((c) => {
+                const on = category === c;
+                return (
+                  <button
+                    key={c ?? 'all'}
+                    type="button"
+                    onClick={() => setCategory(c)}
+                    aria-pressed={on}
                     className={cn(
-                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-onaccent shadow-sm',
-                      tpl.id === 'blank' ? 'bg-slate-800' : cn('bg-gradient-to-br', style.gradient),
+                      'rounded-full border px-3 py-1 text-xs font-medium transition',
+                      on ? 'border-brand-600 bg-brand-600 text-onaccent' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
                     )}
                   >
-                    <Icon className="h-5 w-5" />
+                    {c ? t(c) : t('All')}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="scrollbar-thin grid content-start gap-3 overflow-y-auto p-5 sm:grid-cols-2 md:max-h-[58vh]">
+            {visible.length === 0 && (
+              <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-600 sm:col-span-2">{t('No templates match your search.')}</p>
+            )}
+            {visible.map((tpl) => {
+              const Icon = TEMPLATE_ICONS[tpl.id];
+              const style = categoryStyle(tpl.category);
+              const active = selected === tpl.id;
+              const count = previews[tpl.id].fields.length;
+              return (
+                <button
+                  key={tpl.id}
+                  onClick={() => setSelected(tpl.id)}
+                  onDoubleClick={() => create(tpl.id)}
+                  className={cn(
+                    'group relative flex flex-col overflow-hidden rounded-xl border bg-white text-start transition',
+                    active ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-slate-200 hover:border-slate-300 hover:shadow-card',
+                    tpl.id === 'blank' && 'sm:col-span-2',
+                  )}
+                >
+                  <div className={cn('flex items-center gap-3 p-4', tpl.id !== 'blank' && 'pb-3')}>
+                    <div
+                      className={cn(
+                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-onaccent shadow-sm',
+                        tpl.id === 'blank' ? 'bg-slate-800' : cn('bg-gradient-to-br', style.gradient),
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-slate-900">{t(tpl.name)}</div>
+                      <div className="line-clamp-2 text-xs text-slate-600">{t(tpl.tagline)}</div>
+                    </div>
+                    {creating === tpl.id && <Spinner className="ms-auto text-brand-600" />}
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900">{t(tpl.name)}</div>
-                    <div className="truncate text-xs text-slate-500">{t(tpl.tagline)}</div>
-                  </div>
-                  {creating === tpl.id && <Spinner className="ms-auto text-brand-600" />}
-                </div>
-                {tpl.id !== 'blank' && (
-                  <div className="flex items-center gap-1 border-t border-slate-100 bg-slate-50/70 px-4 py-2">
-                    {previews[tpl.id].fields.slice(0, 6).map((f) => {
-                      const FIcon = FIELD_ICONS[f.type];
-                      return (
-                        <span key={f.id} title={t(FIELD_META[f.type].label)} className="flex h-6 w-6 items-center justify-center rounded-md bg-white text-slate-500 ring-1 ring-slate-200">
-                          <FIcon className="h-3.5 w-3.5" />
-                        </span>
-                      );
-                    })}
-                    <span className="ms-auto text-[11px] font-medium text-slate-400">{count === 1 ? t('1 field') : t('{n} fields', { n: count })}</span>
-                  </div>
-                )}
-              </button>
-            );
-          })}
+                  {tpl.id !== 'blank' && (
+                    <div className="flex items-center gap-1 border-t border-slate-100 bg-slate-50/70 px-4 py-2">
+                      {previews[tpl.id].fields.slice(0, 6).map((f) => {
+                        const FIcon = FIELD_ICONS[f.type];
+                        return (
+                          <span key={f.id} title={t(FIELD_META[f.type].label)} className="flex h-6 w-6 items-center justify-center rounded-md bg-white text-slate-500 ring-1 ring-slate-200">
+                            <FIcon className="h-3.5 w-3.5" />
+                          </span>
+                        );
+                      })}
+                      <span className="ms-auto text-[11px] font-medium text-slate-600">{count === 1 ? t('1 field') : t('{n} fields', { n: count })}</span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <aside className="flex flex-col border-t border-slate-100 bg-slate-50/60 md:border-s md:border-t-0">
           <div className="flex-1 p-5">
             <div className="label">{t('Preview')}</div>
             <h3 className="text-base font-semibold text-slate-900">{current.title}</h3>
-            {current.description && <p className="mt-1 text-sm text-slate-500">{current.description}</p>}
+            {current.description && <p className="mt-1 text-sm text-slate-600">{current.description}</p>}
             {schema.settings.quiz && (
               <span className="chip mt-2 bg-emerald-50 text-emerald-700 ring-emerald-200">{t('Auto-scored quiz')}</span>
             )}
@@ -112,7 +171,7 @@ export function TemplatePicker({ open, onClose }: { open: boolean; onClose: () =
                   <li key={f.id} className="flex items-center gap-2.5 rounded-lg bg-white px-2.5 py-2 text-sm ring-1 ring-slate-200">
                     <span className="w-4 text-end text-[11px] tabular-nums text-slate-400">{i + 1}</span>
                     <FIcon className="h-4 w-4 shrink-0 text-slate-400" />
-                    <span className="min-w-0 flex-1 truncate text-slate-700">{f.label}</span>
+                    <span className="min-w-0 flex-1 truncate text-slate-800">{f.label}</span>
                     {f.required && <span className="text-xs text-rose-500">*</span>}
                   </li>
                 );

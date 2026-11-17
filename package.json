@@ -1,6 +1,6 @@
 {
   "name": "formcraft",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "The developer-first, self-hosted form builder.",
   "license": "MIT",
@@ -18,10 +18,13 @@
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@prisma/client": "5.22.0",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
     "fuse.js": "^7.0.0",
     "lucide-react": "^0.460.0",
     "next": "^14.2.33",
     "nodemailer": "^6.10.1",
+    "pdf-lib": "^1.17.1",
+    "pino": "^9.14.0",
     "qrcode": "^1.5.4",
     "react": "18.3.1",
     "react-dom": "18.3.1"

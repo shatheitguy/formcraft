@@ -25,6 +25,9 @@ export async function POST(req: Request) {
       role: data.role ?? 'VIEWER',
       formScope: data.formScope ?? 'ALL',
       active: data.active ?? true,
+      whatsappNumber: data.whatsappNumber ?? null,
+      whatsappNotifications: !!data.whatsappNumber && (data.whatsappNotifications ?? false),
+      require2fa: data.require2fa ?? false,
       formAccess: data.formScope === 'SELECTED' && data.formIds?.length ? { create: data.formIds.map((formId) => ({ formId })) } : undefined,
     },
   });

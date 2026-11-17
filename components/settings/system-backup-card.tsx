@@ -23,6 +23,7 @@ const LABELS: Record<string, string> = {
   setting: 'Settings',
   notificationLog: 'Alert log entries',
   uploads: 'Uploaded images',
+  responseFiles: 'Response attachments',
 };
 
 /** Reads just the summary of a .fcbackup file in the browser before anything is uploaded. */
