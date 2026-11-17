@@ -127,6 +127,12 @@ const dict: AreaDict = {
     "Attach up to {n} files.": "أرفق ما يصل إلى {n} ملفات.",
     "One of the files is invalid. Please upload it again.": "أحد الملفات غير صالح. يرجى رفعه مجددًا.",
     "One of the files is missing. Please upload it again.": "أحد الملفات مفقود. يرجى رفعه مجددًا.",
+    // WhatsApp & reports
+    "You’ve already responded": "لقد أرسلت ردك بالفعل",
+    "This form accepts a limited number of responses per person, and you’ve reached it. Thank you!": "يقبل هذا النموذج عددًا محدودًا من الردود لكل شخص، وقد وصلت إليه. شكرًا لك!",
+    "This email address has already been used for this form.": "تم استخدام هذا البريد الإلكتروني بالفعل في هذا النموذج.",
+    "This phone number has already been used for this form.": "تم استخدام رقم الهاتف هذا بالفعل في هذا النموذج.",
+    "This answer has already been used for this form.": "تم استخدام هذه الإجابة بالفعل في هذا النموذج.",
   },
   ta: {
     // Validation
@@ -252,6 +258,12 @@ const dict: AreaDict = {
     "Attach up to {n} files.": "அதிகபட்சம் {n} கோப்புகளை இணைக்கவும்.",
     "One of the files is invalid. Please upload it again.": "கோப்புகளில் ஒன்று தவறானது. மீண்டும் பதிவேற்றவும்.",
     "One of the files is missing. Please upload it again.": "கோப்புகளில் ஒன்று காணவில்லை. மீண்டும் பதிவேற்றவும்.",
+    // WhatsApp & reports
+    "You’ve already responded": "நீங்கள் ஏற்கனவே பதிலளித்துவிட்டீர்கள்",
+    "This form accepts a limited number of responses per person, and you’ve reached it. Thank you!": "இந்தப் படிவம் ஒருவருக்கு குறிப்பிட்ட எண்ணிக்கையிலான பதில்களை மட்டுமே ஏற்கும்; நீங்கள் அதை அடைந்துவிட்டீர்கள். நன்றி!",
+    "This email address has already been used for this form.": "இந்த மின்னஞ்சல் முகவரி இந்தப் படிவத்தில் ஏற்கனவே பயன்படுத்தப்பட்டுள்ளது.",
+    "This phone number has already been used for this form.": "இந்தத் தொலைபேசி எண் இந்தப் படிவத்தில் ஏற்கனவே பயன்படுத்தப்பட்டுள்ளது.",
+    "This answer has already been used for this form.": "இந்தப் பதில் இந்தப் படிவத்தில் ஏற்கனவே பயன்படுத்தப்பட்டுள்ளது.",
   },
 };
 

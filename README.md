@@ -182,6 +182,8 @@ Or start from a **blank form**. The template picker has search and category filt
 **Field types:** short text · paragraph · email (validated) · phone (validated) · multiple choice · checkboxes · dropdown · date picker · star rating (1–5 / 1–10) · linear scale (0/1 → 3–10, with end labels) · **terms & conditions** (terms text, optional link, *I agree* checkbox) · **file upload** (images, PDF, documents, spreadsheets; 1–10 files up to 25 MB each, checked by file signature and stored privately)
 
 - **Works on phones:** on small screens the builder shows one panel at a time (Add field · Form · Settings) with Build / Translate / Preview always at the top.
+- **Responses per person:** unlimited, once, or a set number per person — recognised by an anonymous browser cookie plus local storage, and optionally the network (a keyed hash of the IP, never the IP itself). People who already responded see a message before they start
+- **No duplicates:** turn it on for an email, phone or text question to allow one registration per email or phone number (phone numbers match regardless of spaces, dashes or the country prefix; emails regardless of case)
 - **Crop before upload:** logos, cover banners and profile photos open a crop dialog (move, zoom, rotate, aspect presets) before they're saved.
 
 ### 📊 Submissions viewer

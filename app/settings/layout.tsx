@@ -12,9 +12,9 @@ export default async function SettingsLayout({ children }: { children: React.Rea
   const user = await requireUser();
   const t = await getServerT();
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <AppHeader />
-      <div className="mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6">
+      <div className="mx-auto w-full max-w-7xl flex-1 px-4 pb-20 pt-8 sm:px-6">
         <Link href="/" className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-800 mb-4">
           <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t('Back to dashboard')}
         </Link>

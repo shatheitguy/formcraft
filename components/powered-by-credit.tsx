@@ -1,7 +1,7 @@
 import { POWERED_BY_NAME, POWERED_BY_URL } from '@/lib/brand';
 import { Logo } from './icons';
 
-const linkCls = 'font-semibold text-slate-500 underline-offset-2 transition hover:text-brand-600 hover:underline';
+const linkCls = 'font-semibold text-slate-700 underline-offset-2 transition hover:text-brand-600 hover:underline';
 
 /**
  * Footer credit used on app pages and public forms: the workspace's own optional branding,
@@ -21,7 +21,7 @@ export function PoweredByCredit({
   dir?: string;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-slate-400" dir={dir}>
+    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-slate-600" dir={dir}>
       {footerText && (
         <>
           {footerUrl ? (
@@ -29,9 +29,9 @@ export function PoweredByCredit({
               {footerText}
             </a>
           ) : (
-            <span className="font-medium text-slate-500">{footerText}</span>
+            <span className="font-semibold text-slate-700">{footerText}</span>
           )}
-          <span aria-hidden className="text-slate-300">
+          <span aria-hidden className="text-slate-400">
             ·
           </span>
         </>

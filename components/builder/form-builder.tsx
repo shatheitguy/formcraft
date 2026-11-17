@@ -21,6 +21,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FormFrame, FormHeader } from '@/components/form/form-frame';
 import { FormRenderer } from '@/components/form/form-renderer';
+import { AppFooter } from '@/components/app-footer';
 import { ShareDialog, type ShareForm } from '@/components/share-dialog';
 import { useT } from '@/components/i18n';
 import { useToast } from '@/components/toast';
@@ -486,6 +487,11 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
           </DragOverlay>
         </DndContext>
       )}
+
+      {/* Workspace footer + "Powered by", on every screen */}
+      <div className="shrink-0 border-t border-slate-200 bg-white [&>footer]:py-1.5">
+        <AppFooter />
+      </div>
 
       <ShareDialog
         open={shareOpen}

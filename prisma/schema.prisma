@@ -47,9 +47,15 @@ model Submission {
   maxScore  Int?
   /// Language the respondent filled the form in
   language  String?
+  /// Anonymous browser id (fc_rid cookie / local storage) — for "responses per person" limits
+  respondentId String?
+  /// HMAC of the submitter's IP address (never the IP itself)
+  ipHash    String?
   createdAt DateTime @default(now())
 
   @@index([formId, createdAt])
+  @@index([formId, respondentId])
+  @@index([formId, ipHash])
 }
 
 model User {

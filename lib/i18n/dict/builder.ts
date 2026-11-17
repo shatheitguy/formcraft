@@ -194,6 +194,19 @@ const dict: AreaDict = {
     "Form description": "وصف النموذج",
     "Message after submitting": "الرسالة بعد الإرسال",
     "Everything is translated into {lang}.": "تمت ترجمة كل شيء إلى {lang}.",
+    // WhatsApp & reports
+    "No duplicates": "بدون تكرار",
+    "Reject a response if this answer was already used — e.g. one registration per phone number or email.": "رفض الرد إذا استُخدمت هذه الإجابة من قبل — مثل تسجيل واحد لكل رقم هاتف أو بريد إلكتروني.",
+    "Responses per person": "الردود لكل شخص",
+    "Stop the same person filling the form again. They’re recognised by their device and browser.": "امنع الشخص نفسه من تعبئة النموذج مرة أخرى. يتم التعرف عليه من جهازه ومتصفحه.",
+    "Unlimited": "غير محدود",
+    "Only once": "مرة واحدة فقط",
+    "Set a number": "تحديد عدد",
+    "responses per person": "ردود لكل شخص",
+    "Also check the network (IP address)": "التحقق من الشبكة أيضًا (عنوان IP)",
+    "Stricter, but everyone on the same Wi-Fi or office network counts as one person.": "أكثر صرامة، لكن كل من على نفس شبكة Wi-Fi أو المكتب يُحسب شخصًا واحدًا.",
+    "Message when the limit is reached": "الرسالة عند بلوغ الحد",
+    "This form accepts a limited number of responses per person, and you’ve reached it. Thank you!": "يقبل هذا النموذج عددًا محدودًا من الردود لكل شخص، وقد وصلت إليه. شكرًا لك!",
   },
   ta: {
     // Header & tabs
@@ -387,6 +400,19 @@ const dict: AreaDict = {
     "Form description": "படிவ விளக்கம்",
     "Message after submitting": "சமர்ப்பித்த பின் செய்தி",
     "Everything is translated into {lang}.": "அனைத்தும் {lang} மொழிக்கு மொழிபெயர்க்கப்பட்டன.",
+    // WhatsApp & reports
+    "No duplicates": "நகல் வேண்டாம்",
+    "Reject a response if this answer was already used — e.g. one registration per phone number or email.": "இந்தப் பதில் ஏற்கனவே பயன்படுத்தப்பட்டிருந்தால் நிராகரி — எ.கா. ஒரு தொலைபேசி எண் அல்லது மின்னஞ்சலுக்கு ஒரு பதிவு.",
+    "Responses per person": "ஒருவருக்கான பதில்கள்",
+    "Stop the same person filling the form again. They’re recognised by their device and browser.": "ஒரே நபர் மீண்டும் படிவத்தை நிரப்புவதைத் தடு. அவரது சாதனம் மற்றும் உலாவி மூலம் அடையாளம் காணப்படுவார்.",
+    "Unlimited": "வரம்பற்றது",
+    "Only once": "ஒருமுறை மட்டும்",
+    "Set a number": "எண்ணிக்கையை அமை",
+    "responses per person": "ஒருவருக்கான பதில்கள்",
+    "Also check the network (IP address)": "நெட்வொர்க்கையும் சரிபார் (IP முகவரி)",
+    "Stricter, but everyone on the same Wi-Fi or office network counts as one person.": "கடுமையானது, ஆனால் ஒரே Wi-Fi அல்லது அலுவலக நெட்வொர்க்கில் உள்ள அனைவரும் ஒருவராகக் கணக்கிடப்படுவர்.",
+    "Message when the limit is reached": "வரம்பை அடைந்தால் காட்டும் செய்தி",
+    "This form accepts a limited number of responses per person, and you’ve reached it. Thank you!": "இந்தப் படிவம் ஒருவருக்கு குறிப்பிட்ட எண்ணிக்கையிலான பதில்களை மட்டுமே ஏற்கும்; நீங்கள் அதை அடைந்துவிட்டீர்கள். நன்றி!",
   },
 };
 

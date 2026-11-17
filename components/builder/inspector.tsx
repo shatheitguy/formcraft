@@ -130,6 +130,16 @@ export function FieldInspector({
           <Switch checked={field.required} onChange={(required) => onChange({ required })} label={t('Required')} />
         </div>
 
+        {(field.type === 'email' || field.type === 'phone' || field.type === 'text') && (
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2.5 ring-1 ring-inset ring-slate-100">
+            <div>
+              <div className="text-sm font-medium text-slate-800">{t('No duplicates')}</div>
+              <div className="text-xs text-slate-500">{t('Reject a response if this answer was already used — e.g. one registration per phone number or email.')}</div>
+            </div>
+            <Switch checked={!!field.unique} onChange={(unique) => onChange({ unique })} label={t('No duplicates')} />
+          </div>
+        )}
+
         {isChoice(field.type) && <OptionsEditor field={field} quiz={quiz} onChange={(options) => onChange({ options })} />}
 
         {field.type === 'rating' && (
@@ -511,7 +521,78 @@ export function FormSettingsPanel({
             <ToggleRow label={t('Show score after submit')} description={t('Respondents see their result')} checked={settings.showScore} onChange={(showScore) => onSettings({ showScore })} />
           )}
         </div>
+
+        <ResponseLimitSection settings={settings} onSettings={onSettings} />
       </div>
+    </div>
+  );
+}
+
+/** Responses per person: unlimited, once, or a set number — recognised by device (and optionally network). */
+function ResponseLimitSection({ settings, onSettings }: { settings: FormSettings; onSettings: (patch: Partial<FormSettings>) => void }) {
+  const t = useT();
+  const limit = Math.max(0, Math.floor(Number(settings.perPersonLimit) || 0));
+  const mode = limit === 0 ? 'off' : limit === 1 ? 'once' : 'custom';
+  return (
+    <div className="space-y-3 rounded-xl bg-slate-50 p-3 ring-1 ring-inset ring-slate-100">
+      <div>
+        <div className="text-sm font-medium text-slate-800">{t('Responses per person')}</div>
+        <div className="text-xs text-slate-500">{t('Stop the same person filling the form again. They’re recognised by their device and browser.')}</div>
+      </div>
+      <div className="grid grid-cols-3 gap-1.5">
+        {(
+          [
+            ['off', t('Unlimited')],
+            ['once', t('Only once')],
+            ['custom', t('Set a number')],
+          ] as const
+        ).map(([m, label]) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => onSettings({ perPersonLimit: m === 'off' ? 0 : m === 'once' ? 1 : Math.max(2, limit) })}
+            aria-pressed={mode === m}
+            className={cn(
+              'rounded-lg px-2 py-1.5 text-xs font-semibold ring-1 ring-inset transition',
+              mode === m ? 'bg-brand-600 text-onaccent ring-brand-600' : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-100',
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {mode === 'custom' && (
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="number"
+            min={2}
+            max={1000}
+            className="input w-24"
+            value={limit}
+            onChange={(e) => onSettings({ perPersonLimit: Math.min(1000, Math.max(2, Math.floor(Number(e.target.value) || 2))) })}
+          />
+          {t('responses per person')}
+        </label>
+      )}
+      {limit > 0 && (
+        <>
+          <ToggleRow
+            label={t('Also check the network (IP address)')}
+            description={t('Stricter, but everyone on the same Wi-Fi or office network counts as one person.')}
+            checked={!!settings.limitByIp}
+            onChange={(limitByIp) => onSettings({ limitByIp })}
+          />
+          <Section label={t('Message when the limit is reached')}>
+            <textarea
+              className="input resize-none"
+              rows={2}
+              value={settings.limitMessage ?? ''}
+              placeholder={t('This form accepts a limited number of responses per person, and you’ve reached it. Thank you!')}
+              onChange={(e) => onSettings({ limitMessage: e.target.value.slice(0, 500) })}
+            />
+          </Section>
+        </>
+      )}
     </div>
   );
 }

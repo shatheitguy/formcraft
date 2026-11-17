@@ -42,8 +42,8 @@ export default async function PublicFormPage({ params, searchParams }: { params:
   const theme = form.schema.settings.theme === 'light' || form.schema.settings.theme === 'dark' ? form.schema.settings.theme : '';
 
   return (
-    <main className={`bg-grid min-h-screen bg-slate-50 px-3 py-4 text-slate-900 sm:px-4 sm:py-14 ${theme}`} style={accentVars(form.schema.settings.branding?.accent)}>
-      <div className="mx-auto max-w-2xl">
+    <main className={`bg-grid flex min-h-screen flex-col bg-slate-50 px-3 py-4 text-slate-900 sm:px-4 sm:pt-14 sm:pb-6 ${theme}`} style={accentVars(form.schema.settings.branding?.accent)}>
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col">
         {preview && form.status !== 'ACTIVE' && (
           <div className="mb-4 rounded-xl bg-amber-50 px-4 py-2.5 text-center text-sm text-amber-800 ring-1 ring-amber-200" dir={dirOf(lang)}>
             {t('Previewing a draft. Publish the form to start accepting responses.')}
@@ -62,6 +62,7 @@ export default async function PublicFormPage({ params, searchParams }: { params:
             <FormRenderer formId={form.id} title={form.title} description={form.description} schema={form.schema} mode={preview ? 'preview' : 'live'} initialLanguage={searchParams.lang} />
           )}
         </FormFrame>
+        <div className="flex-1" />
         <PoweredBy initialLang={lang} footerText={app.footerText} footerUrl={app.footerUrl || undefined} logoUrl={app.logoUrl || undefined} />
       </div>
     </main>

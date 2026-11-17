@@ -14,7 +14,7 @@ import { portRange } from './form-links';
 
 type Listener = { server: http.Server; formId: string; version: number };
 // Bump when the proxy handler changes so already-running listeners (e.g. after a hot reload) restart.
-const HANDLER_VERSION = 3;
+const HANDLER_VERSION = 4;
 // globalThis: instrumentation and route handlers are separate bundles but share the process.
 const g = globalThis as unknown as { __fcPorts?: Map<number, Listener>; __fcPortErrors?: Map<number, string>; __fcPortSync?: Promise<void> };
 const listeners = (g.__fcPorts ??= new Map());
@@ -26,6 +26,7 @@ const UPSTREAM_PORT = Number(process.env.PORT) || 3000;
 function allowed(method: string, path: string, formId: string) {
   if (path.startsWith('/_next/') || path.startsWith('/api/uploads/') || path === '/logo.svg' || path === '/favicon.ico') return true;
   if (method === 'POST' && (path === `/api/forms/${formId}/submissions` || path === `/api/forms/${formId}/files`)) return true;
+  if (method === 'GET' && path === `/api/forms/${formId}/respondent`) return true;
   return false;
 }
 

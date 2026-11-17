@@ -105,9 +105,33 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
   const [invalid, setInvalid] = useState<Set<string>>(new Set());
   const [state, setState] = useState<'idle' | 'submitting' | 'done'>('idle');
   const [serverError, setServerError] = useState<string | null>(null);
+  // Field errors only the server can know (e.g. "this phone number was already used").
+  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<ScoreResult | null>(null);
+  // Responses per person: null = no limit / not known yet.
+  const limited = mode === 'live' && !!formId && (Number(schema.settings.perPersonLimit) || 0) > 0;
+  const [blocked, setBlocked] = useState(false);
+  const [remaining, setRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!limited) return;
+    let gone = false;
+    fetch(`/api/forms/${formId}/respondent`, { headers: ridHeader(), cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (gone || !d) return;
+        saveRid(d.respondentId);
+        setRemaining(d.remaining);
+        if (d.allowed === false) setBlocked(true);
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+    };
+  }, [limited, formId]);
 
   const messageFor = (id: string) => {
+    if (serverFieldErrors[id]) return t(serverFieldErrors[id]);
     const field = schema.fields.find((f) => f.id === id);
     const v = answers[id];
     return field ? validateField(field, typeof v === 'string' ? v.trim() : v, t) ?? t('Please check this answer.') : null;
@@ -115,6 +139,14 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
 
   const setValue = (id: string, v: AnswerValue) => {
     setAnswers((a) => ({ ...a, [id]: v }));
+    if (serverFieldErrors[id]) {
+      setServerFieldErrors(({ [id]: _gone, ...rest }) => rest);
+      setInvalid((s) => {
+        const n = new Set(s);
+        n.delete(id);
+        return n;
+      });
+    }
     if (invalid.has(id)) {
       const field = schema.fields.find((f) => f.id === id);
       if (field && !validateField(field, typeof v === 'string' ? v.trim() : v)) {
@@ -153,12 +185,18 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
     try {
       const res = await fetch(`/api/forms/${formId}/submissions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...ridHeader() },
         body: JSON.stringify({ answers, language: lang }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (res.status === 409 && json.error === 'limit') {
+          setBlocked(true);
+          setState('idle');
+          return;
+        }
         if (json.errors) {
+          if (json.error === 'duplicate') setServerFieldErrors(json.errors);
           setInvalid(new Set(Object.keys(json.errors)));
           focusFirst(Object.keys(json.errors));
           setServerError(t('Please fix the highlighted fields.'));
@@ -168,6 +206,8 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
         setState('idle');
         return;
       }
+      saveRid(json.respondentId);
+      if (typeof json.remaining === 'number') setRemaining(json.remaining);
       setResult(json.result ?? null);
       setState('done');
     } catch {
@@ -182,6 +222,20 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
     setResult(null);
     setState('idle');
   };
+
+  if (blocked && state !== 'done') {
+    return (
+      <div className="animate-pop-in px-6 py-14 text-center sm:px-10">
+        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 text-brand-600 ring-8 ring-brand-50/50">
+          <CheckCircle2 className="h-7 w-7" />
+        </div>
+        <h2 className="text-xl font-semibold text-slate-900">{t('You’ve already responded')}</h2>
+        <p className="mx-auto mt-2 max-w-md whitespace-pre-line text-slate-700">
+          {schema.settings.limitMessage?.trim() || t('This form accepts a limited number of responses per person, and you’ve reached it. Thank you!')}
+        </p>
+      </div>
+    );
+  }
 
   if (state === 'done') {
     const pct = result && result.maxScore > 0 ? Math.round((result.score / result.maxScore) * 100) : null;
@@ -210,11 +264,13 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
         {mode === 'preview' && (
           <p className="mt-6 inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-200">{t('Preview mode — this response was not saved')}</p>
         )}
-        <div className="mt-6">
-          <Button variant="ghost" onClick={reset}>
-            <RotateCcw className="h-4 w-4" /> {t('Submit another response')}
-          </Button>
-        </div>
+        {remaining !== 0 && (
+          <div className="mt-6">
+            <Button variant="ghost" onClick={reset}>
+              <RotateCcw className="h-4 w-4" /> {t('Submit another response')}
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -270,4 +326,22 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
       </div>
     </form>
   );
+}
+
+/* Anonymous respondent id kept in local storage, sent with each request (see lib/respondent.ts). */
+const RID_KEY = 'fc_rid';
+function ridHeader(): Record<string, string> {
+  try {
+    const v = localStorage.getItem(RID_KEY);
+    return v && /^[a-f0-9]{32}$/.test(v) ? { 'x-fc-rid': v } : {};
+  } catch {
+    return {};
+  }
+}
+function saveRid(id: unknown) {
+  try {
+    if (typeof id === 'string' && /^[a-f0-9]{32}$/.test(id) && !localStorage.getItem(RID_KEY)) localStorage.setItem(RID_KEY, id);
+  } catch {
+    /* storage blocked: the cookie still works */
+  }
 }

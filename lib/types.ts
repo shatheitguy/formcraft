@@ -31,6 +31,8 @@ export interface FormField {
   placeholder?: string;
   helpText?: string;
   required: boolean;
+  /** email / phone / text: reject a response whose answer was already submitted to this form. */
+  unique?: boolean;
   /** radio / checkbox / select */
   options?: FieldOption[];
   /** rating / scale */
@@ -79,6 +81,12 @@ export interface FormSettings {
   languages?: string[];
   /** Colour theme for respondents: follow their device, or force light / dark. */
   theme?: 'auto' | 'light' | 'dark';
+  /** How many times one person (device, optionally network) may respond; 0 / missing = unlimited. */
+  perPersonLimit?: number;
+  /** Also count responses from the same network (IP address). */
+  limitByIp?: boolean;
+  /** Shown to someone who already used up their responses. */
+  limitMessage?: string;
 }
 
 /** Per-language overrides. Anything missing falls back to the primary language. */
