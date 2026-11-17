@@ -57,20 +57,28 @@ export function FormRenderer(props: Props) {
 
   return (
     <I18nProvider locale={isLocale(lang) ? lang : 'en'}>
-      <div dir={dirOf(lang)} lang={lang} className="text-start">
-        {languages.length > 1 && <LanguagePicker languages={languages} value={lang} onChange={changeLanguage} />}
+      <div dir={dirOf(lang)} lang={lang} className="relative text-start">
+        {languages.length > 1 && (
+          <LanguagePicker languages={languages} value={lang} onChange={changeLanguage} onCover={!!props.schema.settings.branding?.coverUrl} />
+        )}
         <FormBody {...props} lang={lang} />
       </div>
     </I18nProvider>
   );
 }
 
-function LanguagePicker({ languages, value, onChange }: { languages: string[]; value: string; onChange: (l: string) => void }) {
+function LanguagePicker({ languages, value, onChange, onCover }: { languages: string[]; value: string; onChange: (l: string) => void; onCover: boolean }) {
   const { t } = useI18n();
   return (
-    <div className="flex justify-end px-6 pt-5 sm:px-10">
-      <div className="inline-flex items-center gap-1 rounded-full bg-slate-100 p-1" role="radiogroup" aria-label={t('Language')}>
-        <Languages className="mx-1 h-3.5 w-3.5 text-slate-400" />
+    // With a cover banner the picker floats on the banner's top corner, so a logo that overlaps
+    // the banner never covers it (cover is h-36 / sm:h-44 in FormFrame).
+    <div className={cn('flex justify-end', onCover ? 'absolute end-3 -top-[8.25rem] z-10 sm:-top-[10.25rem]' : 'px-4 pt-4 sm:px-10 sm:pt-5')}>
+      <div
+        className={cn('inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full p-1', onCover ? 'bg-white/95 shadow-lift ring-1 ring-black/5 backdrop-blur' : 'bg-slate-100')}
+        role="radiogroup"
+        aria-label={t('Language')}
+      >
+        <Languages className="mx-1 h-3.5 w-3.5 shrink-0 text-slate-500" />
         {languages.map((l) => (
           <button
             key={l}
@@ -79,7 +87,7 @@ function LanguagePicker({ languages, value, onChange }: { languages: string[]; v
             aria-checked={l === value}
             lang={l}
             onClick={() => onChange(l)}
-            className={cn('rounded-full px-3 py-1 text-xs font-semibold transition', l === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800')}
+            className={cn('shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition', l === value ? 'bg-brand-600 text-onaccent shadow-sm' : 'text-slate-700 hover:text-slate-900')}
           >
             {isLocale(l) ? LOCALES[l].native : l}
           </button>
@@ -97,9 +105,33 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
   const [invalid, setInvalid] = useState<Set<string>>(new Set());
   const [state, setState] = useState<'idle' | 'submitting' | 'done'>('idle');
   const [serverError, setServerError] = useState<string | null>(null);
+  // Field errors only the server can know (e.g. "this phone number was already used").
+  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<ScoreResult | null>(null);
+  // Responses per person: null = no limit / not known yet.
+  const limited = mode === 'live' && !!formId && (Number(schema.settings.perPersonLimit) || 0) > 0;
+  const [blocked, setBlocked] = useState(false);
+  const [remaining, setRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!limited) return;
+    let gone = false;
+    fetch(`/api/forms/${formId}/respondent`, { headers: ridHeader(), cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (gone || !d) return;
+        saveRid(d.respondentId);
+        setRemaining(d.remaining);
+        if (d.allowed === false) setBlocked(true);
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+    };
+  }, [limited, formId]);
 
   const messageFor = (id: string) => {
+    if (serverFieldErrors[id]) return t(serverFieldErrors[id]);
     const field = schema.fields.find((f) => f.id === id);
     const v = answers[id];
     return field ? validateField(field, typeof v === 'string' ? v.trim() : v, t) ?? t('Please check this answer.') : null;
@@ -107,6 +139,14 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
 
   const setValue = (id: string, v: AnswerValue) => {
     setAnswers((a) => ({ ...a, [id]: v }));
+    if (serverFieldErrors[id]) {
+      setServerFieldErrors(({ [id]: _gone, ...rest }) => rest);
+      setInvalid((s) => {
+        const n = new Set(s);
+        n.delete(id);
+        return n;
+      });
+    }
     if (invalid.has(id)) {
       const field = schema.fields.find((f) => f.id === id);
       if (field && !validateField(field, typeof v === 'string' ? v.trim() : v)) {
@@ -127,6 +167,10 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setServerError(null);
+    if (document.querySelector('[data-uploading]')) {
+      setServerError(t('Please wait for your files to finish uploading.'));
+      return;
+    }
     const { valid, errors, clean } = validateAnswers(schema.fields, answers);
     setInvalid(new Set(Object.keys(errors)));
     if (!valid) return focusFirst(Object.keys(errors));
@@ -141,12 +185,18 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
     try {
       const res = await fetch(`/api/forms/${formId}/submissions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...ridHeader() },
         body: JSON.stringify({ answers, language: lang }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (res.status === 409 && json.error === 'limit') {
+          setBlocked(true);
+          setState('idle');
+          return;
+        }
         if (json.errors) {
+          if (json.error === 'duplicate') setServerFieldErrors(json.errors);
           setInvalid(new Set(Object.keys(json.errors)));
           focusFirst(Object.keys(json.errors));
           setServerError(t('Please fix the highlighted fields.'));
@@ -156,6 +206,8 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
         setState('idle');
         return;
       }
+      saveRid(json.respondentId);
+      if (typeof json.remaining === 'number') setRemaining(json.remaining);
       setResult(json.result ?? null);
       setState('done');
     } catch {
@@ -170,6 +222,20 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
     setResult(null);
     setState('idle');
   };
+
+  if (blocked && state !== 'done') {
+    return (
+      <div className="animate-pop-in px-6 py-14 text-center sm:px-10">
+        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 text-brand-600 ring-8 ring-brand-50/50">
+          <CheckCircle2 className="h-7 w-7" />
+        </div>
+        <h2 className="text-xl font-semibold text-slate-900">{t('You’ve already responded')}</h2>
+        <p className="mx-auto mt-2 max-w-md whitespace-pre-line text-slate-700">
+          {schema.settings.limitMessage?.trim() || t('This form accepts a limited number of responses per person, and you’ve reached it. Thank you!')}
+        </p>
+      </div>
+    );
+  }
 
   if (state === 'done') {
     const pct = result && result.maxScore > 0 ? Math.round((result.score / result.maxScore) * 100) : null;
@@ -198,25 +264,27 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
         {mode === 'preview' && (
           <p className="mt-6 inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-200">{t('Preview mode — this response was not saved')}</p>
         )}
-        <div className="mt-6">
-          <Button variant="ghost" onClick={reset}>
-            <RotateCcw className="h-4 w-4" /> {t('Submit another response')}
-          </Button>
-        </div>
+        {remaining !== 0 && (
+          <div className="mt-6">
+            <Button variant="ghost" onClick={reset}>
+              <RotateCcw className="h-4 w-4" /> {t('Submit another response')}
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
 
   const count = invalid.size;
   return (
-    <form onSubmit={onSubmit} noValidate className="px-6 py-8 sm:px-10">
+    <form onSubmit={onSubmit} noValidate className="px-5 py-7 sm:px-10 sm:py-8">
       <FormHeader
         branding={schema.settings.branding}
         title={<h1 className="text-2xl font-bold tracking-tight text-slate-900">{view.title || t('Untitled form')}</h1>}
         description={view.description ? <p className="mt-2 whitespace-pre-line text-slate-600">{view.description}</p> : undefined}
         footer={
           schema.fields.some((f) => f.required) ? (
-            <p className="mt-3 text-xs text-slate-400">
+            <p className="mt-3 text-xs text-slate-500">
               <span className="text-rose-500">*</span> {t('Required')}
             </p>
           ) : undefined
@@ -232,7 +300,7 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
             return (
               <div key={field.id} id={`q-${field.id}`} className="scroll-mt-24">
                 <FieldLabel field={field} htmlFor={`in-${field.id}`} />
-                <FieldInput field={field} value={answers[field.id]} onChange={(v) => setValue(field.id, v)} error={err ?? undefined} />
+                <FieldInput field={field} value={answers[field.id]} onChange={(v) => setValue(field.id, v)} error={err ?? undefined} formId={mode === 'live' ? formId : undefined} />
                 {err && (
                   <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {err}
@@ -250,12 +318,30 @@ function FormBody({ formId, title, description, schema, mode, lang }: Props & { 
         </div>
       )}
 
-      <div className="mt-8 flex items-center justify-between gap-4 border-t border-slate-100 pt-6">
-        <Button type="submit" variant="primary" size="md" loading={state === 'submitting'} disabled={schema.fields.length === 0}>
+      <div className="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <Button type="submit" variant="primary" size="md" className="w-full sm:w-auto" loading={state === 'submitting'} disabled={schema.fields.length === 0}>
           {view.schema.settings.submitLabel || t('Submit')}
         </Button>
         {count > 0 && <span className="text-xs text-rose-600">{count === 1 ? t('1 field needs attention') : t('{n} fields need attention', { n: count })}</span>}
       </div>
     </form>
   );
+}
+
+/* Anonymous respondent id kept in local storage, sent with each request (see lib/respondent.ts). */
+const RID_KEY = 'fc_rid';
+function ridHeader(): Record<string, string> {
+  try {
+    const v = localStorage.getItem(RID_KEY);
+    return v && /^[a-f0-9]{32}$/.test(v) ? { 'x-fc-rid': v } : {};
+  } catch {
+    return {};
+  }
+}
+function saveRid(id: unknown) {
+  try {
+    if (typeof id === 'string' && /^[a-f0-9]{32}$/.test(id) && !localStorage.getItem(RID_KEY)) localStorage.setItem(RID_KEY, id);
+  } catch {
+    /* storage blocked: the cookie still works */
+  }
 }

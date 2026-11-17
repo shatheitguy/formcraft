@@ -47,9 +47,15 @@ model Submission {
   maxScore  Int?
   /// Language the respondent filled the form in
   language  String?
+  /// Anonymous browser id (fc_rid cookie / local storage) — for "responses per person" limits
+  respondentId String?
+  /// HMAC of the submitter's IP address (never the IP itself)
+  ipHash    String?
   createdAt DateTime @default(now())
 
   @@index([formId, createdAt])
+  @@index([formId, respondentId])
+  @@index([formId, ipHash])
 }
 
 model User {
@@ -74,6 +80,11 @@ model User {
   telegramChatId        String?
   emailNotifications    Boolean      @default(false)
   telegramNotifications Boolean      @default(false)
+  /// WhatsApp number with country code, e.g. +971501234567
+  whatsappNumber        String?
+  whatsappNotifications Boolean      @default(false)
+  /// Attach the new response to WhatsApp alerts: "none" | "pdf" | "xlsx"
+  whatsappAttach        String       @default("none")
   notifyAllForms        Boolean      @default(true)
   /// JSON-encoded string[] of form ids (when notifyAllForms is false)
   notifyFormIds         String       @default("[]")
@@ -85,6 +96,11 @@ model User {
   /// Last TOTP time step accepted, so a code can't be replayed.
   totpLastStep          Int?
   emailOtpEnabled       Boolean      @default(false)
+  /// Sign-in codes sent to whatsappNumber / telegramChatId.
+  whatsappOtpEnabled    Boolean      @default(false)
+  telegramOtpEnabled    Boolean      @default(false)
+  /// Admin requires this user to use two-factor sign-in (on top of the workspace policy).
+  require2fa            Boolean      @default(false)
   /// JSON-encoded string[] of sha256 hashes of unused recovery codes
   recoveryCodes         String       @default("[]")
   createdAt             DateTime     @default(now())
@@ -113,7 +129,7 @@ model OtpCode {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  /// "reset" | "email-setup"
+  /// "reset" | "email-setup" | "whatsapp-setup" | "telegram-setup"
   purpose   String
   codeHash  String
   attempts  Int      @default(0)
@@ -130,8 +146,11 @@ model LoginChallenge {
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   attempts      Int       @default(0)
+  /// Hash and send time of the last code sent (by email, WhatsApp or Telegram — see codeChannel).
   emailCodeHash String?
   emailSentAt   DateTime?
+  /// "email" | "whatsapp" | "telegram": where the code in emailCodeHash was sent.
+  codeChannel   String?
   expiresAt     DateTime
   createdAt     DateTime  @default(now())
 

@@ -1,11 +1,13 @@
 'use client';
 
-import { Check, ChevronDown, Star } from 'lucide-react';
+import { Check, ChevronDown, ExternalLink, Star } from 'lucide-react';
 import { useState } from 'react';
 import { useT } from '@/components/i18n';
+import { DEFAULT_AGREE_LABEL, safeTermsUrl, TERMS_AGREED } from '@/lib/fields';
 import { cn } from '@/lib/utils';
 import type { AnswerValue, FormField } from '@/lib/types';
 import { scaleBounds } from '@/lib/validation';
+import { FileInput } from './file-input';
 
 interface Props {
   field: FormField;
@@ -13,10 +15,12 @@ interface Props {
   onChange: (value: AnswerValue) => void;
   error?: string;
   disabled?: boolean;
+  /** Live forms: file uploads go to this form. Omit in previews (files then stay in the browser). */
+  formId?: string;
 }
 
 /** Renders the interactive control for a single field. */
-export function FieldInput({ field, value, onChange, error, disabled }: Props) {
+export function FieldInput({ field, value, onChange, error, disabled, formId }: Props) {
   const t = useT();
   const inputId = `in-${field.id}`;
   const errorCls = error ? 'input-error' : '';
@@ -60,7 +64,7 @@ export function FieldInput({ field, value, onChange, error, disabled }: Props) {
         <input
           id={inputId}
           type="date"
-          className={cn('input max-w-[220px]', errorCls, !str && 'text-slate-400')}
+          className={cn('input min-h-[42px] w-full sm:max-w-[260px]', errorCls, !str && 'text-slate-500')}
           value={str}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
@@ -171,6 +175,59 @@ export function FieldInput({ field, value, onChange, error, disabled }: Props) {
               <span>{field.maxLabel}</span>
             </div>
           )}
+        </div>
+      );
+    }
+
+    case 'file':
+      return <FileInput field={field} value={value} onChange={onChange} error={error} disabled={disabled} formId={formId} />;
+
+    case 'terms': {
+      const agreed = value === TERMS_AGREED;
+      const href = safeTermsUrl(field.termsUrl);
+      return (
+        <div className="space-y-3">
+          {field.terms && (
+            <div
+              tabIndex={0}
+              aria-label={field.label}
+              className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-800"
+            >
+              {field.terms}
+            </div>
+          )}
+          {href && (
+            <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-brand-700 underline-offset-2 hover:underline">
+              {t('Read full terms')} <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+          <button
+            id={inputId}
+            type="button"
+            role="checkbox"
+            aria-checked={agreed}
+            aria-invalid={!!error}
+            disabled={disabled}
+            onClick={() => onChange(agreed ? '' : TERMS_AGREED)}
+            className={cn(
+              'group flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-start text-sm transition',
+              agreed
+                ? 'border-brand-500 bg-brand-50/70 text-brand-900 ring-1 ring-brand-500'
+                : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50',
+              error && !agreed && 'border-rose-300',
+              disabled && 'cursor-default',
+            )}
+          >
+            <span
+              className={cn(
+                'mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border transition',
+                agreed ? 'border-brand-600 bg-brand-600 text-onaccent' : 'border-slate-300 bg-white group-hover:border-slate-400',
+              )}
+            >
+              {agreed && <Check className="h-3 w-3" strokeWidth={3} />}
+            </span>
+            <span className="min-w-0 flex-1 break-words font-medium">{field.agreeLabel || t(DEFAULT_AGREE_LABEL)}</span>
+          </button>
         </div>
       );
     }

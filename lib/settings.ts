@@ -33,10 +33,42 @@ export interface TelegramSettings {
   botToken: string;
 }
 
+export interface WhatsAppSettings {
+  enabled: boolean;
+  /** Digits only, e.g. "971" — used for numbers typed without a country code. */
+  defaultCountryCode: string;
+}
+
+export type BackupFrequency = 'hourly' | 'daily' | 'weekly';
+
+export interface BackupSettings {
+  /** Automatic scheduled backups of all forms, responses, users and settings. */
+  enabled: boolean;
+  frequency: BackupFrequency;
+  /** "HH:MM", server local time. Daily/weekly: the time of day; hourly: only the minute is used. */
+  time: string;
+  /** 0 = Sunday … 6 = Saturday (weekly only). */
+  weekday: number;
+  /** How many automatic backups to keep (1–365). */
+  keep: number;
+  /** Include uploaded images (logos, covers). */
+  includeUploads: boolean;
+}
+
+/** Who must use two-factor sign-in: nobody (users choose), admins only, or everyone. */
+export type TwoFactorPolicy = 'off' | 'admins' | 'all';
+
+export interface SecuritySettings {
+  require2fa: TwoFactorPolicy;
+}
+
 export interface AllSettings {
   app: AppSettings;
   smtp: SmtpSettings;
   telegram: TelegramSettings;
+  whatsapp: WhatsAppSettings;
+  backup: BackupSettings;
+  security: SecuritySettings;
 }
 
 export type SettingsSection = keyof AllSettings;
@@ -54,6 +86,10 @@ export const DEFAULT_SETTINGS: AllSettings = {
   },
   smtp: { enabled: false, host: '', port: 587, secure: false, user: '', pass: '', from: '' },
   telegram: { enabled: false, botToken: '' },
+  whatsapp: { enabled: false, defaultCountryCode: '' },
+  // On by default so data is protected out of the box.
+  backup: { enabled: true, frequency: 'daily', time: '02:00', weekday: 0, keep: 14, includeUploads: true },
+  security: { require2fa: 'off' },
 };
 
 let cache: AllSettings | null = null;
@@ -71,6 +107,9 @@ export async function getSettings(): Promise<AllSettings> {
     app: { ...DEFAULT_SETTINGS.app, ...(map.get('app') as Partial<AppSettings>) },
     smtp: { ...DEFAULT_SETTINGS.smtp, ...(map.get('smtp') as Partial<SmtpSettings>) },
     telegram: { ...DEFAULT_SETTINGS.telegram, ...(map.get('telegram') as Partial<TelegramSettings>) },
+    whatsapp: { ...DEFAULT_SETTINGS.whatsapp, ...(map.get('whatsapp') as Partial<WhatsAppSettings>) },
+    backup: { ...DEFAULT_SETTINGS.backup, ...(map.get('backup') as Partial<BackupSettings>) },
+    security: { ...DEFAULT_SETTINGS.security, ...(map.get('security') as Partial<SecuritySettings>) },
   };
   return cache;
 }
@@ -90,6 +129,9 @@ export function redactSettings(s: AllSettings) {
     app: s.app,
     smtp: { ...s.smtp, pass: '', hasPass: !!s.smtp.pass },
     telegram: { ...s.telegram, botToken: '', hasToken: !!s.telegram.botToken, tokenHint: s.telegram.botToken ? `…${s.telegram.botToken.slice(-4)}` : '' },
+    whatsapp: s.whatsapp,
+    backup: s.backup,
+    security: s.security,
   };
 }
 

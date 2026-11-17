@@ -9,10 +9,22 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
+  async headers() {
+    const common = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()' },
+    ];
+    return [
+      { source: '/:path*', headers: common },
+      // The app itself can't be framed by other sites (clickjacking). Public form pages (/f/…) stay embeddable.
+      { source: '/((?!f/).*)', headers: [{ key: 'X-Frame-Options', value: 'SAMEORIGIN' }] },
+    ];
+  },
   experimental: {
     // Starts per-form port listeners on boot (instrumentation.ts).
     instrumentationHook: true,
-    serverComponentsExternalPackages: ['@prisma/client', 'nodemailer'],
+    serverComponentsExternalPackages: ['@prisma/client', 'nodemailer', '@whiskeysockets/baileys', 'pino', 'pdf-lib'],
   },
 };
 

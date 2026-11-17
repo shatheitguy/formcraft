@@ -5,6 +5,7 @@ import { DOMAIN_RE, nextFreePort, portRange, SLUG_RE } from '@/lib/form-links';
 import { syncPortListeners } from '@/lib/port-router';
 import { isValidSchema, normalizeTags, sanitizeBranding, toFormDTO } from '@/lib/forms';
 import { formAudience, notifyFormEvent } from '@/lib/activity';
+import { deleteFormFiles } from '@/lib/response-files';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,6 +96,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     const audience = await formAudience(params.id);
     const form = await prisma.form.delete({ where: { id: params.id } });
     await syncPortListeners();
+    void deleteFormFiles(form.id);
     void notifyFormEvent('form.deleted', me, form, audience);
     return NextResponse.json({ ok: true });
   } catch {

@@ -1,0 +1,53 @@
+import type { AreaDict } from '.';
+
+// Translations for image upload & the crop/resize dialog. Keys are the exact English strings passed to t().
+const dict: AreaDict = {
+  ar: {
+    'Crop & resize': 'قص الصورة وتغيير حجمها',
+    'Drag to move · pinch, scroll or use the slider to zoom': 'اسحب للتحريك · قرّب بإصبعين أو بعجلة الفأرة أو بالشريط',
+    'Use original': 'استخدام الأصل',
+    'Apply': 'تطبيق',
+    'Aspect ratio': 'نسبة الأبعاد',
+    'Original': 'الأصلي',
+    'Square 1:1': 'مربع 1:1',
+    'Wide 3:1': 'عريض 3:1',
+    'Banner 4:1': 'شريط 4:1',
+    'Free': 'حر',
+    'Crop area. Arrow keys move the picture, + and − zoom.': 'منطقة القص. تحرّك مفاتيح الأسهم الصورة، و+ و− للتكبير والتصغير.',
+    'This image could not be opened.': 'تعذّر فتح هذه الصورة.',
+    'Zoom': 'تكبير',
+    'Zoom in': 'تكبير',
+    'Zoom out': 'تصغير',
+    'Rotate left': 'تدوير لليسار',
+    'Rotate right': 'تدوير لليمين',
+    'Fit': 'ملاءمة',
+    'Saved size: {w} × {h} px': 'الحجم المحفوظ: {w} × {h} بكسل',
+    'Images must be 25 MB or smaller': 'يجب ألا يتجاوز حجم الصورة 25 ميغابايت',
+    'PNG, JPG, GIF, WebP · crop after choosing': 'PNG أو JPG أو GIF أو WebP · يمكنك القص بعد الاختيار',
+  },
+  ta: {
+    'Crop & resize': 'செதுக்கி அளவை மாற்று',
+    'Drag to move · pinch, scroll or use the slider to zoom': 'நகர்த்த இழுக்கவும் · பெரிதாக்க இரு விரல்களால் கிள்ளவும், உருட்டவும் அல்லது ஸ்லைடரைப் பயன்படுத்தவும்',
+    'Use original': 'அசலைப் பயன்படுத்து',
+    'Apply': 'பயன்படுத்து',
+    'Aspect ratio': 'விகிதம்',
+    'Original': 'அசல்',
+    'Square 1:1': 'சதுரம் 1:1',
+    'Wide 3:1': 'அகலம் 3:1',
+    'Banner 4:1': 'பேனர் 4:1',
+    'Free': 'சுதந்திரம்',
+    'Crop area. Arrow keys move the picture, + and − zoom.': 'செதுக்கும் பகுதி. அம்புக்குறி விசைகள் படத்தை நகர்த்தும், + மற்றும் − பெரிதாக்கும்/சிறிதாக்கும்.',
+    'This image could not be opened.': 'இந்தப் படத்தைத் திறக்க முடியவில்லை.',
+    'Zoom': 'பெரிதாக்கு',
+    'Zoom in': 'பெரிதாக்கு',
+    'Zoom out': 'சிறிதாக்கு',
+    'Rotate left': 'இடப்புறம் சுழற்று',
+    'Rotate right': 'வலப்புறம் சுழற்று',
+    'Fit': 'பொருத்து',
+    'Saved size: {w} × {h} px': 'சேமிக்கப்படும் அளவு: {w} × {h} px',
+    'Images must be 25 MB or smaller': 'படங்கள் 25 MB அல்லது அதற்குக் குறைவாக இருக்க வேண்டும்',
+    'PNG, JPG, GIF, WebP · crop after choosing': 'PNG, JPG, GIF, WebP · தேர்ந்தெடுத்த பின் செதுக்கலாம்',
+  },
+};
+
+export default dict;

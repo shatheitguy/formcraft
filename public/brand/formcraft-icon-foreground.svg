@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="432" height="432">
+  <!-- Android adaptive-icon foreground: artwork kept inside the 66dp safe zone (21..87). -->
+  <g transform="translate(24 24) scale(0.6)">
+    <rect x="20" y="24" width="60" height="12" rx="6" fill="#22C55E"/>
+    <rect x="20" y="44" width="42" height="12" rx="6" fill="#38BDF8"/>
+    <rect x="20" y="64" width="24" height="12" rx="6" fill="#F59E0B"/>
+    <circle cx="74" cy="70" r="7" fill="#fff"/>
+  </g>
+</svg>

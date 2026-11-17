@@ -3,6 +3,7 @@
 import { Star } from 'lucide-react';
 import { useI18n, useT } from '@/components/i18n';
 import { FIELD_ICONS } from '@/components/icons';
+import { formatAnswer } from '@/lib/answers';
 import { isChoice } from '@/lib/fields';
 import type { FormField, SubmissionDTO } from '@/lib/types';
 import { cn, formatDate, timeAgo } from '@/lib/utils';
@@ -140,7 +141,7 @@ function TextSamples({ field, rows }: { field: FormField; rows: SubmissionDTO[] 
         const v = r.data[field.id];
         return (
           <li key={r.id} className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-inset ring-slate-100">
-            <p className="line-clamp-2">{field.type === 'date' ? formatDate(String(v), locale) : String(v)}</p>
+            <p className="line-clamp-2">{field.type === 'date' ? formatDate(String(v), locale) : field.type === 'file' ? formatAnswer(field, v) : String(v)}</p>
             <p className="mt-0.5 text-[11px] text-slate-400">{timeAgo(r.createdAt, t)}</p>
           </li>
         );

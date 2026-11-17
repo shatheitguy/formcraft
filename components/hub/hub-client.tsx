@@ -183,7 +183,7 @@ export function HubClient({ forms, canCreate, portRange }: { forms: HubForm[]; c
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <AppHeader>
         {canCreate && (
           <Button variant="primary" onClick={() => setPickerOpen(true)}>
@@ -192,7 +192,7 @@ export function HubClient({ forms, canCreate, portRange }: { forms: HubForm[]; c
         )}
       </AppHeader>
 
-      <main className="mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-20 pt-8 sm:px-6">
         {/* Heading + stats */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -212,7 +212,7 @@ export function HubClient({ forms, canCreate, portRange }: { forms: HubForm[]; c
             locale={locale}
             tone="bg-amber-50 text-amber-600"
             sub={
-              <span className={cn('font-semibold', stats.trend >= 0 ? 'text-emerald-600' : 'text-rose-600')}>
+              <span className={cn('font-semibold', stats.trend >= 0 ? 'text-emerald-700' : 'text-rose-700')}>
                 {stats.trend >= 0 ? t('▲ {n}% vs prior week', { n: Math.abs(stats.trend) }) : t('▼ {n}% vs prior week', { n: Math.abs(stats.trend) })}
               </span>
             }

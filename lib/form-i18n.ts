@@ -31,6 +31,8 @@ export function localizeForm(schema: FormSchema, title: string, description: str
       helpText: pick(ft.helpText, f.helpText),
       minLabel: pick(ft.minLabel, f.minLabel),
       maxLabel: pick(ft.maxLabel, f.maxLabel),
+      terms: pick(ft.terms, f.terms),
+      agreeLabel: pick(ft.agreeLabel, f.agreeLabel),
       options: f.options?.map((o) => ({ ...o, display: pick(ft.options?.[o.id], undefined) })),
     };
   });
@@ -58,6 +60,8 @@ export function translatableKeys(schema: FormSchema) {
     if (f.placeholder) keys.push({ path: `fields.${f.id}.placeholder`, source: f.placeholder });
     if (f.minLabel) keys.push({ path: `fields.${f.id}.minLabel`, source: f.minLabel });
     if (f.maxLabel) keys.push({ path: `fields.${f.id}.maxLabel`, source: f.maxLabel });
+    if (f.type === 'terms' && f.terms) keys.push({ path: `fields.${f.id}.terms`, source: f.terms, multiline: true });
+    if (f.type === 'terms' && f.agreeLabel) keys.push({ path: `fields.${f.id}.agreeLabel`, source: f.agreeLabel });
     for (const o of f.options ?? []) keys.push({ path: `fields.${f.id}.options.${o.id}`, source: o.label });
   }
   keys.push({ path: 'submitLabel', source: schema.settings.submitLabel }, { path: 'successMessage', source: schema.settings.successMessage, multiline: true });

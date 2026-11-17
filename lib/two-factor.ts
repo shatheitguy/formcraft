@@ -2,9 +2,10 @@ import crypto from 'node:crypto';
 import type { User } from '@prisma/client';
 import { cookies, headers } from 'next/headers';
 import { prisma } from './db';
-import { sendCodeEmail } from './notify';
-import { getSettings } from './settings';
+import { sendCodeEmail, sendCodeMessage } from './notify';
+import { getSettings, type TwoFactorPolicy } from './settings';
 import { safeJson } from './utils';
+import { waNumber, waStatus } from './whatsapp';
 
 /* ------------------------------ TOTP (RFC 6238) ------------------------------ */
 
@@ -80,6 +81,8 @@ export const CODE_MINUTES = 10;
 export const MAX_CODE_ATTEMPTS = 5;
 /** Minimum gap between two emailed codes for the same purpose. */
 export const RESEND_SECONDS = 60;
+/** Minimum gap before a sign-in code can be sent through a different channel. */
+export const SWITCH_SECONDS = 20;
 
 export const newEmailCode = () => String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
 export const hashCode = (userId: string, code: string) => sha256(`${userId}:${code.replace(/\s/g, '')}`);
@@ -108,7 +111,45 @@ export const recoveryCodesLeft = (stored: string) => safeJson<string[]>(stored, 
 
 /* ------------------------------ status ------------------------------ */
 
-export const hasTwoFactor = (u: Pick<User, 'totpEnabled' | 'emailOtpEnabled'>) => u.totpEnabled || u.emailOtpEnabled;
+type TwoFactorFlags = Pick<User, 'totpEnabled' | 'emailOtpEnabled' | 'whatsappOtpEnabled' | 'telegramOtpEnabled'>;
+export const hasTwoFactor = (u: TwoFactorFlags) => u.totpEnabled || u.emailOtpEnabled || u.whatsappOtpEnabled || u.telegramOtpEnabled;
+
+/** Channels a sign-in code can be sent through. */
+export type CodeChannel = 'email' | 'whatsapp' | 'telegram';
+export const CODE_CHANNELS: CodeChannel[] = ['email', 'whatsapp', 'telegram'];
+export const isCodeChannel = (v: unknown): v is CodeChannel => CODE_CHANNELS.includes(v as CodeChannel);
+export const OTP_FLAG = { email: 'emailOtpEnabled', whatsapp: 'whatsappOtpEnabled', telegram: 'telegramOtpEnabled' } as const;
+
+/** Whether the admin requires this user to use two-factor sign-in (workspace policy or per-user switch). */
+export function twoFactorRequired(u: Pick<User, 'role' | 'require2fa'>, policy: TwoFactorPolicy) {
+  return u.require2fa || policy === 'all' || (policy === 'admins' && u.role === 'ADMIN');
+}
+
+/** Which message channels the workspace can send codes through right now. */
+export async function workspaceChannels() {
+  const s = await getSettings();
+  return {
+    email: s.smtp.enabled && !!s.smtp.host,
+    whatsapp: s.whatsapp.enabled && waStatus().status === 'on',
+    telegram: s.telegram.enabled && !!s.telegram.botToken,
+  };
+}
+
+/** Where a code for this channel goes for this user ('' when they haven't saved one). */
+export async function codeDestination(u: Pick<User, 'email' | 'whatsappNumber' | 'telegramChatId'>, channel: CodeChannel) {
+  if (channel === 'email') return u.email;
+  if (channel === 'telegram') return (u.telegramChatId ?? '').trim();
+  const { whatsapp } = await getSettings();
+  return waNumber(u.whatsappNumber, whatsapp.defaultCountryCode) ? (u.whatsappNumber ?? '').trim() : '';
+}
+
+/** "+•••4567" / "•••789", so screens can say where the code went without revealing all of it. */
+export function maskTarget(channel: CodeChannel, target: string) {
+  if (channel === 'email') return maskEmail(target);
+  const t = target.replace(/\s/g, '');
+  if (t.startsWith('@')) return `@${t.slice(1, 3)}•••`;
+  return `${t.startsWith('+') ? '+' : ''}•••${t.slice(-Math.min(4, Math.max(2, t.length - 4)))}`;
+}
 
 export async function emailAvailable() {
   const s = await getSettings();
@@ -120,6 +161,27 @@ export function maskEmail(email: string) {
   const [name, domain] = email.split('@');
   if (!domain) return email;
   return `${name.slice(0, 1)}${'•'.repeat(Math.max(2, Math.min(name.length - 1, 5)))}@${domain}`;
+}
+
+/** Sends a code over WhatsApp or Telegram. Returns a readable error message or null. */
+async function messageCode(channel: 'whatsapp' | 'telegram', to: string, purpose: 'login' | 'setup', code: string) {
+  const settings = await getSettings();
+  const ch = await workspaceChannels();
+  if (!ch[channel]) {
+    return channel === 'whatsapp'
+      ? 'WhatsApp isn’t connected on this workspace right now. Choose another method, or ask an admin.'
+      : 'Telegram isn’t set up on this workspace. Choose another method, or ask an admin.';
+  }
+  if (!to) {
+    return channel === 'whatsapp'
+      ? 'Save your WhatsApp number in My profile → Notifications first.'
+      : 'Save your Telegram chat ID in My profile → Notifications first.';
+  }
+  const r = await sendCodeMessage(channel, to, settings.app.name, purpose, code, CODE_MINUTES);
+  if (r.ok) return null;
+  return channel === 'whatsapp'
+    ? 'Could not send the WhatsApp message. WhatsApp may be disconnected or the number isn’t on WhatsApp. Choose another method.'
+    : 'Could not send the Telegram message. Make sure you started a chat with the workspace bot and your chat ID is right.';
 }
 
 /** Sends a code by email, honouring the resend gap. Returns an error message or null. */
@@ -165,31 +227,52 @@ export async function endChallenge(id: string) {
   cookies().delete(CHALLENGE_COOKIE);
 }
 
-/** Sends (or re-sends) the sign-in code for a challenge. Returns an error message or null. */
-export async function sendChallengeEmail(challenge: { id: string; userId: string; emailSentAt: Date | null }, email: string) {
-  if (challenge.emailSentAt && Date.now() - challenge.emailSentAt.getTime() < RESEND_SECONDS * 1000) {
+type ChallengeRef = { id: string; userId: string; emailSentAt: Date | null; codeChannel: string | null };
+
+/**
+ * Sends (or re-sends) the sign-in code for a challenge by email, WhatsApp or Telegram.
+ * Only the newest code works. Codes on the same channel are at least RESEND_SECONDS apart.
+ * Returns an error message or null.
+ */
+export async function sendChallengeCode(challenge: ChallengeRef, user: Pick<User, 'email' | 'whatsappNumber' | 'telegramChatId'>, channel: CodeChannel) {
+  const lastChannel = challenge.codeChannel ?? (challenge.emailSentAt ? 'email' : null);
+  const since = challenge.emailSentAt ? Date.now() - challenge.emailSentAt.getTime() : Infinity;
+  // Same channel: one code a minute. Switching channels is allowed sooner, but not instantly,
+  // so alternating channels can't be used to flood someone with messages.
+  if (since < (lastChannel === channel ? RESEND_SECONDS : SWITCH_SECONDS) * 1000) {
     return 'Please wait a minute before asking for another code.';
   }
   const code = newEmailCode();
-  const error = await emailCode(email, 'login', code);
+  const to = await codeDestination(user, channel);
+  const error = channel === 'email' ? await emailCode(to, 'login', code) : await messageCode(channel, to, 'login', code);
   if (error) return error;
+  // A new code doesn't reset the wrong-code counter, so switching channels can't buy extra guesses.
   await prisma.loginChallenge.update({
     where: { id: challenge.id },
-    data: { emailCodeHash: hashCode(challenge.userId, code), emailSentAt: new Date(), attempts: 0 },
+    data: { emailCodeHash: hashCode(challenge.userId, code), emailSentAt: new Date(), codeChannel: channel },
   });
   return null;
 }
 
-/* ------------------------------ emailed one-time codes ------------------------------ */
+/* ------------------------------ one-time codes (email, WhatsApp, Telegram) ------------------------------ */
 
-/** Creates and emails a code for a purpose, replacing any earlier one. Returns an error or null. */
-export async function issueOtp(user: Pick<User, 'id' | 'email'>, purpose: 'reset' | 'email-setup') {
+export type OtpPurpose = 'reset' | 'email-setup' | 'whatsapp-setup' | 'telegram-setup';
+
+/** Creates and sends a code for a purpose, replacing any earlier one. Returns an error or null. */
+export async function issueOtp(user: Pick<User, 'id' | 'email'> & Partial<Pick<User, 'whatsappNumber' | 'telegramChatId'>>, purpose: OtpPurpose) {
   const last = await prisma.otpCode.findFirst({ where: { userId: user.id, purpose }, orderBy: { createdAt: 'desc' } });
   if (last && Date.now() - last.createdAt.getTime() < RESEND_SECONDS * 1000) {
     return 'Please wait a minute before asking for another code.';
   }
   const code = newEmailCode();
-  const error = await emailCode(user.email, purpose, code);
+  let error: string | null;
+  if (purpose === 'whatsapp-setup' || purpose === 'telegram-setup') {
+    const channel = purpose === 'whatsapp-setup' ? 'whatsapp' : 'telegram';
+    const to = await codeDestination({ email: user.email, whatsappNumber: user.whatsappNumber ?? null, telegramChatId: user.telegramChatId ?? null }, channel);
+    error = await messageCode(channel, to, 'setup', code);
+  } else {
+    error = await emailCode(user.email, purpose, code);
+  }
   if (error) return error;
   await prisma.otpCode.deleteMany({ where: { OR: [{ userId: user.id, purpose }, { expiresAt: { lt: new Date() } }] } });
   await prisma.otpCode.create({
@@ -199,7 +282,7 @@ export async function issueOtp(user: Pick<User, 'id' | 'email'>, purpose: 'reset
 }
 
 /** Checks an emailed code; consumes it on success. Returns an error message or null. */
-export async function checkOtp(userId: string, purpose: 'reset' | 'email-setup', code: string) {
+export async function checkOtp(userId: string, purpose: OtpPurpose, code: string) {
   const otp = await prisma.otpCode.findFirst({ where: { userId, purpose }, orderBy: { createdAt: 'desc' } });
   if (!otp || otp.expiresAt < new Date()) return 'That code has expired. Ask for a new one.';
   if (otp.attempts >= MAX_CODE_ATTEMPTS) return 'Too many wrong codes. Ask for a new one.';

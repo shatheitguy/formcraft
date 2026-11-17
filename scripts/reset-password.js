@@ -21,12 +21,12 @@ const prisma = new PrismaClient();
   const hash = crypto.scryptSync(password, salt, 64);
   const data = { passwordHash: `scrypt$${salt.toString('base64')}$${hash.toString('base64')}`, active: true };
   // Same fields as an admin's "Reset two-factor" (app/api/admin/users/[id]/route.ts).
-  if (disable2fa) Object.assign(data, { totpEnabled: false, totpSecret: null, totpPendingSecret: null, totpLastStep: null, emailOtpEnabled: false, recoveryCodes: '[]' });
+  if (disable2fa) Object.assign(data, { totpEnabled: false, totpSecret: null, totpPendingSecret: null, totpLastStep: null, emailOtpEnabled: false, whatsappOtpEnabled: false, telegramOtpEnabled: false, recoveryCodes: '[]' });
   await prisma.user.update({ where: { id: user.id }, data });
   await prisma.session.deleteMany({ where: { userId: user.id } });
   if (disable2fa) await prisma.loginChallenge.deleteMany({ where: { userId: user.id } });
   console.log(`Password reset for ${user.username}${disable2fa ? ', two-factor sign-in turned off' : ''}. They have been signed out everywhere.`);
-  if (!disable2fa && (user.totpEnabled || user.emailOtpEnabled)) console.log('Note: two-factor sign-in is still on for this account. Add --disable-2fa to turn it off.');
+  if (!disable2fa && (user.totpEnabled || user.emailOtpEnabled || user.whatsappOtpEnabled || user.telegramOtpEnabled)) console.log('Note: two-factor sign-in is still on for this account. Add --disable-2fa to turn it off.');
 })()
   .catch((e) => {
     console.error(e.message);

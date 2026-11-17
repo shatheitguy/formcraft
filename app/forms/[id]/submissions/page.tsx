@@ -5,6 +5,8 @@ import { canEditForm, canViewForm, requireUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getServerT } from '@/lib/i18n/server';
 import { toFormDTO, toSubmissionDTO } from '@/lib/forms';
+import { getSettings } from '@/lib/settings';
+import { waStatus } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,5 +24,13 @@ export default async function SubmissionsPage({ params }: { params: { id: string
     include: { submissions: { orderBy: { createdAt: 'desc' } } },
   });
   if (!row) notFound();
-  return <SubmissionsView form={toFormDTO(row)} submissions={row.submissions.map(toSubmissionDTO)} canManage={canEditForm(user, row.id)} />;
+  const [settings, me] = await Promise.all([getSettings(), prisma.user.findUnique({ where: { id: user.id }, select: { whatsappNumber: true } })]);
+  return (
+    <SubmissionsView
+      form={toFormDTO(row)}
+      submissions={row.submissions.map(toSubmissionDTO)}
+      canManage={canEditForm(user, row.id)}
+      whatsapp={{ enabled: settings.whatsapp.enabled && waStatus().status === 'on', myNumber: me?.whatsappNumber ?? '', isAdmin: user.role === 'ADMIN' }}
+    />
+  );
 }

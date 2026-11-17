@@ -5,7 +5,9 @@ import { prisma } from '@/lib/db';
 import { getSettings } from '@/lib/settings';
 import {
   checkOtp,
+  codeDestination,
   emailAvailable,
+  hasTwoFactor,
   hashRecoveryCodes,
   issueOtp,
   matchTotp,
@@ -13,6 +15,8 @@ import {
   newTotpSecret,
   otpauthUri,
   recoveryCodesLeft,
+  twoFactorRequired,
+  workspaceChannels,
 } from '@/lib/two-factor';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +28,8 @@ const bad = (error: string, status = 400) => NextResponse.json({ error }, { stat
  *   totp-setup → new secret + QR code (not active until totp-enable)
  *   totp-enable { code } · totp-disable { password }
  *   email-send → emails a confirmation code · email-enable { code } · email-disable { password }
+ *   whatsapp-send · whatsapp-enable { code } · whatsapp-disable { password }  (code sent to the saved WhatsApp number)
+ *   telegram-send · telegram-enable { code } · telegram-disable { password }  (code sent to the saved Telegram chat)
  *   recovery { password } → a fresh set of recovery codes
  * Enabling the first method also returns recovery codes, shown once.
  */
@@ -33,13 +39,26 @@ export async function POST(req: Request) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: me.id } });
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === 'string' ? body.code.trim() : '';
-  const needsPassword = ['totp-disable', 'email-disable', 'recovery'].includes(body.action);
+  const needsPassword = ['totp-disable', 'email-disable', 'whatsapp-disable', 'telegram-disable', 'recovery'].includes(body.action);
   if (needsPassword && !(typeof body.password === 'string' && (await verifyPassword(body.password, user.passwordHash)))) {
     return bad('Your password is incorrect.');
   }
 
   /** Recovery codes come with the first method; returns them so they can be shown once. */
-  const firstCodes = () => (user.totpEnabled || user.emailOtpEnabled ? null : newRecoveryCodes());
+  const firstCodes = () => (hasTwoFactor(user) ? null : newRecoveryCodes());
+  /** After turning `flag` off: keeps recovery codes only while another method is still on. */
+  const keepCodes = (flag: 'totpEnabled' | 'emailOtpEnabled' | 'whatsappOtpEnabled' | 'telegramOtpEnabled') =>
+    hasTwoFactor({ ...user, [flag]: false }) ? {} : { recoveryCodes: '[]' };
+
+  // An admin may require two-factor sign-in: the last method can't be turned off then.
+  const disabling = { 'totp-disable': 'totpEnabled', 'email-disable': 'emailOtpEnabled', 'whatsapp-disable': 'whatsappOtpEnabled', 'telegram-disable': 'telegramOtpEnabled' } as const;
+  const flag = disabling[body.action as keyof typeof disabling];
+  if (flag && !hasTwoFactor({ ...user, [flag]: false })) {
+    const { security } = await getSettings();
+    if (twoFactorRequired(user, security.require2fa)) {
+      return bad('Your admin requires two-factor sign-in. Turn on another method before turning this one off.');
+    }
+  }
 
   switch (body.action) {
     case 'totp-setup': {
@@ -65,7 +84,7 @@ export async function POST(req: Request) {
     case 'totp-disable': {
       await prisma.user.update({
         where: { id: user.id },
-        data: { totpSecret: null, totpPendingSecret: null, totpEnabled: false, totpLastStep: null, ...(user.emailOtpEnabled ? {} : { recoveryCodes: '[]' }) },
+        data: { totpSecret: null, totpPendingSecret: null, totpEnabled: false, totpLastStep: null, ...keepCodes('totpEnabled') },
       });
       return NextResponse.json({ ok: true });
     }
@@ -82,11 +101,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, recoveryCodes: codes });
     }
     case 'email-disable': {
-      await prisma.user.update({ where: { id: user.id }, data: { emailOtpEnabled: false, ...(user.totpEnabled ? {} : { recoveryCodes: '[]' }) } });
+      await prisma.user.update({ where: { id: user.id }, data: { emailOtpEnabled: false, ...keepCodes('emailOtpEnabled') } });
+      return NextResponse.json({ ok: true });
+    }
+    case 'whatsapp-send':
+    case 'telegram-send': {
+      const channel = body.action === 'whatsapp-send' ? 'whatsapp' : 'telegram';
+      const ch = await workspaceChannels();
+      if (!ch[channel]) {
+        return bad(channel === 'whatsapp' ? 'WhatsApp isn’t connected on this workspace. Ask an admin.' : 'Telegram isn’t set up on this workspace. Ask an admin.');
+      }
+      if (!(await codeDestination(user, channel))) {
+        return bad(channel === 'whatsapp' ? 'Save your WhatsApp number in My profile → Notifications first.' : 'Save your Telegram chat ID in My profile → Notifications first.');
+      }
+      const error = await issueOtp(user, `${channel}-setup`);
+      return error ? bad(error, error.startsWith('Please wait') ? 429 : 502) : NextResponse.json({ ok: true });
+    }
+    case 'whatsapp-enable':
+    case 'telegram-enable': {
+      const channel = body.action === 'whatsapp-enable' ? 'whatsapp' : 'telegram';
+      const error = await checkOtp(user.id, `${channel}-setup`, code);
+      if (error) return bad(error);
+      const codes = firstCodes();
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { [channel === 'whatsapp' ? 'whatsappOtpEnabled' : 'telegramOtpEnabled']: true, ...(codes ? { recoveryCodes: hashRecoveryCodes(codes) } : {}) },
+      });
+      return NextResponse.json({ ok: true, recoveryCodes: codes });
+    }
+    case 'whatsapp-disable':
+    case 'telegram-disable': {
+      const f = body.action === 'whatsapp-disable' ? 'whatsappOtpEnabled' : 'telegramOtpEnabled';
+      await prisma.user.update({ where: { id: user.id }, data: { [f]: false, ...keepCodes(f) } });
       return NextResponse.json({ ok: true });
     }
     case 'recovery': {
-      if (!user.totpEnabled && !user.emailOtpEnabled) return bad('Turn on two-factor sign-in first.');
+      if (!hasTwoFactor(user)) return bad('Turn on two-factor sign-in first.');
       const codes = newRecoveryCodes();
       await prisma.user.update({ where: { id: user.id }, data: { recoveryCodes: hashRecoveryCodes(codes) } });
       return NextResponse.json({ ok: true, recoveryCodes: codes, left: recoveryCodesLeft(hashRecoveryCodes(codes)) });

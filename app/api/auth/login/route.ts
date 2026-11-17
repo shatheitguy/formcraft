@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { clearLoginFailures, createSession, loginBlocked, recordLoginFailure, verifyPassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { emailAvailable, hasTwoFactor, maskEmail, sendChallengeEmail, startChallenge } from '@/lib/two-factor';
+import { codeDestination, emailAvailable, hasTwoFactor, maskTarget, sendChallengeCode, startChallenge, type CodeChannel } from '@/lib/two-factor';
 
 export const dynamic = 'force-dynamic';
+
+// A valid scrypt hash of a random password, used for timing only.
+const DUMMY_HASH = 'scrypt$AAAAAAAAAAAAAAAAAAAAAA==$' + Buffer.alloc(64).toString('base64');
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
@@ -18,7 +21,8 @@ export async function POST(req: Request) {
   }
 
   const user = await prisma.user.findFirst({ where: { OR: [{ username: identifier }, { email: identifier }] } });
-  const ok = user ? await verifyPassword(password, user.passwordHash) : false;
+  // Unknown accounts still pay for a password hash, so response time doesn't reveal which accounts exist.
+  const ok = user ? await verifyPassword(password, user.passwordHash) : (await verifyPassword(password, DUMMY_HASH), false);
   if (!user || !ok) {
     recordLoginFailure(key);
     return NextResponse.json({ error: 'Incorrect username or password.' }, { status: 401 });
@@ -30,13 +34,34 @@ export async function POST(req: Request) {
   // Two-factor: the password alone doesn't sign in. Start a challenge and ask for a code.
   if (hasTwoFactor(user)) {
     const challenge = await startChallenge(user.id);
-    const email = user.emailOtpEnabled && (await emailAvailable());
-    const methods = [...(user.totpEnabled ? ['totp'] : []), ...(email ? ['email'] : []), 'recovery'];
-    // Email-only accounts get their code straight away.
-    let emailError: string | null = null;
-    if (email && !user.totpEnabled) emailError = await sendChallengeEmail(challenge, user.email);
+    // Message channels the user turned on. Email is offered only while the workspace can send it;
+    // WhatsApp / Telegram stay listed so a broken channel shows a clear error instead of vanishing.
+    const channels: CodeChannel[] = [];
+    if (user.emailOtpEnabled && (await emailAvailable())) channels.push('email');
+    for (const ch of ['whatsapp', 'telegram'] as const) {
+      if (user[ch === 'whatsapp' ? 'whatsappOtpEnabled' : 'telegramOtpEnabled'] && (await codeDestination(user, ch))) channels.push(ch);
+    }
+    const sentTo: Partial<Record<CodeChannel, string>> = {};
+    for (const ch of channels) sentTo[ch] = maskTarget(ch, await codeDestination(user, ch));
+    const methods = [...(user.totpEnabled ? ['totp'] : []), ...channels, 'recovery'];
+    // With a single code channel and no authenticator app, the code goes out straight away.
+    let sent: CodeChannel | null = null;
+    let sendError: string | null = null;
+    if (!user.totpEnabled && channels.length === 1) {
+      sendError = await sendChallengeCode(challenge, user, channels[0]);
+      if (!sendError) sent = channels[0];
+    }
     return NextResponse.json({
-      twoFactor: { methods, emailTo: email ? maskEmail(user.email) : null, emailSent: email && !user.totpEnabled && !emailError, emailError },
+      twoFactor: {
+        methods,
+        sentTo,
+        sent,
+        sendError,
+        // Kept for older clients.
+        emailTo: sentTo.email ?? null,
+        emailSent: sent === 'email',
+        emailError: channels[0] === 'email' ? sendError : null,
+      },
     });
   }
 

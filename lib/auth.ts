@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { prisma } from './db';
 import type { Role, SessionUser } from './roles';
+import { getSettings } from './settings';
 import { safeJson } from './utils';
 
 export * from './roles';
@@ -92,8 +93,41 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
     include: { user: { include: { formAccess: { select: { formId: true } } } } },
   });
   if (!session || session.expiresAt < new Date() || !session.user.active) return null;
+  // An admin requires two-factor sign-in but this user hasn't set it up yet: only their profile
+  // (where they turn it on) and the APIs it needs work until they do.
+  if (await mustSetUpTwoFactor(session.user)) {
+    const path = headers().get('x-fc-path') ?? '';
+    if (!SETUP_2FA_ALLOWED.some((r) => r.test(path))) {
+      if (!path || path.startsWith('/api/')) return null;
+      redirect(SETUP_2FA_PATH);
+    }
+  }
   return toSessionUser(session.user);
 });
+
+/* ------------------------------ required two-factor ------------------------------ */
+
+/** Where users who must set up two-factor sign-in are sent. */
+export const SETUP_2FA_PATH = '/settings/profile#security';
+/** Pages and APIs that stay open while two-factor setup is pending (set by middleware in x-fc-path). */
+const SETUP_2FA_ALLOWED = [
+  /^\/settings\/profile\/?$/,
+  /^\/(login|forgot|setup)\/?$/,
+  /^\/f\//,
+  /^\/api\/me(\/.*)?$/,
+  /^\/api\/auth\//,
+  /^\/api\/uploads\/?$/,
+];
+
+type TwoFactorFields = Pick<User, 'role' | 'require2fa' | 'totpEnabled' | 'emailOtpEnabled' | 'whatsappOtpEnabled' | 'telegramOtpEnabled'>;
+
+/** True when the admin requires two-factor sign-in for this user and no method is on yet. */
+export async function mustSetUpTwoFactor(u: TwoFactorFields) {
+  if (u.totpEnabled || u.emailOtpEnabled || u.whatsappOtpEnabled || u.telegramOtpEnabled) return false;
+  if (u.require2fa) return true;
+  const policy = (await getSettings()).security.require2fa;
+  return policy === 'all' || (policy === 'admins' && u.role === 'ADMIN');
+}
 
 /* ------------------------------ guards ------------------------------ */
 

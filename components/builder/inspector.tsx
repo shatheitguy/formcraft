@@ -7,7 +7,8 @@ import { useT } from '@/components/i18n';
 import { ImageUpload } from '@/components/image-upload';
 import { Switch } from '@/components/ui';
 import { SUGGESTED_CATEGORIES } from '@/lib/categories';
-import { FIELD_META, isChoice, opt } from '@/lib/fields';
+import { DEFAULT_AGREE_LABEL, FIELD_META, isChoice, opt, safeTermsUrl } from '@/lib/fields';
+import { FILE_KINDS, fileLimits, MAX_FILE_MB_LIMIT, MAX_FILES_LIMIT, type FileKind } from '@/lib/files';
 import { LOCALE_CODES, LOCALES } from '@/lib/i18n';
 import { ACCENTS, ACCENT_KEYS } from '@/lib/theme';
 import type { FieldOption, FieldType, FormBranding, FormField, FormSettings } from '@/lib/types';
@@ -78,7 +79,7 @@ export function FieldInspector({
       </div>
 
       <div className="space-y-5 p-4">
-        <Section label={t('Question')}>
+        <Section label={field.type === 'terms' ? t('Title') : t('Question')}>
           <textarea
             className="input min-h-[60px] resize-none"
             rows={2}
@@ -129,6 +130,16 @@ export function FieldInspector({
           <Switch checked={field.required} onChange={(required) => onChange({ required })} label={t('Required')} />
         </div>
 
+        {(field.type === 'email' || field.type === 'phone' || field.type === 'text') && (
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2.5 ring-1 ring-inset ring-slate-100">
+            <div>
+              <div className="text-sm font-medium text-slate-800">{t('No duplicates')}</div>
+              <div className="text-xs text-slate-500">{t('Reject a response if this answer was already used — e.g. one registration per phone number or email.')}</div>
+            </div>
+            <Switch checked={!!field.unique} onChange={(unique) => onChange({ unique })} label={t('No duplicates')} />
+          </div>
+        )}
+
         {isChoice(field.type) && <OptionsEditor field={field} quiz={quiz} onChange={(options) => onChange({ options })} />}
 
         {field.type === 'rating' && (
@@ -176,6 +187,10 @@ export function FieldInspector({
           </>
         )}
 
+        {field.type === 'terms' && <TermsEditor field={field} onChange={onChange} />}
+
+        {field.type === 'file' && <FileSettings field={field} onChange={onChange} />}
+
         {(field.type === 'email' || field.type === 'phone') && (
           <p className="flex gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-800 ring-1 ring-inset ring-sky-100">
             <Check className="h-4 w-4 shrink-0" />
@@ -188,6 +203,111 @@ export function FieldInspector({
         </button>
       </div>
     </div>
+  );
+}
+
+function FileSettings({ field, onChange }: { field: FormField; onChange: (patch: Partial<FormField>) => void }) {
+  const t = useT();
+  const { kinds, maxFiles, maxFileMb } = fileLimits(field);
+  const toggle = (k: FileKind) => {
+    let next: FileKind[];
+    if (k === 'any') next = kinds.includes('any') ? ['image', 'pdf'] : ['any'];
+    else {
+      const base = kinds.filter((x) => x !== 'any');
+      next = base.includes(k) ? base.filter((x) => x !== k) : [...base, k];
+      if (!next.length) return; // keep at least one kind
+    }
+    onChange({ fileKinds: next });
+  };
+  return (
+    <>
+      <Section label={t('Allowed file types')}>
+        <div className="flex flex-wrap gap-1.5">
+          {FILE_KINDS.map((k) => {
+            const on = kinds.includes(k.kind);
+            return (
+              <button
+                key={k.kind}
+                type="button"
+                role="checkbox"
+                aria-checked={on}
+                onClick={() => toggle(k.kind)}
+                title={k.exts.length ? k.exts.join(', ') : undefined}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition',
+                  on ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50',
+                )}
+              >
+                {on && <Check className="h-3 w-3" strokeWidth={3} />}
+                {t(k.label)}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-1.5 text-xs text-slate-500">
+          {kinds.includes('any')
+            ? t('Any file type is accepted except programs and scripts.')
+            : FILE_KINDS.filter((k) => kinds.includes(k.kind)).flatMap((k) => k.exts).join(', ')}
+        </p>
+      </Section>
+      <div className="grid grid-cols-2 gap-3">
+        <Section label={t('Max files')}>
+          <select className="input" value={maxFiles} onChange={(e) => onChange({ maxFiles: Number(e.target.value) })}>
+            {Array.from({ length: MAX_FILES_LIMIT }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </Section>
+        <Section label={t('Max size per file')}>
+          <select className="input" value={maxFileMb} onChange={(e) => onChange({ maxFileMb: Number(e.target.value) })}>
+            {[1, 2, 5, 10, 15, 20, MAX_FILE_MB_LIMIT].map((n) => (
+              <option key={n} value={n}>
+                {n} MB
+              </option>
+            ))}
+          </select>
+        </Section>
+      </div>
+      <p className="flex gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-800 ring-1 ring-inset ring-sky-100">
+        <Check className="h-4 w-4 shrink-0" />
+        {t('Files are stored on your server and only people who can view responses can open them.')}
+      </p>
+    </>
+  );
+}
+
+function TermsEditor({ field, onChange }: { field: FormField; onChange: (patch: Partial<FormField>) => void }) {
+  const t = useT();
+  const url = field.termsUrl?.trim() ?? '';
+  const badUrl = !!url && !safeTermsUrl(url);
+  return (
+    <>
+      <Section label={t('Terms text')}>
+        <textarea
+          className="input min-h-[140px] resize-y text-sm leading-relaxed"
+          rows={7}
+          value={field.terms ?? ''}
+          onChange={(e) => onChange({ terms: e.target.value })}
+          placeholder={t('Paste or type your terms and conditions…')}
+        />
+      </Section>
+      <Section label={t('Link to full terms')} hint={t('Optional')}>
+        <input
+          className={cn('input', badUrl && 'input-error')}
+          type="url"
+          inputMode="url"
+          value={field.termsUrl ?? ''}
+          onChange={(e) => onChange({ termsUrl: e.target.value })}
+          placeholder="https://example.com/terms"
+        />
+        {badUrl && <p className="mt-1 text-xs text-rose-600">{t('Enter a link starting with http:// or https://')}</p>}
+      </Section>
+      <Section label={t('Checkbox text')}>
+        <input className="input" value={field.agreeLabel ?? ''} onChange={(e) => onChange({ agreeLabel: e.target.value })} placeholder={t(DEFAULT_AGREE_LABEL)} />
+      </Section>
+    </>
   );
 }
 
@@ -401,7 +521,78 @@ export function FormSettingsPanel({
             <ToggleRow label={t('Show score after submit')} description={t('Respondents see their result')} checked={settings.showScore} onChange={(showScore) => onSettings({ showScore })} />
           )}
         </div>
+
+        <ResponseLimitSection settings={settings} onSettings={onSettings} />
       </div>
+    </div>
+  );
+}
+
+/** Responses per person: unlimited, once, or a set number — recognised by device (and optionally network). */
+function ResponseLimitSection({ settings, onSettings }: { settings: FormSettings; onSettings: (patch: Partial<FormSettings>) => void }) {
+  const t = useT();
+  const limit = Math.max(0, Math.floor(Number(settings.perPersonLimit) || 0));
+  const mode = limit === 0 ? 'off' : limit === 1 ? 'once' : 'custom';
+  return (
+    <div className="space-y-3 rounded-xl bg-slate-50 p-3 ring-1 ring-inset ring-slate-100">
+      <div>
+        <div className="text-sm font-medium text-slate-800">{t('Responses per person')}</div>
+        <div className="text-xs text-slate-500">{t('Stop the same person filling the form again. They’re recognised by their device and browser.')}</div>
+      </div>
+      <div className="grid grid-cols-3 gap-1.5">
+        {(
+          [
+            ['off', t('Unlimited')],
+            ['once', t('Only once')],
+            ['custom', t('Set a number')],
+          ] as const
+        ).map(([m, label]) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => onSettings({ perPersonLimit: m === 'off' ? 0 : m === 'once' ? 1 : Math.max(2, limit) })}
+            aria-pressed={mode === m}
+            className={cn(
+              'rounded-lg px-2 py-1.5 text-xs font-semibold ring-1 ring-inset transition',
+              mode === m ? 'bg-brand-600 text-onaccent ring-brand-600' : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-100',
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {mode === 'custom' && (
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="number"
+            min={2}
+            max={1000}
+            className="input w-24"
+            value={limit}
+            onChange={(e) => onSettings({ perPersonLimit: Math.min(1000, Math.max(2, Math.floor(Number(e.target.value) || 2))) })}
+          />
+          {t('responses per person')}
+        </label>
+      )}
+      {limit > 0 && (
+        <>
+          <ToggleRow
+            label={t('Also check the network (IP address)')}
+            description={t('Stricter, but everyone on the same Wi-Fi or office network counts as one person.')}
+            checked={!!settings.limitByIp}
+            onChange={(limitByIp) => onSettings({ limitByIp })}
+          />
+          <Section label={t('Message when the limit is reached')}>
+            <textarea
+              className="input resize-none"
+              rows={2}
+              value={settings.limitMessage ?? ''}
+              placeholder={t('This form accepts a limited number of responses per person, and you’ve reached it. Thank you!')}
+              onChange={(e) => onSettings({ limitMessage: e.target.value.slice(0, 500) })}
+            />
+          </Section>
+        </>
+      )}
     </div>
   );
 }

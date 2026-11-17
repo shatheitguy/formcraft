@@ -14,7 +14,14 @@ export interface UserInput {
   formScope?: FormScope;
   formIds?: string[];
   active?: boolean;
+  /** WhatsApp number with country code; null clears it. */
+  whatsappNumber?: string | null;
+  whatsappNotifications?: boolean;
+  /** Admin requires two-factor sign-in for this user. */
+  require2fa?: boolean;
 }
+
+export const WHATSAPP_NUMBER_RE = /^\+?[\d\s()-]{7,22}$/;
 
 /** Normalizes and validates user fields present in `body`. */
 export function validateUserInput(body: Record<string, unknown>, opts: { requirePassword?: boolean; partial?: boolean } = {}) {
@@ -46,6 +53,13 @@ export function validateUserInput(body: Record<string, unknown>, opts: { require
     data.formIds = Array.isArray(body.formIds) ? body.formIds.filter((x): x is string => typeof x === 'string') : [];
   }
   if (body.active !== undefined) data.active = !!body.active;
+  if (body.whatsappNumber !== undefined) {
+    const n = typeof body.whatsappNumber === 'string' ? body.whatsappNumber.trim() : '';
+    if (n && !WHATSAPP_NUMBER_RE.test(n)) return { data, error: 'Enter the WhatsApp number with its country code, e.g. +971 50 123 4567.' };
+    data.whatsappNumber = n || null;
+  }
+  if (body.whatsappNotifications !== undefined) data.whatsappNotifications = !!body.whatsappNotifications;
+  if (body.require2fa !== undefined) data.require2fa = !!body.require2fa;
   return { data, error: null };
 }
 

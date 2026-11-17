@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, unauthorized } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { uniquenessProblem, validateUserInput } from '@/lib/users';
+import { uniquenessProblem, validateUserInput, WHATSAPP_NUMBER_RE } from '@/lib/users';
 import { isLocale, isThemePref } from '@/lib/i18n';
+import { hasTwoFactor } from '@/lib/two-factor';
 import { safeImageUrl } from '@/lib/uploads';
 import { isValidEmail } from '@/lib/validation';
 
@@ -48,12 +49,32 @@ export async function PATCH(req: Request) {
     }
     update.telegramChatId = c || null;
   }
-  for (const k of ['emailNotifications', 'telegramNotifications', 'notifyAllForms'] as const) {
+  if (body.whatsappNumber !== undefined) {
+    const n = String(body.whatsappNumber ?? '').trim();
+    if (n && !WHATSAPP_NUMBER_RE.test(n)) {
+      return NextResponse.json({ error: 'Enter the WhatsApp number with its country code, e.g. +971 50 123 4567.' }, { status: 400 });
+    }
+    update.whatsappNumber = n || null;
+  }
+  if (body.whatsappAttach !== undefined) {
+    update.whatsappAttach = ['pdf', 'xlsx'].includes(body.whatsappAttach) ? body.whatsappAttach : 'none';
+  }
+  for (const k of ['emailNotifications', 'telegramNotifications', 'whatsappNotifications', 'notifyAllForms'] as const) {
     if (body[k] !== undefined) update[k] = !!body[k];
   }
   if (body.notifyFormIds !== undefined) {
     const ids: string[] = Array.isArray(body.notifyFormIds) ? body.notifyFormIds.filter((x: unknown) => typeof x === 'string') : [];
     update.notifyFormIds = JSON.stringify(ids);
+  }
+
+  // A changed or removed WhatsApp number / Telegram chat ID turns off sign-in codes sent there,
+  // so codes never go to a destination that wasn't confirmed with a setup code.
+  if (update.whatsappNumber !== undefined || update.telegramChatId !== undefined) {
+    const cur = await prisma.user.findUniqueOrThrow({ where: { id: me.id } });
+    const flags = { totpEnabled: cur.totpEnabled, emailOtpEnabled: cur.emailOtpEnabled, whatsappOtpEnabled: cur.whatsappOtpEnabled, telegramOtpEnabled: cur.telegramOtpEnabled };
+    if (update.whatsappNumber !== undefined && update.whatsappNumber !== cur.whatsappNumber && cur.whatsappOtpEnabled) flags.whatsappOtpEnabled = update.whatsappOtpEnabled = false;
+    if (update.telegramChatId !== undefined && update.telegramChatId !== cur.telegramChatId && cur.telegramOtpEnabled) flags.telegramOtpEnabled = update.telegramOtpEnabled = false;
+    if (hasTwoFactor(cur) && !hasTwoFactor(flags)) update.recoveryCodes = '[]';
   }
 
   await prisma.user.update({ where: { id: me.id }, data: update });

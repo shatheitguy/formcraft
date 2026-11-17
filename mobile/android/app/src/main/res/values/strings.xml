@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FormCraft</string>
+    <string name="title_activity_main">FormCraft</string>
+    <string name="package_name">in.shatheitguy.formcraft</string>
+    <string name="custom_url_scheme">in.shatheitguy.formcraft</string>
+    <string name="shortcut_change_server_short">Change server</string>
+    <string name="shortcut_change_server_long">Connect to another FormCraft server</string>
+    <string name="downloading">Downloading %1$s</string>
+    <string name="saved_to_downloads">Saved to Downloads: %1$s</string>
+    <string name="download_failed">The download failed.</string>
+    <string name="download_unsupported">This download can\'t be saved in the app. Open FormCraft in your browser to download it.</string>
+    <string name="no_app_for_link">No app on this phone can open that link.</string>
+</resources>

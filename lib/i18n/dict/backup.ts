@@ -1,0 +1,93 @@
+import type { AreaDict } from '.';
+
+// Translations for automatic backups (Settings → Database). Keys are the exact English strings passed to t().
+const dict: AreaDict = {
+  ar: {
+    'Automatic backups': 'النسخ الاحتياطي التلقائي',
+    'Scheduled full backups of every form (published and draft), all responses, users and settings, kept on the server.':
+      'نسخ احتياطية كاملة مجدولة لكل النماذج (المنشورة والمسودات) وجميع الردود والمستخدمين والإعدادات، تُحفظ على الخادم.',
+    'Back up now': 'نسخ احتياطي الآن',
+    'Backup schedule saved': 'تم حفظ جدول النسخ الاحتياطي',
+    'Backup created': 'تم إنشاء النسخة الاحتياطية',
+    'Backup deleted': 'تم حذف النسخة الاحتياطية',
+    'Backup not found': 'النسخة الاحتياطية غير موجودة',
+    'No backup has run yet.': 'لم يتم تشغيل أي نسخ احتياطي بعد.',
+    'Last backup {date} · {size} · {forms} forms / {responses} responses': 'آخر نسخة احتياطية {date} · {size} · {forms} نموذج / {responses} رد',
+    'Last backup failed {date}': 'فشلت آخر نسخة احتياطية {date}',
+    'Last successful backup: {date}': 'آخر نسخة احتياطية ناجحة: {date}',
+    'Back up automatically': 'نسخ احتياطي تلقائي',
+    'Runs in the background on the server. Missed backups run as soon as the server is back up.':
+      'يعمل في الخلفية على الخادم. تُنفَّذ النسخ الفائتة فور عودة الخادم للعمل.',
+    'How often': 'التكرار',
+    'Hourly': 'كل ساعة',
+    'Daily': 'يوميًا',
+    'Weekly': 'أسبوعيًا',
+    'Day': 'اليوم',
+    'Minute past the hour': 'الدقيقة بعد كل ساعة',
+    'Time (server time)': 'الوقت (بتوقيت الخادم)',
+    'Backups to keep': 'عدد النسخ المحفوظة',
+    'Older automatic backups are deleted. Manual backups are kept until you delete them.':
+      'تُحذف النسخ التلقائية الأقدم. أما النسخ اليدوية فتبقى حتى تحذفها بنفسك.',
+    'Include uploaded files': 'تضمين الملفات المرفوعة',
+    'Logos, cover images and files attached to responses. Turn off to keep backup files small.': 'الشعارات وصور الغلاف والملفات المرفقة بالردود. أوقفه لتصغير حجم ملفات النسخ الاحتياطي.',
+    'Response attachments': 'مرفقات الردود',
+    'Stored backups': 'النسخ الاحتياطية المحفوظة',
+    'No backups stored yet.': 'لا توجد نسخ احتياطية محفوظة بعد.',
+    'Automatic': 'تلقائي',
+    'Manual': 'يدوي',
+    'Before restore': 'قبل الاستعادة',
+    'Restore': 'استعادة',
+    'Stored on the server in {dir} (in Docker: {docker}, inside the data volume). Copy them somewhere else too — a backup on the same disk won’t survive losing the server.':
+      'تُحفظ على الخادم في {dir} (في Docker: {docker}، داخل وحدة تخزين البيانات). انسخها إلى مكان آخر أيضًا — فالنسخة الموجودة على القرص نفسه لن تنجو إذا فُقد الخادم.',
+    'Delete this backup?': 'حذف هذه النسخة الاحتياطية؟',
+    'The file is permanently removed from the server.': 'سيُحذف الملف نهائيًا من الخادم.',
+    'Automatic backup failed: {error}': 'فشل النسخ الاحتياطي التلقائي: {error}',
+    'Time must be HH:MM (24-hour).': 'يجب أن يكون الوقت بصيغة HH:MM (نظام 24 ساعة).',
+    'Keep must be a whole number from 1 to 365.': 'يجب أن يكون عدد النسخ المحفوظة رقمًا صحيحًا من 1 إلى 365.',
+  },
+  ta: {
+    'Automatic backups': 'தானியங்கி காப்புப்பிரதிகள்',
+    'Scheduled full backups of every form (published and draft), all responses, users and settings, kept on the server.':
+      'அனைத்து படிவங்கள் (வெளியிடப்பட்டவை மற்றும் வரைவுகள்), எல்லா பதில்கள், பயனர்கள் மற்றும் அமைப்புகளின் திட்டமிட்ட முழு காப்புப்பிரதிகள், சேவையகத்தில் சேமிக்கப்படும்.',
+    'Back up now': 'இப்போது காப்புப்பிரதி எடு',
+    'Backup schedule saved': 'காப்புப்பிரதி அட்டவணை சேமிக்கப்பட்டது',
+    'Backup created': 'காப்புப்பிரதி உருவாக்கப்பட்டது',
+    'Backup deleted': 'காப்புப்பிரதி நீக்கப்பட்டது',
+    'Backup not found': 'காப்புப்பிரதி கிடைக்கவில்லை',
+    'No backup has run yet.': 'இதுவரை எந்த காப்புப்பிரதியும் இயங்கவில்லை.',
+    'Last backup {date} · {size} · {forms} forms / {responses} responses': 'கடைசி காப்புப்பிரதி {date} · {size} · {forms} படிவங்கள் / {responses} பதில்கள்',
+    'Last backup failed {date}': 'கடைசி காப்புப்பிரதி தோல்வியடைந்தது {date}',
+    'Last successful backup: {date}': 'கடைசி வெற்றிகரமான காப்புப்பிரதி: {date}',
+    'Back up automatically': 'தானாக காப்புப்பிரதி எடு',
+    'Runs in the background on the server. Missed backups run as soon as the server is back up.':
+      'சேவையகத்தில் பின்னணியில் இயங்கும். தவறிய காப்புப்பிரதிகள் சேவையகம் மீண்டும் இயங்கியவுடன் இயங்கும்.',
+    'How often': 'எத்தனை முறை',
+    'Hourly': 'மணிநேரத்திற்கு ஒருமுறை',
+    'Daily': 'தினசரி',
+    'Weekly': 'வாராந்திர',
+    'Day': 'நாள்',
+    'Minute past the hour': 'ஒவ்வொரு மணிநேரத்தின் நிமிடம்',
+    'Time (server time)': 'நேரம் (சேவையக நேரம்)',
+    'Backups to keep': 'வைத்திருக்க வேண்டிய காப்புப்பிரதிகள்',
+    'Older automatic backups are deleted. Manual backups are kept until you delete them.':
+      'பழைய தானியங்கி காப்புப்பிரதிகள் நீக்கப்படும். கைமுறை காப்புப்பிரதிகள் நீங்கள் நீக்கும் வரை வைக்கப்படும்.',
+    'Include uploaded files': 'பதிவேற்றிய கோப்புகளைச் சேர்',
+    'Logos, cover images and files attached to responses. Turn off to keep backup files small.': 'லோகோக்கள், அட்டைப் படங்கள் மற்றும் பதில்களுடன் இணைக்கப்பட்ட கோப்புகள். காப்புப்பிரதி கோப்புகளைச் சிறியதாக வைக்க அணைக்கவும்.',
+    'Response attachments': 'பதில் இணைப்புகள்',
+    'Stored backups': 'சேமிக்கப்பட்ட காப்புப்பிரதிகள்',
+    'No backups stored yet.': 'இதுவரை காப்புப்பிரதிகள் எதுவும் சேமிக்கப்படவில்லை.',
+    'Automatic': 'தானியங்கி',
+    'Manual': 'கைமுறை',
+    'Before restore': 'மீட்டமைப்புக்கு முன்',
+    'Restore': 'மீட்டமை',
+    'Stored on the server in {dir} (in Docker: {docker}, inside the data volume). Copy them somewhere else too — a backup on the same disk won’t survive losing the server.':
+      'சேவையகத்தில் {dir} இல் சேமிக்கப்படுகின்றன (Docker இல்: {docker}, தரவு volume க்குள்). அவற்றை வேறு இடத்திலும் நகலெடுக்கவும் — அதே வட்டில் உள்ள காப்புப்பிரதி சேவையகத்தை இழந்தால் தப்பாது.',
+    'Delete this backup?': 'இந்த காப்புப்பிரதியை நீக்கவா?',
+    'The file is permanently removed from the server.': 'கோப்பு சேவையகத்திலிருந்து நிரந்தரமாக நீக்கப்படும்.',
+    'Automatic backup failed: {error}': 'தானியங்கி காப்புப்பிரதி தோல்வியடைந்தது: {error}',
+    'Time must be HH:MM (24-hour).': 'நேரம் HH:MM (24 மணிநேர) வடிவில் இருக்க வேண்டும்.',
+    'Keep must be a whole number from 1 to 365.': 'வைத்திருக்கும் எண்ணிக்கை 1 முதல் 365 வரையிலான முழு எண்ணாக இருக்க வேண்டும்.',
+  },
+};
+
+export default dict;

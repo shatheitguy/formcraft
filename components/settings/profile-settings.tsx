@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { PasswordInput, StrengthMeter } from '@/components/auth/password-input';
+import { ImageCrop, canCrop } from '@/components/image-crop';
 import { useToast } from '@/components/toast';
 import { Avatar } from '@/components/user-menu';
 import { useI18n, useT } from '@/components/i18n';
@@ -15,6 +16,7 @@ import { categoryStyle } from '@/lib/categories';
 import { ROLE_INFO, type Role } from '@/lib/roles';
 import { cn, formatDate } from '@/lib/utils';
 import { TelegramIcon } from './notification-settings';
+import { WhatsAppIcon } from './whatsapp-card';
 import { Field, SettingsCard, sendJson } from './settings-ui';
 import { TwoFactorCard, type TwoFactorStatus } from './two-factor-card';
 
@@ -27,6 +29,9 @@ interface Profile {
   createdAt: string;
   notifyEmail: string;
   telegramChatId: string;
+  whatsappNumber: string;
+  whatsappNotifications: boolean;
+  whatsappAttach: 'none' | 'pdf' | 'xlsx';
   emailNotifications: boolean;
   telegramNotifications: boolean;
   notifyAllForms: boolean;
@@ -42,7 +47,7 @@ export function ProfileSettings({
 }: {
   profile: Profile;
   forms: { id: string; title: string; category: string }[];
-  channels: { email: boolean; telegram: boolean };
+  channels: { email: boolean; telegram: boolean; whatsapp: boolean };
   isAdmin: boolean;
   twoFactor: TwoFactorStatus;
 }) {
@@ -56,6 +61,9 @@ export function ProfileSettings({
     telegramChatId: profile.telegramChatId,
     emailNotifications: profile.emailNotifications,
     telegramNotifications: profile.telegramNotifications,
+    whatsappNumber: profile.whatsappNumber,
+    whatsappNotifications: profile.whatsappNotifications,
+    whatsappAttach: profile.whatsappAttach,
     notifyAllForms: profile.notifyAllForms,
     notifyFormIds: profile.notifyFormIds,
   });
@@ -97,7 +105,7 @@ export function ProfileSettings({
     );
   }
 
-  async function test(channel: 'email' | 'telegram') {
+  async function test(channel: 'email' | 'telegram' | 'whatsapp') {
     setBusy(`test-${channel}`);
     const r = await sendJson('/api/me/test', 'POST', { channel });
     setBusy(null);
@@ -218,6 +226,33 @@ export function ProfileSettings({
               <input className="input" value={notify.telegramChatId} onChange={(e) => setN('telegramChatId', e.target.value)} placeholder="123456789" dir="ltr" />
             </Field>
           </Channel>
+          <Channel
+            icon={<WhatsAppIcon className="h-4 w-4" />}
+            title={t('WhatsApp')}
+            enabled={notify.whatsappNotifications}
+            onToggle={(v) => setN('whatsappNotifications', v)}
+            available={channels.whatsapp}
+            isAdmin={isAdmin}
+            onTest={() => test('whatsapp')}
+            testing={busy === 'test-whatsapp'}
+            testDisabled={!profile.whatsappNumber}
+          >
+            <Field label={t('WhatsApp number')} hint={t('With country code, e.g. +971 50 123 4567. Save before testing.')}>
+              <input className="input" value={notify.whatsappNumber} onChange={(e) => setN('whatsappNumber', e.target.value)} placeholder="+971 50 123 4567" dir="ltr" inputMode="tel" />
+            </Field>
+            <div className="mt-3">
+              <span className="label">{t('Attach the response as')}</span>
+              <Segmented
+                value={notify.whatsappAttach}
+                onChange={(v) => setN('whatsappAttach', v)}
+                options={[
+                  { value: 'none', label: t('Text only') },
+                  { value: 'pdf', label: 'PDF' },
+                  { value: 'xlsx', label: t('Excel') },
+                ]}
+              />
+            </div>
+          </Channel>
         </div>
 
         <div className="mt-6">
@@ -291,6 +326,17 @@ function ProfilePhoto({ name, username, initial }: { name: string; username: str
   const input = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState(initial);
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<File | null>(null); // picked photo waiting in the crop dialog
+
+  // PNG/JPG/WebP open the crop dialog first (square, round preview); GIFs upload as-is.
+  function pick(file: File | undefined) {
+    if (file && canCrop(file) && file.size <= 25 * 1024 * 1024) return setPending(file);
+    upload(file);
+  }
+  const closeCrop = () => {
+    setPending(null);
+    if (input.current) input.current.value = '';
+  };
 
   async function save(next: string | null) {
     const r = await sendJson('/api/me', 'PATCH', { avatarUrl: next ?? '' });
@@ -335,7 +381,21 @@ function ProfilePhoto({ name, username, initial }: { name: string; username: str
 
   return (
     <div className="flex items-center gap-3">
-      <input ref={input} type="file" accept={PHOTO_TYPES.join(',')} className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
+      <input ref={input} type="file" accept={PHOTO_TYPES.join(',')} className="hidden" onChange={(e) => pick(e.target.files?.[0])} />
+      <ImageCrop
+        file={pending}
+        mode="avatar"
+        onCancel={closeCrop}
+        onDone={(f) => {
+          closeCrop();
+          upload(f);
+        }}
+        onSkip={() => {
+          const f = pending;
+          closeCrop();
+          upload(f ?? undefined);
+        }}
+      />
       <button
         type="button"
         onClick={() => input.current?.click()}

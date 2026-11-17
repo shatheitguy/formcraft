@@ -1,4 +1,6 @@
-# 🏗️ FormCraft
+<p align="center"><img src="public/brand/formcraft-icon.svg" width="88" alt="FormCraft logo"></p>
+
+# FormCraft
 
 > The developer-first, self-hosted form builder.
 > Deployable in seconds via Docker. Infinite fields, total privacy.
@@ -118,6 +120,16 @@ If you expose ports directly instead of through a tunnel, restrict the range wit
 
 To remove everything, including data: `docker compose down -v`.
 
+### Automatic backups
+
+FormCraft backs itself up on a schedule, out of the box: every form (published and draft), every response, users, settings, uploaded images and files attached to responses, in the same `.fcbackup` format as the full system backup.
+
+- **Default:** on, daily at 02:00 (server time), keeping the newest **14** automatic backups. Change the schedule (hourly / daily / weekly), retention (1–365) and whether uploaded files are included in **Settings → Database → Automatic backups**.
+- **Where:** `/app/data/backups/` inside the `formcraft-data` volume (`data/backups/` in a local checkout). Set `BACKUP_DIR` to store them elsewhere, e.g. a mounted network share.
+- **Missed runs** (server was off at the scheduled time) run once as soon as it starts again; a failed run is retried every 30 minutes and admins get a notification in the bell.
+- **Back up now** creates a manual backup that is never pruned. Stored backups can be downloaded, restored (type `RESTORE` to confirm) or deleted from the same card. Only automatic backups count toward retention; manual ones and pre-restore snapshots stay until you delete them.
+- Backups on the same disk don't protect against losing the server — copy them off regularly, e.g. `docker compose cp formcraft:/app/data/backups ./formcraft-backups`.
+
 ### Locked out? Reset a password
 
 The sign-in page shows *Forgot password?* only when email (SMTP) is set up. Otherwise, another admin can set a new password in **Settings → Users**. If no admin can sign in, reset it from the server:
@@ -148,8 +160,17 @@ Add `--disable-2fa` if the account's authenticator app or recovery codes are als
 | **Customer Feedback** | NPS linear scale (1–10), product-rating multiple choice, open paragraph |
 | **Event Registration** | Name, Email, Company, Phone, session date picker, food-preference checkboxes |
 | **Quiz / Poll** | Radio questions with correct answers & per-option points, auto-scored |
+| **Job application** | Contact details, position, experience, cover letter, start date, consent |
+| **Customer / member registration** | Contact details, company, address, how they heard about you, terms |
+| **Order / service request** | Product or service, quantity, delivery date, notes, terms |
+| **Leave request** | Employee, department, leave type, dates, reason |
+| **IT support ticket** | Department, category, priority, description |
+| **Complaint** | Type, date of incident, details, desired resolution |
+| **Customer satisfaction survey** | Rating, NPS, what they liked, suggestions |
+| **Visitor registration** | Visitor, company, host, purpose, visit date, safety agreement |
+| **Terms & consent** | Name, email, terms with an *I agree* checkbox, date |
 
-Or start from a **blank form**.
+Or start from a **blank form**. The template picker has search and category filters.
 
 ### 🏗️ Visual form builder
 - **Drag and drop** fields from the palette to any position, or **click to add** below the selected field
@@ -158,7 +179,12 @@ Or start from a **blank form**.
 - **Quiz mode**: mark correct answers and assign points; respondents can see their score after submitting
 - **Autosave** (plus <kbd>Ctrl/⌘</kbd>+<kbd>S</kbd>), a live **preview** with desktop and mobile widths, and one-click **Publish**
 
-**Field types:** short text · paragraph · email (validated) · phone (validated) · multiple choice · checkboxes · dropdown · date picker · star rating (1–5 / 1–10) · linear scale (0/1 → 3–10, with end labels)
+**Field types:** short text · paragraph · email (validated) · phone (validated) · multiple choice · checkboxes · dropdown · date picker · star rating (1–5 / 1–10) · linear scale (0/1 → 3–10, with end labels) · **terms & conditions** (terms text, optional link, *I agree* checkbox) · **file upload** (images, PDF, documents, spreadsheets; 1–10 files up to 25 MB each, checked by file signature and stored privately)
+
+- **Works on phones:** on small screens the builder shows one panel at a time (Add field · Form · Settings) with Build / Translate / Preview always at the top.
+- **Responses per person:** unlimited, once, or a set number per person — recognised by an anonymous browser cookie plus local storage, and optionally the network (a keyed hash of the IP, never the IP itself). People who already responded see a message before they start
+- **No duplicates:** turn it on for an email, phone or text question to allow one registration per email or phone number (phone numbers match regardless of spaces, dashes or the country prefix; emails regardless of case)
+- **Crop before upload:** logos, cover banners and profile photos open a crop dialog (move, zoom, rotate, aspect presets) before they're saved.
 
 ### 📊 Submissions viewer
 - A sortable data table with one column per question, sticky columns, pagination and row selection
@@ -166,6 +192,8 @@ Or start from a **blank form**.
 - A row-detail drawer with keyboard navigation (↑/↓)
 - An **Insights** tab: choice distributions, rating/scale histograms with averages, automatic **NPS** for 1–10 / 0–10 scales, and recent text answers
 - **CSV export** of the filtered rows, and bulk delete
+- **PDF and Excel reports** of all, filtered, selected or a single response — download them, or **send them on WhatsApp** with an optional message
+- Attached files open from the response drawer (images show a thumbnail)
 - Quiz scores per response, with an average score summary
 
 ### 👥 Users, roles & sign-in
@@ -176,14 +204,17 @@ Or start from a **blank form**.
 - Each editor or viewer can be limited to **all forms** or **selected forms only**. Forms an editor creates are added to their access automatically
 - Admins can reset passwords (which signs the user out everywhere) and disable accounts. The last active admin can't be removed
 - **Forgot password by email:** with email set up, the sign-in page offers *Forgot password?*, which emails a 6-digit code (10 minutes, 5 tries) to set a new password and signs the account out everywhere. It answers the same whether or not the account exists
-- **Two-factor sign-in for every user** (*My profile → Two-factor sign-in*): an authenticator app (TOTP: Google/Microsoft Authenticator, 1Password, Authy…), a code by email, or both, plus 10 single-use recovery codes. Codes can't be replayed, wrong codes are limited, and turning a method off asks for the password. Admins can *Reset two-factor* for someone who lost their phone
+- **Two-factor sign-in for every user** (*My profile → Two-factor sign-in*): an authenticator app (TOTP: Google/Microsoft Authenticator, 1Password, Authy…) and codes by **email, WhatsApp or Telegram** — any combination — plus 10 single-use recovery codes. At sign-in the user picks a method; codes can't be replayed, resends are limited, wrong codes are limited, and turning a method off asks for the password. Admins can *Reset two-factor* for someone who lost their phone
+- **Admins can require two-factor sign-in** for admins, for everyone, or for chosen users (*Users & roles*). Until a required user turns a method on, they can only reach *My profile* to set it up
 - **Notification bell** in the top bar for every user: forms published, moved back to draft, created or deleted (by you or a teammate), new responses grouped per form ("12 new responses on …"), and — for admins — a notice when a newer FormCraft version is out, with the update command. Unread badge, mark as read, clear; updates every minute and in each user's language
 
 ### ⚙️ Settings
 - **Per-form logo & title** (top of the builder's form settings): upload a form logo, choose its size (small/medium/large) and placement (above or beside the title), align the header left or center, and hide the title when the logo already shows the name.
 - **Per-form branding**: a cover banner and a form color that overrides the workspace accent. Uploads accept PNG, JPG, GIF or WebP up to 2 MB, are checked by file signature, and are stored on the data volume
 - **Customization**: app name, tagline, uploaded logo, accent color (8 palettes, previewed live), public URL for links, and the "Powered by" footer
-- **Notifications**: SMTP email (with Gmail/Outlook/SendGrid/Mailgun presets) and a Telegram bot, test buttons, and a log of recent deliveries
+- **Notifications**: SMTP email (with Gmail/Outlook/SendGrid/Mailgun presets), a Telegram bot and **WhatsApp**, test buttons, and a log of recent deliveries
+- **WhatsApp**: link the workspace's WhatsApp by scanning a QR code (Linked devices, like WhatsApp Web). Users then get new-response alerts on WhatsApp — optionally with the response attached as PDF or Excel — and anyone can send reports from the Responses page. Numbers are saved in *My profile* or by an admin in *Users*. It isn't the official WhatsApp API: use a business number and don't send unexpected bulk messages
+- **About**: version, install type, database, counts and server details; **Check for updates**; one-click **Update** for native (git) installs, and the exact Docker / one-line installer command for Docker installs
 - **Database**: connection status, engine and version, size, row counts, JSON export, SQLite snapshot download, purging old responses, optimize (VACUUM), session cleanup, and a guide to switching engines
 - **My profile** (every user): profile photo (upload, change or remove), name, username, email, password change (signs out other devices), a notification email, Telegram chat ID, email/Telegram toggles, and alerts for all forms or selected ones
 
@@ -193,6 +224,9 @@ Or start from a **blank form**.
 - **Respondents can switch language at any time while filling in.** Answers are kept, because choice answers are stored under their primary-language value, so reports and charts stay consistent across languages. Each response records its language, which appears in the Submissions table and the CSV. Links can preselect a language with `?lang=ar`; otherwise the respondent's browser language is used.
 - **Light and dark mode.** By default the app follows the device's setting; users can force Light or Dark from the account menu, the login page or My profile. Each form can be **Auto**, **Light only** or **Dark only** for respondents.
 - Adding a language: add it to `LOCALES` in `lib/i18n/index.ts` and its strings to `lib/i18n/dict/*.ts` (English text is the key; anything missing falls back to English).
+
+### 📱 Android app
+An Android app (APK) opens your FormCraft like Nextcloud does: enter your server address once, then sign in and use every feature in the phone layout. Build it from `mobile/` — see [mobile/README.md](mobile/README.md).
 
 ### 🔒 Validation everywhere
 The same validation runs in the browser and on the server: required fields, email and phone format, allowed option values and scale bounds. Quiz scores are always calculated on the server. Draft forms reject submissions.

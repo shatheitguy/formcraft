@@ -20,17 +20,29 @@ const CHROMA_DARK: Record<Shade, Shade> = { 50: 950, 100: 900, 200: 800, 300: 70
 const SLATE_DARK: Record<Shade, string> = {
   50: '#020617', // page background
   100: '#1e293b', // subtle fills
-  200: '#273449', // borders
-  300: '#3b4a61',
-  400: '#64748b', // placeholders
-  500: '#94a3b8', // muted text
-  600: '#cbd5e1', // body text
+  200: '#2e3d54', // borders
+  300: '#44546d',
+  400: '#8695ab', // icons, captions
+  500: '#aab6c7', // muted text
+  600: '#d3dbe6', // body text
   700: '#e2e8f0',
   800: '#f1f5f9',
   900: '#f8fafc', // headings
   950: '#ffffff',
 };
 const WHITE_DARK = '#0f172a'; // cards & inputs
+
+// Light mode: Tailwind's stock slate-400/500/600 are too faint for secondary text (slate-400 on white is
+// only ~2.6:1). These shades are used almost only for text and icons here, so they are darkened one
+// step to keep every label, hint and caption readable (WCAG AA), and borders get a touch more definition.
+const SLATE_LIGHT: Partial<Record<Shade, string>> = {
+  200: '#d8dfe8', // borders
+  300: '#bcc6d3',
+  400: '#64748b', // icons, captions (~4.7:1)
+  500: '#475569', // muted text (~7.5:1)
+  600: '#334155', // body text
+  700: '#1e293b',
+};
 
 const rgb = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
@@ -41,7 +53,7 @@ const varColor = (v: string) => `rgb(var(${v}) / <alpha-value>)`;
 
 function lightVars() {
   const v: Record<string, string> = { '--c-white': '255 255 255' };
-  for (const s of SHADES) v[`--c-slate-${s}`] = rgb(pal('slate')[s]);
+  for (const s of SHADES) v[`--c-slate-${s}`] = rgb(SLATE_LIGHT[s] ?? pal('slate')[s]);
   for (const c of CHROMA) for (const s of SHADES) v[`--c-${c}-${s}`] = rgb(pal(c)[s]);
   return v;
 }

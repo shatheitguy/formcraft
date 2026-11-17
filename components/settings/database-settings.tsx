@@ -10,6 +10,7 @@ import type { DatabaseInfo } from '@/lib/database';
 import { fmtNumber } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { SettingsCard, rich, sendJson } from './settings-ui';
+import { AutoBackupCard } from './auto-backup-card';
 import { SystemBackupCard } from './system-backup-card';
 
 const fmtBytes = (n: number | null) => {
@@ -109,17 +110,17 @@ export function DatabaseSettings({ initial }: { initial: DatabaseInfo }) {
         </div>
         <div className="mt-4 rounded-lg bg-slate-900 px-4 py-3 font-mono text-xs text-slate-200" dir="ltr">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-slate-500">DATABASE_URL</span>
+            <span className="text-slate-300">DATABASE_URL</span>
             <button
               onClick={() => navigator.clipboard?.writeText(info.url).then(() => toast(t('Copied')))}
-              className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-slate-200"
+              className="rounded p-1 text-slate-300 hover:bg-white/10 hover:text-slate-100"
               aria-label={t('Copy')}
             >
               <Copy className="h-3.5 w-3.5" />
             </button>
           </div>
           <div className="mt-1 break-all">{info.url}</div>
-          {info.file && <div className="mt-1 break-all text-slate-500">→ {info.file}</div>}
+          {info.file && <div className="mt-1 break-all text-slate-300">→ {info.file}</div>}
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
           {Object.entries(info.counts).map(([k, n]) => (
@@ -130,6 +131,8 @@ export function DatabaseSettings({ initial }: { initial: DatabaseInfo }) {
           ))}
         </div>
       </SettingsCard>
+
+      <AutoBackupCard />
 
       <SystemBackupCard />
 

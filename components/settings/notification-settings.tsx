@@ -11,6 +11,7 @@ import { Button, Switch } from '@/components/ui';
 import type { RedactedSettings } from '@/lib/settings';
 import { cn, timeAgo } from '@/lib/utils';
 import { Field, SettingsCard, ToggleField, rich, sendJson } from './settings-ui';
+import { WhatsAppCard } from './whatsapp-card';
 
 interface Log {
   id: string;
@@ -32,14 +33,16 @@ const PRESETS = [
 export function NotificationSettings({
   smtp: initialSmtp,
   telegram: initialTg,
+  whatsapp,
   adminEmail,
   stats,
   logs,
 }: {
   smtp: RedactedSettings['smtp'];
   telegram: RedactedSettings['telegram'];
+  whatsapp: RedactedSettings['whatsapp'];
   adminEmail: string;
-  stats: { email: number; telegram: number };
+  stats: { email: number; telegram: number; whatsapp: number };
   logs: Log[];
 }) {
   const router = useRouter();
@@ -85,7 +88,8 @@ export function NotificationSettings({
           ),
         })}{' '}
         {rich(t(stats.email === 1 ? 'Currently {n} user receives email alerts.' : 'Currently {n} users receive email alerts.'), { n: <strong>{stats.email}</strong> })}{' '}
-        {rich(t(stats.telegram === 1 ? '{n} user receives Telegram alerts.' : '{n} users receive Telegram alerts.'), { n: <strong>{stats.telegram}</strong> })}
+        {rich(t(stats.telegram === 1 ? '{n} user receives Telegram alerts.' : '{n} users receive Telegram alerts.'), { n: <strong>{stats.telegram}</strong> })}{' '}
+        {rich(t(stats.whatsapp === 1 ? '{n} user receives WhatsApp alerts.' : '{n} users receive WhatsApp alerts.'), { n: <strong>{stats.whatsapp}</strong> })}
       </div>
 
       {/* Email */}
@@ -197,6 +201,8 @@ export function NotificationSettings({
         </div>
       </SettingsCard>
 
+      <WhatsAppCard whatsapp={whatsapp} />
+
       {/* Delivery log */}
       <SettingsCard title={t('Recent deliveries')} description={t('The last 25 notification attempts, kept for 30 days.')} icon={<History />}>
         {logs.length === 0 ? (
@@ -206,7 +212,7 @@ export function NotificationSettings({
             {logs.map((l) => (
               <div key={l.id} className="flex items-center gap-3 px-6 py-2.5 text-sm">
                 {l.status === 'sent' ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" /> : <XCircle className="h-4 w-4 shrink-0 text-rose-500" />}
-                <span className="w-16 shrink-0 text-xs font-medium uppercase text-slate-500">{l.channel === 'email' ? t('Email') : l.channel === 'telegram' ? t('Telegram') : l.channel}</span>
+                <span className="w-20 shrink-0 text-xs font-semibold uppercase text-slate-600">{l.channel === 'email' ? t('Email') : l.channel === 'telegram' ? t('Telegram') : l.channel === 'whatsapp' ? t('WhatsApp') : l.channel}</span>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-slate-800">{l.subject}</div>
                   <div className={cn('truncate text-xs', l.error ? 'text-rose-600' : 'text-slate-500')} title={l.error ?? undefined}>
