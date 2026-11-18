@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { clearLoginFailures, createSession, loginBlocked, recordLoginFailure, verifyPassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { codeDestination, emailAvailable, hasTwoFactor, maskTarget, sendChallengeCode, startChallenge, type CodeChannel } from '@/lib/two-factor';
+import { LOGIN_CODE_MINUTES, RESEND_SECONDS, codeDestinations, hasMessageCodes, hasTwoFactor, maskDestinations, startChallenge } from '@/lib/two-factor';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,36 +33,16 @@ export async function POST(req: Request) {
 
   // Two-factor: the password alone doesn't sign in. Start a challenge and ask for a code.
   if (hasTwoFactor(user)) {
-    const challenge = await startChallenge(user.id);
-    // Message channels the user turned on. Email is offered only while the workspace can send it;
-    // WhatsApp / Telegram stay listed so a broken channel shows a clear error instead of vanishing.
-    const channels: CodeChannel[] = [];
-    if (user.emailOtpEnabled && (await emailAvailable())) channels.push('email');
-    for (const ch of ['whatsapp', 'telegram'] as const) {
-      if (user[ch === 'whatsapp' ? 'whatsappOtpEnabled' : 'telegramOtpEnabled'] && (await codeDestination(user, ch))) channels.push(ch);
-    }
-    const sentTo: Partial<Record<CodeChannel, string>> = {};
-    for (const ch of channels) sentTo[ch] = maskTarget(ch, await codeDestination(user, ch));
-    const methods = [...(user.totpEnabled ? ['totp'] : []), ...channels, 'recovery'];
-    // With a single code channel and no authenticator app, the code goes out straight away.
-    let sent: CodeChannel | null = null;
-    let sendError: string | null = null;
-    if (!user.totpEnabled && channels.length === 1) {
-      sendError = await sendChallengeCode(challenge, user, channels[0]);
-      if (!sendError) sent = channels[0];
-    }
-    return NextResponse.json({
-      twoFactor: {
-        methods,
-        sentTo,
-        sent,
-        sendError,
-        // Kept for older clients.
-        emailTo: sentTo.email ?? null,
-        emailSent: sent === 'email',
-        emailError: channels[0] === 'email' ? sendError : null,
-      },
-    });
+    await startChallenge(user.id);
+    // Codes by message can go to any destination that works right now; the sign-in screen
+    // lets the user pick one (email first) and sends the code from there.
+    const destinations = hasMessageCodes(user)
+      ? maskDestinations(await codeDestinations(user))
+          .filter((d) => d.available)
+          .map(({ channel, to }) => ({ channel, to }))
+      : [];
+    const methods = [...(user.totpEnabled ? ['totp'] : []), ...(hasMessageCodes(user) ? ['message'] : []), 'recovery'];
+    return NextResponse.json({ twoFactor: { methods, destinations, codeMinutes: LOGIN_CODE_MINUTES, resendSeconds: RESEND_SECONDS } });
   }
 
   await createSession(user.id);

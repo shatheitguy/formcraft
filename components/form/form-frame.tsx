@@ -2,29 +2,57 @@ import type { ReactNode } from 'react';
 import { useT } from '@/components/i18n';
 import { categoryStyle } from '@/lib/categories';
 import { accentVars } from '@/lib/theme';
-import type { FormBranding } from '@/lib/types';
+import type { FormBranding, FormLayout } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 /**
- * Card chrome around a rendered form: applies the form's own accent palette and the
+ * Chrome around a rendered form: applies the form's own accent palette and the
  * cover banner (or colour bar). Shared by the public page, builder canvas and preview.
+ *
+ * Looks: classic / steps = card with the cover on top; minimal = no card, the cover is a
+ * full-width hero and the form sits in a centred column; split = card whose cover is drawn
+ * by the renderer in its side panel.
  */
 export function FormFrame({
   branding,
   category,
   children,
   className,
+  layout = 'classic',
 }: {
   branding?: FormBranding;
   category: string;
   children: ReactNode;
   className?: string;
+  layout?: FormLayout;
 }) {
   const vars = accentVars(branding?.accent);
   // Without a custom accent, keep the category colour bar from the dashboard.
   const bar = vars ? 'from-brand-500 via-brand-500 to-brand-700' : categoryStyle(category).gradient;
+  if (layout === 'minimal') {
+    return (
+      <div style={vars} className={className}>
+        {branding?.coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={branding.coverUrl} alt="" className="h-44 w-full object-cover sm:h-64" />
+        ) : (
+          <div className={cn('h-1.5 bg-gradient-to-r', bar)} />
+        )}
+        <div className="mx-auto w-full max-w-2xl">{children}</div>
+      </div>
+    );
+  }
+  if (layout === 'split') {
+    // overflow-clip so the side panel can stay in view (sticky) on desktop.
+    return (
+      <div style={vars} className={cn('card overflow-hidden supports-[overflow:clip]:overflow-clip', className)}>
+        {children}
+      </div>
+    );
+  }
   return (
-    <div style={vars} className={cn('card overflow-hidden', className)}>
+    // Steps: overflow-clip (not hidden) so the phone's sticky Next/Back bar can stick to the screen.
+    <div style={vars} className={cn('card overflow-hidden', layout === 'steps' && 'supports-[overflow:clip]:overflow-clip', className)}>
       {branding?.coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={branding.coverUrl} alt="" className="h-36 w-full object-cover sm:h-44" />

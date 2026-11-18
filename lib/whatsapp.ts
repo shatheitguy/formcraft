@@ -1,4 +1,4 @@
-// WhatsApp linked to this server (Settings → Notifications → WhatsApp): an admin scans a QR with the
+// WhatsApp linked to this server (Settings → Notification channel setup → WhatsApp): an admin scans a QR with the
 // workspace's WhatsApp (Linked devices), then FormCraft can send response alerts and PDF / Excel reports.
 // It works like WhatsApp Web (the Baileys library). WhatsApp does not officially allow this: a number that
 // sends a lot can get blocked, so messages go out one at a time, a few seconds apart.
@@ -195,7 +195,7 @@ export function waSend(num: string, text: string, doc?: WaDocument): Promise<WaR
 }
 
 export const WA_ERRORS: Record<Exclude<WaResult, 'ok'>, string> = {
-  not_linked: 'WhatsApp isn’t linked. An admin can link it in Settings → Notifications.',
+  not_linked: 'WhatsApp isn’t linked. An admin can link it in Settings → Notification channel setup.',
   not_on_whatsapp: 'That number isn’t on WhatsApp.',
   bad_number: 'Enter the WhatsApp number with its country code, e.g. +971 50 123 4567.',
   failed: 'WhatsApp couldn’t send the message. Try again in a minute.',

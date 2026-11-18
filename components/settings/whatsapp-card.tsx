@@ -1,6 +1,6 @@
 'use client';
 
-// Settings → Notifications → WhatsApp: link the workspace's WhatsApp to this server by scanning a QR
+// Settings → Notification channel setup → WhatsApp: link the workspace's WhatsApp to this server by scanning a QR
 // (like WhatsApp Web), then send response alerts and PDF / Excel reports from FormCraft.
 import { AlertTriangle, CheckCircle2, Link2, Send, Unlink } from 'lucide-react';
 import QRCode from 'qrcode';

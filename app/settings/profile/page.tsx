@@ -3,10 +3,11 @@ import { getServerT } from '@/lib/i18n/server';
 import { ProfileSettings } from '@/components/settings/profile-settings';
 import { formWhere, notifyFormIds, requireUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { normalizeForced, parseNotifyEvents } from '@/lib/notify-prefs';
 import { getSettings } from '@/lib/settings';
 import { waStatus } from '@/lib/whatsapp';
 import { ShieldAlert } from 'lucide-react';
-import { codeDestination, maskTarget, recoveryCodesLeft, twoFactorRequired } from '@/lib/two-factor';
+import { twoFactorStatus } from '@/lib/two-factor';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,10 +28,10 @@ export default async function ProfilePage() {
     telegram: settings.telegram.enabled && !!settings.telegram.botToken,
     whatsapp: settings.whatsapp.enabled && waStatus().status === 'on',
   };
-  const [waTo, tgTo] = await Promise.all([codeDestination(user, 'whatsapp'), codeDestination(user, 'telegram')]);
-  const required = twoFactorRequired(user, settings.security.require2fa);
-  const anyOn = user.totpEnabled || user.emailOtpEnabled || user.whatsappOtpEnabled || user.telegramOtpEnabled;
-  const methods = [t('Authenticator app'), ...(channels.email ? [t('Email codes')] : []), ...(channels.whatsapp ? [t('WhatsApp codes')] : []), ...(channels.telegram ? [t('Telegram codes')] : [])];
+  const twoFactor = await twoFactorStatus(user);
+  const required = twoFactor.required;
+  const anyOn = twoFactor.totp || twoFactor.message;
+  const methods = [t('Authenticator app'), ...(twoFactor.destinations.some((d) => d.available) ? [t('Codes by message')] : [])];
 
   return (
     <>
@@ -66,22 +67,13 @@ export default async function ProfilePage() {
         whatsappAttach: user.whatsappAttach === 'pdf' || user.whatsappAttach === 'xlsx' ? user.whatsappAttach : 'none',
         notifyAllForms: user.notifyAllForms,
         notifyFormIds: notifyFormIds(user),
+        notifyEvents: parseNotifyEvents(user.notifyEvents),
+        forcedNotify: normalizeForced(user.forcedNotify),
       }}
       forms={forms}
       channels={channels}
       isAdmin={me.role === 'ADMIN'}
-      twoFactor={{
-        totp: user.totpEnabled,
-        email: user.emailOtpEnabled,
-        whatsapp: user.whatsappOtpEnabled,
-        telegram: user.telegramOtpEnabled,
-        recoveryLeft: recoveryCodesLeft(user.recoveryCodes),
-        whatsappAvailable: channels.whatsapp,
-        telegramAvailable: channels.telegram,
-        whatsappTo: waTo ? maskTarget('whatsapp', waTo) : '',
-        telegramTo: tgTo ? maskTarget('telegram', tgTo) : '',
-        required,
-      }}
+      twoFactor={twoFactor}
     />
     </>
   );

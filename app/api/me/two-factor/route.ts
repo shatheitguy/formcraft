@@ -4,32 +4,41 @@ import { getCurrentUser, unauthorized, verifyPassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getSettings } from '@/lib/settings';
 import {
+  MESSAGE_CODES_OFF,
+  NO_DESTINATION,
+  OTP_FLAG,
   checkOtp,
-  codeDestination,
-  emailAvailable,
+  codeDestinations,
   hasTwoFactor,
   hashRecoveryCodes,
-  issueOtp,
+  issueMessageSetupCode,
   matchTotp,
   newRecoveryCodes,
   newTotpSecret,
   otpauthUri,
   recoveryCodesLeft,
   twoFactorRequired,
-  workspaceChannels,
+  twoFactorStatus,
 } from '@/lib/two-factor';
 
 export const dynamic = 'force-dynamic';
 
 const bad = (error: string, status = 400) => NextResponse.json({ error }, { status });
 
+/** Two-factor status for the signed-in user (what the profile card shows). */
+export async function GET() {
+  const me = await getCurrentUser();
+  if (!me) return unauthorized();
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: me.id } });
+  return NextResponse.json(await twoFactorStatus(user));
+}
+
 /**
  * Two-factor settings for the signed-in user. Body: { action, code?, password? }
  *   totp-setup → new secret + QR code (not active until totp-enable)
  *   totp-enable { code } · totp-disable { password }
- *   email-send → emails a confirmation code · email-enable { code } · email-disable { password }
- *   whatsapp-send · whatsapp-enable { code } · whatsapp-disable { password }  (code sent to the saved WhatsApp number)
- *   telegram-send · telegram-enable { code } · telegram-disable { password }  (code sent to the saved Telegram chat)
+ *   message-send → one setup code to every available destination (email, WhatsApp, Telegram) at once
+ *   message-enable { code } · message-disable { password }
  *   recovery { password } → a fresh set of recovery codes
  * Enabling the first method also returns recovery codes, shown once.
  */
@@ -39,21 +48,20 @@ export async function POST(req: Request) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: me.id } });
   const body = await req.json().catch(() => ({}));
   const code = typeof body.code === 'string' ? body.code.trim() : '';
-  const needsPassword = ['totp-disable', 'email-disable', 'whatsapp-disable', 'telegram-disable', 'recovery'].includes(body.action);
+  const needsPassword = ['totp-disable', 'message-disable', 'recovery'].includes(body.action);
   if (needsPassword && !(typeof body.password === 'string' && (await verifyPassword(body.password, user.passwordHash)))) {
     return bad('Your password is incorrect.');
   }
 
   /** Recovery codes come with the first method; returns them so they can be shown once. */
   const firstCodes = () => (hasTwoFactor(user) ? null : newRecoveryCodes());
-  /** After turning `flag` off: keeps recovery codes only while another method is still on. */
-  const keepCodes = (flag: 'totpEnabled' | 'emailOtpEnabled' | 'whatsappOtpEnabled' | 'telegramOtpEnabled') =>
-    hasTwoFactor({ ...user, [flag]: false }) ? {} : { recoveryCodes: '[]' };
+  /** What turning a method off leaves on. */
+  const after = { 'totp-disable': { ...user, totpEnabled: false }, 'message-disable': { ...user, ...MESSAGE_CODES_OFF } }[body.action as string];
+  /** Keeps recovery codes only while another method is still on. */
+  const keepCodes = () => (after && hasTwoFactor(after) ? {} : { recoveryCodes: '[]' });
 
   // An admin may require two-factor sign-in: the last method can't be turned off then.
-  const disabling = { 'totp-disable': 'totpEnabled', 'email-disable': 'emailOtpEnabled', 'whatsapp-disable': 'whatsappOtpEnabled', 'telegram-disable': 'telegramOtpEnabled' } as const;
-  const flag = disabling[body.action as keyof typeof disabling];
-  if (flag && !hasTwoFactor({ ...user, [flag]: false })) {
+  if (after && !hasTwoFactor(after)) {
     const { security } = await getSettings();
     if (twoFactorRequired(user, security.require2fa)) {
       return bad('Your admin requires two-factor sign-in. Turn on another method before turning this one off.');
@@ -84,55 +92,35 @@ export async function POST(req: Request) {
     case 'totp-disable': {
       await prisma.user.update({
         where: { id: user.id },
-        data: { totpSecret: null, totpPendingSecret: null, totpEnabled: false, totpLastStep: null, ...keepCodes('totpEnabled') },
+        data: { totpSecret: null, totpPendingSecret: null, totpEnabled: false, totpLastStep: null, ...keepCodes() },
       });
       return NextResponse.json({ ok: true });
     }
-    case 'email-send': {
-      if (!(await emailAvailable())) return bad('Email is not set up on this workspace. Ask an admin.');
-      const error = await issueOtp(user, 'email-setup');
-      return error ? bad(error, 429) : NextResponse.json({ ok: true });
+    case 'message-send': {
+      const r = await issueMessageSetupCode(user);
+      if (r.error) return bad(r.error, r.status ?? 502);
+      return NextResponse.json({ ok: true, sent: r.sent });
     }
-    case 'email-enable': {
-      const error = await checkOtp(user.id, 'email-setup', code);
+    case 'message-enable': {
+      const error = await checkOtp(user.id, 'message-setup', code);
       if (error) return bad(error);
-      const codes = firstCodes();
-      await prisma.user.update({ where: { id: user.id }, data: { emailOtpEnabled: true, ...(codes ? { recoveryCodes: hashRecoveryCodes(codes) } : {}) } });
-      return NextResponse.json({ ok: true, recoveryCodes: codes });
-    }
-    case 'email-disable': {
-      await prisma.user.update({ where: { id: user.id }, data: { emailOtpEnabled: false, ...keepCodes('emailOtpEnabled') } });
-      return NextResponse.json({ ok: true });
-    }
-    case 'whatsapp-send':
-    case 'telegram-send': {
-      const channel = body.action === 'whatsapp-send' ? 'whatsapp' : 'telegram';
-      const ch = await workspaceChannels();
-      if (!ch[channel]) {
-        return bad(channel === 'whatsapp' ? 'WhatsApp isn’t connected on this workspace. Ask an admin.' : 'Telegram isn’t set up on this workspace. Ask an admin.');
-      }
-      if (!(await codeDestination(user, channel))) {
-        return bad(channel === 'whatsapp' ? 'Save your WhatsApp number in My profile → Notifications first.' : 'Save your Telegram chat ID in My profile → Notifications first.');
-      }
-      const error = await issueOtp(user, `${channel}-setup`);
-      return error ? bad(error, error.startsWith('Please wait') ? 429 : 502) : NextResponse.json({ ok: true });
-    }
-    case 'whatsapp-enable':
-    case 'telegram-enable': {
-      const channel = body.action === 'whatsapp-enable' ? 'whatsapp' : 'telegram';
-      const error = await checkOtp(user.id, `${channel}-setup`, code);
-      if (error) return bad(error);
+      // The flags record where codes could go when it was turned on; any flag on means "on".
+      // Each sign-in uses whatever destinations work at that moment.
+      const available = (await codeDestinations(user)).filter((d) => d.available);
+      if (!available.length) return bad(NO_DESTINATION);
       const codes = firstCodes();
       await prisma.user.update({
         where: { id: user.id },
-        data: { [channel === 'whatsapp' ? 'whatsappOtpEnabled' : 'telegramOtpEnabled']: true, ...(codes ? { recoveryCodes: hashRecoveryCodes(codes) } : {}) },
+        data: {
+          ...MESSAGE_CODES_OFF,
+          ...Object.fromEntries(available.map((d) => [OTP_FLAG[d.channel], true])),
+          ...(codes ? { recoveryCodes: hashRecoveryCodes(codes) } : {}),
+        },
       });
       return NextResponse.json({ ok: true, recoveryCodes: codes });
     }
-    case 'whatsapp-disable':
-    case 'telegram-disable': {
-      const f = body.action === 'whatsapp-disable' ? 'whatsappOtpEnabled' : 'telegramOtpEnabled';
-      await prisma.user.update({ where: { id: user.id }, data: { [f]: false, ...keepCodes(f) } });
+    case 'message-disable': {
+      await prisma.user.update({ where: { id: user.id }, data: { ...MESSAGE_CODES_OFF, ...keepCodes() } });
       return NextResponse.json({ ok: true });
     }
     case 'recovery': {

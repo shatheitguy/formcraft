@@ -30,14 +30,14 @@ export async function POST(req: Request) {
 
   if (channel === 'email') {
     if (!settings.smtp.enabled || !settings.smtp.host) {
-      return NextResponse.json({ error: 'Email isn’t set up yet. Ask an admin to configure SMTP in Settings → Notifications.' }, { status: 400 });
+      return NextResponse.json({ error: 'Email isn’t set up yet. Ask an admin to configure SMTP in Settings → Notification channel setup.' }, { status: 400 });
     }
     const r = await sendTest('email', user.notifyEmail || user.email);
     return r.ok ? NextResponse.json({ ok: true }) : NextResponse.json({ error: r.error }, { status: 502 });
   }
   if (channel === 'telegram') {
     if (!settings.telegram.enabled || !settings.telegram.botToken) {
-      return NextResponse.json({ error: 'Telegram isn’t set up yet. Ask an admin to add a bot token in Settings → Notifications.' }, { status: 400 });
+      return NextResponse.json({ error: 'Telegram isn’t set up yet. Ask an admin to add a bot token in Settings → Notification channel setup.' }, { status: 400 });
     }
     if (!user.telegramChatId) return NextResponse.json({ error: 'Save your Telegram chat ID first.' }, { status: 400 });
     const r = await sendTest('telegram', user.telegramChatId);
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   }
   if (channel === 'whatsapp') {
     if (!settings.whatsapp.enabled || waStatus().status !== 'on') {
-      return NextResponse.json({ error: 'WhatsApp isn’t set up yet. Ask an admin to link it in Settings → Notifications.' }, { status: 400 });
+      return NextResponse.json({ error: 'WhatsApp isn’t set up yet. Ask an admin to link it in Settings → Notification channel setup.' }, { status: 400 });
     }
     if (!user.whatsappNumber) return NextResponse.json({ error: 'Save your WhatsApp number first.' }, { status: 400 });
     const r = await sendTest('whatsapp', user.whatsappNumber);

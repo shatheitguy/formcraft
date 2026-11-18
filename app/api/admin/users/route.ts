@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   if (me.role !== 'ADMIN') return forbidden();
 
   const body = await req.json().catch(() => ({}));
-  const { data, error } = validateUserInput(body, { requirePassword: true });
+  const { data, error } = validateUserInput(body, { requirePassword: true, admin: true });
   if (error) return NextResponse.json({ error }, { status: 400 });
   const clash = await uniquenessProblem(data.username, data.email);
   if (clash) return NextResponse.json({ error: clash }, { status: 409 });
@@ -28,6 +28,7 @@ export async function POST(req: Request) {
       whatsappNumber: data.whatsappNumber ?? null,
       whatsappNotifications: !!data.whatsappNumber && (data.whatsappNotifications ?? false),
       require2fa: data.require2fa ?? false,
+      ...(data.forcedNotify ? { forcedNotify: data.forcedNotify } : {}),
       formAccess: data.formScope === 'SELECTED' && data.formIds?.length ? { create: data.formIds.map((formId) => ({ formId })) } : undefined,
     },
   });

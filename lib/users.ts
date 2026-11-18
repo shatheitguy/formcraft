@@ -1,5 +1,6 @@
 import { passwordProblem } from './auth';
 import { prisma } from './db';
+import { normalizeForced } from './notify-prefs';
 import type { FormScope, Role } from './roles';
 import { isValidEmail } from './validation';
 
@@ -19,12 +20,14 @@ export interface UserInput {
   whatsappNotifications?: boolean;
   /** Admin requires two-factor sign-in for this user. */
   require2fa?: boolean;
+  /** Admin-required notifications, JSON-encoded ForcedNotify (admin routes only). */
+  forcedNotify?: string;
 }
 
 export const WHATSAPP_NUMBER_RE = /^\+?[\d\s()-]{7,22}$/;
 
 /** Normalizes and validates user fields present in `body`. */
-export function validateUserInput(body: Record<string, unknown>, opts: { requirePassword?: boolean; partial?: boolean } = {}) {
+export function validateUserInput(body: Record<string, unknown>, opts: { requirePassword?: boolean; partial?: boolean; admin?: boolean } = {}) {
   const data: UserInput = {};
   const need = (k: string) => !opts.partial || body[k] !== undefined;
 
@@ -60,6 +63,8 @@ export function validateUserInput(body: Record<string, unknown>, opts: { require
   }
   if (body.whatsappNotifications !== undefined) data.whatsappNotifications = !!body.whatsappNotifications;
   if (body.require2fa !== undefined) data.require2fa = !!body.require2fa;
+  // Only an admin decides which notifications a person must receive.
+  if (opts.admin && body.forcedNotify !== undefined) data.forcedNotify = JSON.stringify(normalizeForced(body.forcedNotify));
   return { data, error: null };
 }
 

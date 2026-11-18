@@ -225,7 +225,7 @@ export function SubmissionsView({
         </a>
       </AppHeader>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-20 pt-6 sm:px-6">
+      <main className="mx-auto w-full max-w-[1680px] flex-1 px-4 pb-20 pt-6 sm:px-6 lg:px-8">
         <nav className="mb-4 flex min-w-0 items-center gap-2 text-sm text-slate-600">
           <Link href="/" className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-800 shrink-0">
             <ArrowLeft className="h-4 w-4 rtl:rotate-180" /> {t('Dashboard')}
@@ -375,8 +375,9 @@ export function SubmissionsView({
               <Insights fields={fields} rows={filtered} />
             ) : (
               <div className="card overflow-hidden">
-                <div className="scrollbar-thin overflow-x-auto">
-                  <table className="w-full min-w-max border-collapse text-start text-sm">
+                {/* Fits the window: columns shrink and answers wrap; only a very wide form scrolls sideways (visible scrollbar). */}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-start text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-wide text-slate-500">
                         <th className="sticky start-0 z-10 w-10 bg-slate-50 px-4 py-2.5">
@@ -409,7 +410,7 @@ export function SubmissionsView({
                             </td>
                           )}
                           {fields.map((f) => (
-                            <td key={f.id} className="max-w-[280px] px-4 py-2.5 text-slate-700">
+                            <td key={f.id} className="min-w-[140px] max-w-[320px] break-words px-4 py-2.5 align-top text-slate-700">
                               <Cell field={f} value={formatAnswer(f, r.data[f.id], locale)} count={f.type === 'file' ? fileRefs(r.data[f.id]).length : undefined} />
                             </td>
                           ))}

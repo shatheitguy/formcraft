@@ -1,7 +1,7 @@
 'use client';
 
 import { WhatsAppIcon } from './whatsapp-card';
-import { Check, Eye, KeyRound, Lock, Pencil, Plus, Search, Shield, ShieldCheck, ShieldOff, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
+import { Bell, Check, Eye, KeyRound, Lock, Pencil, Plus, Search, Shield, ShieldCheck, ShieldOff, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { PasswordInput } from '@/components/auth/password-input';
@@ -10,6 +10,7 @@ import { useToast } from '@/components/toast';
 import { Avatar } from '@/components/user-menu';
 import { Button, ConfirmDialog, Dropdown, Modal, Segmented, Switch } from '@/components/ui';
 import { categoryStyle } from '@/lib/categories';
+import { CHANNEL_LABEL, EVENT_INFO, NOTIFY_CHANNELS, NOTIFY_EVENTS, hasForced, type ForcedNotify } from '@/lib/notify-prefs';
 import { ROLE_INFO, ROLES, type FormScope, type Role } from '@/lib/roles';
 import { cn, timeAgo } from '@/lib/utils';
 import { Field, SettingsCard, rich, sendJson } from './settings-ui';
@@ -32,6 +33,8 @@ export interface ManagedUser {
   createdAt: string;
   whatsappNumber: string;
   whatsappNotifications: boolean;
+  /** Notifications the admin requires for this user. */
+  forcedNotify: ForcedNotify;
 }
 
 interface FormOption {
@@ -139,6 +142,12 @@ export function UsersManager({ users, forms, meId, policy = 'off' }: { users: Ma
                     {u.twoFactor && (
                       <span className="inline-flex items-center gap-0.5 rounded bg-emerald-50 px-1.5 text-[10px] font-semibold uppercase text-emerald-700" title={t('Two-factor sign-in is on')}>
                         <ShieldCheck className="h-3 w-3" /> {t('2FA')}
+                      </span>
+                    )}
+                    {hasForced(u.forcedNotify) && (
+                      <span className="inline-flex items-center gap-0.5 rounded bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-600" title={t('Has required notifications')} aria-label={t('Has required notifications')}>
+                        <Bell className="h-3 w-3" />
+                        <Lock className="h-2.5 w-2.5" />
                       </span>
                     )}
                     {!u.twoFactor && isRequired(u, policy) && (
@@ -257,12 +266,19 @@ function UserDialog({
     whatsappNumber: user?.whatsappNumber ?? '',
     whatsappNotifications: user?.whatsappNotifications ?? true,
     require2fa: user?.require2fa ?? false,
+    forcedNotify: user?.forcedNotify ?? ({ channels: [], events: [] } as ForcedNotify),
   });
   const [q, setQ] = useState('');
   const [saving, setSaving] = useState(false);
   const set = <K extends keyof typeof v>(k: K, val: (typeof v)[K]) => setV((x) => ({ ...x, [k]: val }));
   const toggleForm = (id: string) => set('formIds', v.formIds.includes(id) ? v.formIds.filter((x) => x !== id) : [...v.formIds, id]);
   const shownForms = forms.filter((f) => !q || f.title.toLowerCase().includes(q.toLowerCase()));
+  const toggleForced = <K extends keyof ForcedNotify>(k: K, item: ForcedNotify[K][number]) => {
+    const list = v.forcedNotify[k] as string[];
+    const all = (k === 'channels' ? NOTIFY_CHANNELS : NOTIFY_EVENTS) as readonly string[];
+    const next = all.filter((x) => (x === item ? !list.includes(x) : list.includes(x)));
+    set('forcedNotify', { ...v.forcedNotify, [k]: next });
+  };
 
   async function save() {
     setSaving(true);
@@ -338,6 +354,39 @@ function UserDialog({
               </div>
             </div>
             <Switch checked={v.require2fa} onChange={(x) => set('require2fa', x)} label={t('Require two-factor for this user')} />
+          </div>
+          <div className="rounded-lg bg-slate-50 px-4 py-3 ring-1 ring-inset ring-slate-200">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-slate-900">
+              <Bell className="h-3.5 w-3.5 shrink-0" />
+              {t('Required notifications')}
+            </div>
+            <div className="text-xs text-slate-600">{t('Ticked ones stay on for this user; they can’t turn them off in My profile.')}</div>
+            <div className="mt-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{t('Channels')}</div>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1.5">
+              {NOTIFY_CHANNELS.map((c) => (
+                <label key={c} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                  <input type="checkbox" className="h-4 w-4 rounded border-slate-300 accent-brand-600" checked={v.forcedNotify.channels.includes(c)} onChange={() => toggleForced('channels', c)} />
+                  {t(CHANNEL_LABEL[c])}
+                </label>
+              ))}
+            </div>
+            <div className="mt-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{t('Alert types')}</div>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1.5">
+              {NOTIFY_EVENTS.filter((e) => e !== 'system' || v.role === 'ADMIN').map((e) => (
+                <label key={e} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                  <input type="checkbox" className="h-4 w-4 rounded border-slate-300 accent-brand-600" checked={v.forcedNotify.events.includes(e)} onChange={() => toggleForced('events', e)} />
+                  {t(EVENT_INFO[e].label)}
+                </label>
+              ))}
+            </div>
+            {v.forcedNotify.channels.includes('whatsapp') && !v.whatsappNumber.trim() && (
+              <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-800">
+                <Lock className="mt-0.5 h-3 w-3 shrink-0" /> {t('Add their WhatsApp number above, or ask them to add it in My profile.')}
+              </p>
+            )}
+            {v.forcedNotify.channels.includes('telegram') && (
+              <p className="mt-2 text-xs text-slate-500">{t('They need to add their Telegram chat ID in My profile.')}</p>
+            )}
           </div>
           {user && !isSelf && (
             <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3 ring-1 ring-inset ring-slate-100">

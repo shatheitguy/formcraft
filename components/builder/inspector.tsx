@@ -3,13 +3,16 @@
 import { AlertTriangle, AlignCenter, AlignLeft, ArrowDown, ArrowUp, Check, Heading, Languages, Monitor, Moon, PanelLeft, PanelTop, Palette, Plus, Settings2, Sun, Trash2, X } from 'lucide-react';
 import { useRef, useState, type ReactNode } from 'react';
 import { FIELD_ICONS } from '@/components/icons';
+import { NotificationsSection } from './notifications-section';
 import { useT } from '@/components/i18n';
+import { LookPicker } from '@/components/form/look-picker';
 import { ImageUpload } from '@/components/image-upload';
 import { Switch } from '@/components/ui';
 import { SUGGESTED_CATEGORIES } from '@/lib/categories';
 import { DEFAULT_AGREE_LABEL, FIELD_META, isChoice, opt, safeTermsUrl } from '@/lib/fields';
 import { FILE_KINDS, fileLimits, MAX_FILE_MB_LIMIT, MAX_FILES_LIMIT, type FileKind } from '@/lib/files';
-import { LOCALE_CODES, LOCALES } from '@/lib/i18n';
+import { formLayout } from '@/lib/form-layout';
+import { isLocale, LOCALE_CODES, LOCALES } from '@/lib/i18n';
 import { ACCENTS, ACCENT_KEYS } from '@/lib/theme';
 import type { FieldOption, FieldType, FormBranding, FormField, FormSettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -439,12 +442,16 @@ export interface FormMeta {
 }
 
 export function FormSettingsPanel({
+  formId,
+  fields,
   meta,
   settings,
   onMeta,
   onSettings,
   onBranding,
 }: {
+  formId: string;
+  fields: FormField[];
   meta: FormMeta;
   settings: FormSettings;
   onMeta: (patch: Partial<FormMeta>) => void;
@@ -501,6 +508,8 @@ export function FormSettingsPanel({
 
         <LanguagesSection settings={settings} onSettings={onSettings} />
 
+        <LookPicker value={formLayout(settings)} onChange={(layout) => onSettings({ layout })} />
+
         <PillRow
           label={t('Form theme')}
           value={settings.theme ?? 'auto'}
@@ -523,6 +532,10 @@ export function FormSettingsPanel({
         </div>
 
         <ResponseLimitSection settings={settings} onSettings={onSettings} />
+
+        <div className="h-px bg-slate-100" />
+
+        <NotificationsSection formId={formId} fields={fields} settings={settings} onSettings={onSettings} />
       </div>
     </div>
   );
@@ -639,6 +652,24 @@ function LanguagesSection({ settings, onSettings }: { settings: FormSettings; on
           })}
         </div>
       </div>
+      {langs.length > 1 && (
+        <div>
+          <div className="mb-1.5 text-xs text-slate-500">{t('Opens in')}</div>
+          <select
+            className="input"
+            value={settings.openLanguage && langs.includes(settings.openLanguage) ? settings.openLanguage : ''}
+            onChange={(e) => onSettings({ openLanguage: e.target.value || undefined })}
+          >
+            <option value="">{t('Visitor’s browser language')}</option>
+            {langs.map((l) => (
+              <option key={l} value={l}>
+                {isLocale(l) ? LOCALES[l].native : l}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1.5 text-xs text-slate-500">{t('The language people see first. A link with ?lang= still wins.')}</p>
+        </div>
+      )}
       {langs.length > 1 && <p className="text-xs text-slate-500">{t('Respondents can switch language on the form. Translate the texts in the Translate tab.')}</p>}
     </div>
   );
@@ -697,7 +728,7 @@ function HeaderSection({ branding, onChange }: { branding: FormBranding; onChang
   );
 }
 
-function PillRow<T extends string>({ label, value, onChange, options }: { label: string; value: T; onChange: (v: T) => void; options: { value: T; label: string; icon?: React.ReactNode }[] }) {
+export function PillRow<T extends string>({ label, value, onChange, options }: { label: string; value: T; onChange: (v: T) => void; options: { value: T; label: string; icon?: React.ReactNode }[] }) {
   return (
     <div>
       <div className="mb-1.5 text-xs text-slate-500">{label}</div>
@@ -757,7 +788,7 @@ function BrandingSection({ branding, onChange }: { branding: FormBranding; onCha
   );
 }
 
-function ToggleRow({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (v: boolean) => void }) {
+export function ToggleRow({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <div>
@@ -809,7 +840,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) 
   );
 }
 
-function Section({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+export function Section({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <div>
       <div className="mb-1.5 flex items-baseline justify-between">

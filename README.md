@@ -9,6 +9,7 @@
 [![Docker image](https://img.shields.io/badge/ghcr.io-shatheitguy%2Fformcraft-2496ed?logo=docker&logoColor=white)](https://github.com/shatheitguy/formcraft/pkgs/container/formcraft)
 [![Build](https://github.com/shatheitguy/formcraft/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/shatheitguy/formcraft/actions/workflows/docker-publish.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Android app](https://img.shields.io/badge/Android-download%20APK-3ddc84?logo=android&logoColor=white)](https://github.com/shatheitguy/formcraft/releases/latest/download/FormCraft.apk)
 
 ![FormCraft dashboard](docs/img/dashboard.png)
 
@@ -132,7 +133,7 @@ FormCraft backs itself up on a schedule, out of the box: every form (published a
 
 ### Locked out? Reset a password
 
-The sign-in page shows *Forgot password?* only when email (SMTP) is set up. Otherwise, another admin can set a new password in **Settings → Users**. If no admin can sign in, reset it from the server:
+The sign-in page shows *Forgot password?* when email (SMTP), WhatsApp or Telegram is set up. Otherwise, another admin can set a new password in **Settings → Users**. If no admin can sign in, reset it from the server:
 
 ```bash
 docker exec -it formcraft reset-password <username-or-email> <new-password>
@@ -178,6 +179,7 @@ Or start from a **blank form**. The template picker has search and category filt
 - **Inspector** for each field: label, help text, placeholder, required, compatible type switching, and an option editor (press Enter to add the next option; duplicate and empty labels are flagged)
 - **Quiz mode**: mark correct answers and assign points; respondents can see their score after submitting
 - **Autosave** (plus <kbd>Ctrl/⌘</kbd>+<kbd>S</kbd>), a live **preview** with desktop and mobile widths, and one-click **Publish**
+- **Form looks:** pick how respondents see each form, when creating it or later in the form settings: **Classic** (card on a dotted background), **Minimal** (clean full-width page with a large title and a full-width cover, ideal for embedding), **Steps** (one question per screen with a progress bar, Next / Back and Enter to continue) or **Split** (cover, logo and title in a side panel beside the questions; stacks on phones). Every look keeps the form's theme, accent colour, logo and cover, language switch and right-to-left support
 
 **Field types:** short text · paragraph · email (validated) · phone (validated) · multiple choice · checkboxes · dropdown · date picker · star rating (1–5 / 1–10) · linear scale (0/1 → 3–10, with end labels) · **terms & conditions** (terms text, optional link, *I agree* checkbox) · **file upload** (images, PDF, documents, spreadsheets; 1–10 files up to 25 MB each, checked by file signature and stored privately)
 
@@ -203,16 +205,28 @@ Or start from a **blank form**. The template picker has search and category filt
 - **Viewer**: read-only access to submissions and insights, plus CSV export
 - Each editor or viewer can be limited to **all forms** or **selected forms only**. Forms an editor creates are added to their access automatically
 - Admins can reset passwords (which signs the user out everywhere) and disable accounts. The last active admin can't be removed
-- **Forgot password by email:** with email set up, the sign-in page offers *Forgot password?*, which emails a 6-digit code (10 minutes, 5 tries) to set a new password and signs the account out everywhere. It answers the same whether or not the account exists
-- **Two-factor sign-in for every user** (*My profile → Two-factor sign-in*): an authenticator app (TOTP: Google/Microsoft Authenticator, 1Password, Authy…) and codes by **email, WhatsApp or Telegram** — any combination — plus 10 single-use recovery codes. At sign-in the user picks a method; codes can't be replayed, resends are limited, wrong codes are limited, and turning a method off asks for the password. Admins can *Reset two-factor* for someone who lost their phone
+- **Forgot password by email, WhatsApp or Telegram:** with any of them set up, the sign-in page offers *Forgot password?*. The user enters their username or email and picks where to get a 6-digit code (only channels the workspace has set up are shown; WhatsApp and Telegram need the number / chat ID saved in the profile). The code lasts 3 minutes (5 tries, one resend a minute, rate-limited per IP and per account), then they choose a new password and the account is signed out everywhere. It answers the same whether or not the account exists or has that channel
+- **Two-factor sign-in for every user** (*My profile → Two-factor sign-in*): an authenticator app (TOTP: Google/Microsoft Authenticator, 1Password, Authy…) and/or **codes by message** — one switch that covers **email, WhatsApp and Telegram** together (setup sends one code to all of them at once) — plus 10 single-use recovery codes. At sign-in the code goes to email by default and the user can tap WhatsApp or Telegram instead; sign-in codes expire after 3 minutes, can't be replayed, resends and wrong codes are limited, and turning a method off asks for the password. Admins can *Reset two-factor* for someone who lost their phone
 - **Admins can require two-factor sign-in** for admins, for everyone, or for chosen users (*Users & roles*). Until a required user turns a method on, they can only reach *My profile* to set it up
 - **Notification bell** in the top bar for every user: forms published, moved back to draft, created or deleted (by you or a teammate), new responses grouped per form ("12 new responses on …"), and — for admins — a notice when a newer FormCraft version is out, with the update command. Unread badge, mark as read, clear; updates every minute and in each user's language
+
+### 🔔 Notifications
+**Channels** (set up once by an admin in *Settings → Notifications*, each with a test button and a delivery log):
+- **Email (SMTP)**: any SMTP server, with Gmail / Outlook / SendGrid / Mailgun presets
+- **Telegram**: your own bot (token from @BotFather). Send to a person's chat ID, a group (negative ID; add the bot to the group) or a channel (`@channelname`)
+
+**Who gets what**
+- **Team members** choose for themselves in *My profile → Notifications*: new responses, form changes (published, moved to draft, created, deleted) and, for admins, system alerts (new version, failed automatic backup); which channels; all forms or selected ones; and on WhatsApp optionally the response as PDF or Excel. The same choices drive the bell. **Admins can require notifications** (*Users & roles → Edit user*): required channels and alert types show as locked in that user's profile
+- **People outside FormCraft** (builder → *Form settings → Notifications → Alerts for this form*): up to 10 extra recipients per form by email, WhatsApp or Telegram, with the response attached as PDF or Excel (email / WhatsApp). Invalid addresses are never saved
+- **The person who filled the form** (*Message to the person who filled it*): a thank-you on WhatsApp and/or email, sent to the number or address they typed in a chosen Phone / Email question. Placeholders such as `{Full name}`, `{Form title}` and `{Date}` (click to insert), optionally their own answers as a PDF, and *Send me a test* to try it on your own number / email. Limited to 60 messages per form per 10 minutes so a public form can't be used to spam people
+- **Only when…**: alert only when a question's answer *is* / *contains* a value (e.g. *Priority is Urgent*). It applies to everyone's new-response alerts for that form, team members included
+- **Daily summary**: instead of one message per response, extra recipients can get one message a day at a set time with the count of new responses and an Excel file of them (Telegram gets a link). Days without responses send nothing
 
 ### ⚙️ Settings
 - **Per-form logo & title** (top of the builder's form settings): upload a form logo, choose its size (small/medium/large) and placement (above or beside the title), align the header left or center, and hide the title when the logo already shows the name.
 - **Per-form branding**: a cover banner and a form color that overrides the workspace accent. Uploads accept PNG, JPG, GIF or WebP up to 2 MB, are checked by file signature, and are stored on the data volume
 - **Customization**: app name, tagline, uploaded logo, accent color (8 palettes, previewed live), public URL for links, and the "Powered by" footer
-- **Notifications**: SMTP email (with Gmail/Outlook/SendGrid/Mailgun presets), a Telegram bot and **WhatsApp**, test buttons, and a log of recent deliveries
+- **Notifications**: email (SMTP), Telegram and WhatsApp set-up, test buttons, and a log of recent deliveries — see [🔔 Notifications](#-notifications)
 - **WhatsApp**: link the workspace's WhatsApp by scanning a QR code (Linked devices, like WhatsApp Web). Users then get new-response alerts on WhatsApp — optionally with the response attached as PDF or Excel — and anyone can send reports from the Responses page. Numbers are saved in *My profile* or by an admin in *Users*. It isn't the official WhatsApp API: use a business number and don't send unexpected bulk messages
 - **About**: version, install type, database, counts and server details; **Check for updates**; one-click **Update** for native (git) installs, and the exact Docker / one-line installer command for Docker installs
 - **Database**: connection status, engine and version, size, row counts, JSON export, SQLite snapshot download, purging old responses, optimize (VACUUM), session cleanup, and a guide to switching engines
@@ -221,12 +235,16 @@ Or start from a **blank form**. The template picker has search and category filt
 ### 🌍 Languages & themes
 - **Whole app in English, العربية (Arabic) and தமிழ் (Tamil).** Arabic switches every screen to right-to-left. Each user picks a language from the 🌐 menu in the top bar, the login page, or **My profile**, and it's saved to their account. Admins set the **default language** for new visitors in **Settings → Customization**.
 - **Multilingual forms.** In the builder's form settings, choose the language a form is written in and the extra languages it's offered in. The **Translate** tab shows every text side by side (title, questions, help text, options, scale labels, button and confirmation message) with progress per language. Anything left empty falls back to the primary language.
-- **Respondents can switch language at any time while filling in.** Answers are kept, because choice answers are stored under their primary-language value, so reports and charts stay consistent across languages. Each response records its language, which appears in the Submissions table and the CSV. Links can preselect a language with `?lang=ar`; otherwise the respondent's browser language is used.
+- **Respondents can switch language at any time while filling in.** Answers are kept, because choice answers are stored under their primary-language value, so reports and charts stay consistent across languages. Each response records its language, which appears in the Submissions table and the CSV. Links can preselect a language with `?lang=ar`. Otherwise the form opens in its **Opens in** language (form settings → Languages), or, if that's left on *Visitor's browser language*, in the respondent's browser language.
 - **Light and dark mode.** By default the app follows the device's setting; users can force Light or Dark from the account menu, the login page or My profile. Each form can be **Auto**, **Light only** or **Dark only** for respondents.
 - Adding a language: add it to `LOCALES` in `lib/i18n/index.ts` and its strings to `lib/i18n/dict/*.ts` (English text is the key; anything missing falls back to English).
 
 ### 📱 Android app
-An Android app (APK) opens your FormCraft like Nextcloud does: enter your server address once, then sign in and use every feature in the phone layout. Build it from `mobile/` — see [mobile/README.md](mobile/README.md).
+**[⬇ Download FormCraft for Android (APK)](https://github.com/shatheitguy/formcraft/releases/latest/download/FormCraft.apk)** — always the latest version.
+
+The app opens your FormCraft like Nextcloud does: enter your server address once, then sign in and use every feature in the phone layout. To install, open the link on your phone and allow installing apps from your browser when Android asks. New versions install over the old one.
+
+To build it yourself, see [mobile/README.md](mobile/README.md).
 
 ### 🔒 Validation everywhere
 The same validation runs in the browser and on the server: required fields, email and phone format, allowed option values and scale bounds. Quiz scores are always calculated on the server. Draft forms reject submissions.

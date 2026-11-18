@@ -27,7 +27,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     return NextResponse.json({ ok: true });
   }
 
-  const { data, error } = validateUserInput(body, { partial: true });
+  const { data, error } = validateUserInput(body, { partial: true, admin: true });
   if (error) return NextResponse.json({ error }, { status: 400 });
   const clash = await uniquenessProblem(data.username, data.email, target.id);
   if (clash) return NextResponse.json({ error: clash }, { status: 409 });
@@ -45,10 +45,6 @@ export async function PATCH(req: Request, { params }: Ctx) {
       data: {
         ...rest,
         ...(password ? { passwordHash: await hashPassword(password) } : {}),
-        // A new WhatsApp number hasn't been confirmed by the user, so sign-in codes stop going there.
-        ...(rest.whatsappNumber !== undefined && rest.whatsappNumber !== target.whatsappNumber && target.whatsappOtpEnabled
-          ? { whatsappOtpEnabled: false, ...(target.totpEnabled || target.emailOtpEnabled || target.telegramOtpEnabled ? {} : { recoveryCodes: '[]' }) }
-          : {}),
       },
     });
     if (formIds !== undefined) {

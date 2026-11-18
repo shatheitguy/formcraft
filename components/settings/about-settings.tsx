@@ -99,7 +99,7 @@ export function AboutSettings({ initial }: { initial: AboutInfo }) {
   return (
     <div className="space-y-6">
       {/* Identity */}
-      <div className="card flex flex-wrap items-center gap-4 p-5">
+      <div className="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
         <Logo className="h-14 w-14 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="text-xl font-bold text-slate-900">FormCraft</div>
@@ -108,7 +108,7 @@ export function AboutSettings({ initial }: { initial: AboutInfo }) {
             {t('Version')} <span className="font-mono font-semibold text-slate-900">{info.version}</span>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 sm:shrink-0">
           <a href={REPO} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">
             <ExternalLink className="h-4 w-4" /> GitHub
           </a>
@@ -124,12 +124,16 @@ export function AboutSettings({ initial }: { initial: AboutInfo }) {
         description={info.checkedAt ? t('Last checked {when}', { when: formatDateTime(info.checkedAt, locale) }) : t('FormCraft checks GitHub for a new version every 6 hours.')}
         icon={<RefreshCw />}
         aside={
-          <Button onClick={check} loading={busy === 'check'} disabled={running}>
+          <Button onClick={check} loading={busy === 'check'} disabled={running} className="hidden sm:inline-flex">
             <RefreshCw className="h-4 w-4" /> {t('Check for updates')}
           </Button>
         }
       >
         <div className="space-y-4">
+          {/* Phones: the button gets its own row so the header text isn't squeezed */}
+          <Button onClick={check} loading={busy === 'check'} disabled={running} className="w-full sm:hidden">
+            <RefreshCw className="h-4 w-4" /> {t('Check for updates')}
+          </Button>
           {info.updateAvailable ? (
             <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-4 ring-1 ring-inset ring-amber-300">
               <Download className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
@@ -183,7 +187,7 @@ export function AboutSettings({ initial }: { initial: AboutInfo }) {
                           : t('Updated. Restarting…')}
                   </div>
                   {info.update.error && <div className="mt-1">{t(info.update.error)}</div>}
-                  {log && <pre className="scrollbar-thin mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded bg-slate-900 p-2 font-mono text-[11px] leading-relaxed text-slate-100" dir="ltr">{log}</pre>}
+                  {log && <pre className="scrollbar-thin mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded bg-[#0f172a] p-2 font-mono text-[11px] leading-relaxed text-[#f1f5f9]" dir="ltr">{log}</pre>}
                   {!log && info.update.state !== 'running' && (
                     <button onClick={refresh} className="mt-2 text-xs font-semibold underline">
                       {t('Show the update log')}
@@ -206,7 +210,7 @@ export function AboutSettings({ initial }: { initial: AboutInfo }) {
             {info.install === 'docker' && (
               <>
                 <p className="text-sm text-slate-700">{t('Or re-run the one-line installer — it keeps your settings and data:')}</p>
-                <div className="grid gap-2">
+                <div className="grid min-w-0 gap-2">
                   <Cmd label="Linux / macOS" text={linuxCmd} onCopy={copy} />
                   <Cmd label="Windows PowerShell" text={winCmd} onCopy={copy} />
                 </div>
@@ -245,11 +249,11 @@ export function AboutSettings({ initial }: { initial: AboutInfo }) {
 function Cmd({ text, label, onCopy }: { text: string; label?: string; onCopy: (s: string) => void }) {
   const { t } = useI18n();
   return (
-    <div>
+    <div className="min-w-0">
       {label && <div className="mb-1 text-xs font-semibold text-slate-600">{label}</div>}
-      <div className="flex items-stretch overflow-hidden rounded-lg bg-slate-900 ring-1 ring-slate-800" dir="ltr">
-        <code className="scrollbar-thin min-w-0 flex-1 overflow-x-auto whitespace-nowrap px-3 py-2 font-mono text-[12.5px] text-slate-100">{text}</code>
-        <button onClick={() => onCopy(text)} className="flex shrink-0 items-center gap-1 border-s border-white/10 px-3 text-xs font-semibold text-slate-200 hover:bg-white/10" aria-label={t('Copy')}>
+      <div className="flex min-w-0 max-w-full items-stretch overflow-hidden rounded-lg bg-[#0f172a] ring-1 ring-[#1e293b]" dir="ltr">
+        <code className="scrollbar-thin min-w-0 flex-1 overflow-x-auto whitespace-nowrap px-3 py-2 font-mono text-[12.5px] text-[#f1f5f9]">{text}</code>
+        <button onClick={() => onCopy(text)} className="flex shrink-0 items-center gap-1 border-s border-white/10 px-3 text-xs font-semibold text-[#e2e8f0] hover:bg-white/10" aria-label={t('Copy')}>
           <Copy className="h-3.5 w-3.5" /> {t('Copy')}
         </button>
       </div>

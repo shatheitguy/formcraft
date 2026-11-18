@@ -3,9 +3,11 @@ import { canEditForm, canViewForm, forbidden, getCurrentUser, unauthorized } fro
 import { prisma } from '@/lib/db';
 import { DOMAIN_RE, nextFreePort, portRange, SLUG_RE } from '@/lib/form-links';
 import { syncPortListeners } from '@/lib/port-router';
-import { isValidSchema, normalizeTags, sanitizeBranding, toFormDTO } from '@/lib/forms';
+import { isValidSchema, normalizeTags, sanitizeBranding, sanitizeLayout, toFormDTO } from '@/lib/forms';
 import { formAudience, notifyFormEvent } from '@/lib/activity';
 import { deleteFormFiles } from '@/lib/response-files';
+import { sanitizeFormNotify } from '@/lib/form-alerts';
+import { getSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +38,13 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (body.schema !== undefined) {
     if (!isValidSchema(body.schema)) return NextResponse.json({ error: 'Invalid form schema' }, { status: 400 });
     const schema = body.schema;
-    schema.settings = { ...schema.settings, branding: sanitizeBranding(schema.settings?.branding) };
+    const { whatsapp } = await getSettings();
+    schema.settings = {
+      ...schema.settings,
+      branding: sanitizeBranding(schema.settings?.branding),
+      layout: sanitizeLayout(schema.settings?.layout),
+      ...sanitizeFormNotify(schema.settings as unknown as Record<string, unknown>, schema.fields, whatsapp.defaultCountryCode),
+    };
     data.schema = JSON.stringify(schema);
   }
 

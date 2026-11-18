@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { parseSchema, toSubmissionDTO } from '@/lib/forms';
 import { formLanguages } from '@/lib/form-i18n';
 import { notifySubmission } from '@/lib/notify';
+import { sendConfirmation } from '@/lib/form-alerts';
 import { notifySubmissionInApp } from '@/lib/activity';
 import { deleteAnswerFiles, responseFileExists } from '@/lib/response-files';
 import { computeScore } from '@/lib/scoring';
@@ -72,6 +73,18 @@ export async function POST(req: Request, { params }: Ctx) {
   const origin = `${req.headers.get('x-forwarded-proto') ?? 'http'}://${req.headers.get('x-forwarded-host') ?? req.headers.get('host')}`;
   void notifySubmission({ formId: form.id, answers: clean, origin, submissionId: submission.id, score: submission.score, maxScore: submission.maxScore });
   void notifySubmissionInApp(form);
+  if (schema.settings.confirm) {
+    void sendConfirmation({
+      form,
+      fields: schema.fields,
+      quiz: !!schema.settings.quiz,
+      confirm: schema.settings.confirm,
+      answers: clean,
+      submissionId: submission.id,
+      score: submission.score,
+      maxScore: submission.maxScore,
+    });
+  }
 
   const left = limit ? Math.max(0, limit - previous - 1) : null;
   const res = NextResponse.json({ id: submission.id, result: schema.settings.showScore ? result : null, remaining: left, respondentId }, { status: 201 });

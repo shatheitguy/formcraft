@@ -192,7 +192,7 @@ export function HubClient({ forms, canCreate, portRange }: { forms: HubForm[]; c
         )}
       </AppHeader>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-20 pt-8 sm:px-6">
+      <main className="mx-auto w-full max-w-[1680px] flex-1 px-4 pb-20 pt-8 sm:px-6 lg:px-8">
         {/* Heading + stats */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -325,7 +325,7 @@ export function HubClient({ forms, canCreate, portRange }: { forms: HubForm[]; c
             action={<Button onClick={clearFilters}>{t('Clear filters')}</Button>}
           />
         ) : view === 'grid' ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {results.map((f) => (
               <FormCard key={f.id} form={f} actions={actions} />
             ))}

@@ -1,7 +1,10 @@
 import nodemailer from 'nodemailer';
 import { formatAnswer } from './answers';
+import { matchesCondition, MAX_ALERT_RECIPIENTS, TELEGRAM_CHAT_RE } from './form-alerts-shared';
+import { isValidEmail } from './validation';
 import { prisma } from './db';
 import { parseSchema } from './forms';
+import { channelOn, effectiveEvents } from './notify-prefs';
 import { buildReport, REPORT_MIME, reportFileName, type ReportFormat } from './reports';
 import { getSettings, type SmtpSettings } from './settings';
 import type { Answers } from './types';
@@ -10,13 +13,23 @@ import { WA_ERRORS, waNumber, waSend, waStatus, type WaDocument } from './whatsa
 
 export type Channel = 'email' | 'telegram' | 'whatsapp';
 
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
 /* ------------------------------ transports ------------------------------ */
 
-export async function sendEmail(smtp: SmtpSettings, to: string, subject: string, html: string, text: string) {
+/* Every message starts with the workspace's name and, smaller underneath, its tagline (Settings → Customization). */
+async function brand() {
+  const { app } = await getSettings();
+  return { name: app.name.trim() || 'FormCraft', tagline: app.tagline.trim() };
+}
+const TAGLINE_SLOT = '<!--fc-tagline-->';
+
+export async function sendEmail(smtp: SmtpSettings, to: string, subject: string, html: string, text: string, files?: WaDocument[]) {
   if (!smtp.host) throw new Error('SMTP host is not configured.');
+  const b = await brand();
+  html = html.replace(TAGLINE_SLOT, b.tagline ? `<div style="font-size:12px;color:#64748b;margin-top:2px">${esc(b.tagline)}</div>` : '');
+  text = `${b.name}${b.tagline ? `\n${b.tagline}` : ''}\n\n${text}`;
   const transport = nodemailer.createTransport({
     host: smtp.host,
     port: Number(smtp.port) || 587,
@@ -25,11 +38,14 @@ export async function sendEmail(smtp: SmtpSettings, to: string, subject: string,
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
   });
-  await transport.sendMail({ from: smtp.from || smtp.user, to, subject, html, text });
+  const attachments = files?.map((f) => ({ filename: f.fileName, content: f.data, contentType: f.mimetype }));
+  await transport.sendMail({ from: smtp.from || smtp.user, to, subject, html, text, attachments });
 }
 
 export async function sendTelegram(botToken: string, chatId: string, html: string) {
   if (!botToken) throw new Error('Telegram bot token is not configured.');
+  const b = await brand();
+  html = `<b>${esc(b.name)}</b>${b.tagline ? `\n<i>${esc(b.tagline)}</i>` : ''}\n\n${html}`;
   const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -43,11 +59,14 @@ export async function sendTelegram(botToken: string, chatId: string, html: strin
 /** Sends over the linked WhatsApp; throws a readable error when it can't. */
 export async function sendWhatsApp(phone: string, text: string, doc?: WaDocument, defaultCountry = '') {
   const num = waNumber(phone, defaultCountry);
+  const b = await brand();
+  // WhatsApp can't make text smaller, so the tagline goes in italics under the bold name.
+  text = `*${b.name}*${b.tagline ? `\n_${b.tagline}_` : ''}\n\n${text}`;
   const r = await waSend(num, text, doc);
   if (r !== 'ok') throw new Error(WA_ERRORS[r]);
 }
 
-async function deliver(channel: Channel, target: string, subject: string, send: () => Promise<void>) {
+export async function deliver(channel: Channel, target: string, subject: string, send: () => Promise<void>) {
   try {
     await send();
     await prisma.notificationLog.create({ data: { channel, target, subject, status: 'sent' } });
@@ -61,18 +80,18 @@ async function deliver(channel: Channel, target: string, subject: string, send: 
 
 /* ------------------------------ messages ------------------------------ */
 
-function emailLayout(appName: string, title: string, body: string) {
+export function emailLayout(appName: string, title: string, body: string) {
   return `<!doctype html><html><body style="margin:0;background:#f8fafc;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a">
 <div style="max-width:560px;margin:24px auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden">
 <div style="height:6px;background:linear-gradient(90deg,#b8262d,#7f151b)"></div>
-<div style="padding:24px 28px"><div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em">${esc(appName)}</div>
+<div style="padding:24px 28px"><div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em">${esc(appName)}</div>${TAGLINE_SLOT}
 <h1 style="font-size:18px;margin:6px 0 16px">${title}</h1>${body}</div></div></body></html>`;
 }
 
 const CODE_COPY = {
   reset: { subject: 'Your password reset code', title: 'Reset your password', intro: 'Use this code to choose a new password.' },
   login: { subject: 'Your sign-in code', title: 'Your sign-in code', intro: 'Use this code to finish signing in.' },
-  'email-setup': { subject: 'Confirm two-factor sign-in', title: 'Confirm your email', intro: 'Use this code to turn on email two-factor sign-in.' },
+  'email-setup': { subject: 'Confirm two-factor sign-in', title: 'Confirm your email', intro: 'Use this code to turn on sign-in codes by email, WhatsApp and Telegram.' },
 } as const;
 
 /** Emails a one-time code (password reset, sign-in or two-factor setup). */
@@ -115,19 +134,21 @@ export async function notifySubmission({
 
     const form = await prisma.form.findUnique({ where: { id: formId } });
     if (!form) return;
+    const schema = parseSchema(form.schema);
+    // The form's "only when" condition gates every new-response alert for it.
+    if (!matchesCondition(schema.settings.alertWhen, schema.fields, answers)) return;
 
-    const users = await prisma.user.findMany({
-      where: { active: true, OR: [{ emailNotifications: true }, { telegramNotifications: true }, { whatsappNotifications: true }] },
-      include: { formAccess: { select: { formId: true } } },
-    });
+    // Channels an admin requires count as on, so everyone active is a candidate.
+    const users = await prisma.user.findMany({ where: { active: true }, include: { formAccess: { select: { formId: true } } } });
     const recipients = users.filter((u) => {
       const hasAccess = u.role === 'ADMIN' || u.formScope === 'ALL' || u.formAccess.some((a) => a.formId === formId);
       const subscribed = u.notifyAllForms || safeJson<string[]>(u.notifyFormIds, []).includes(formId);
-      return hasAccess && subscribed;
+      return hasAccess && subscribed && effectiveEvents(u).has('submission');
     });
-    if (!recipients.length) return;
+    // People outside FormCraft listed on the form (unless they get a daily summary instead).
+    const extra = schema.settings.alertDelivery?.mode === 'daily' ? [] : (schema.settings.alerts ?? []).slice(0, MAX_ALERT_RECIPIENTS);
+    if (!recipients.length && !extra.length) return;
 
-    const schema = parseSchema(form.schema);
     const rows = schema.fields
       .filter((f) => answers[f.id] !== undefined)
       .slice(0, 12)
@@ -174,14 +195,14 @@ export async function notifySubmission({
     await Promise.all(
       recipients.flatMap((u) => {
         const jobs: Promise<unknown>[] = [];
-        if (emailOn && u.emailNotifications) {
+        if (emailOn && channelOn(u, 'email')) {
           const to = u.notifyEmail || u.email;
           jobs.push(deliver('email', to, subject, () => sendEmail(settings.smtp, to, subject, html, text)));
         }
-        if (tgOn && u.telegramNotifications && u.telegramChatId) {
+        if (tgOn && channelOn(u, 'telegram') && u.telegramChatId) {
           jobs.push(deliver('telegram', u.telegramChatId, subject, () => sendTelegram(settings.telegram.botToken, u.telegramChatId!, tg)));
         }
-        if (waOn && u.whatsappNotifications && u.whatsappNumber) {
+        if (waOn && channelOn(u, 'whatsapp') && u.whatsappNumber) {
           const to = u.whatsappNumber;
           jobs.push(
             fileFor(u.whatsappAttach).then((doc) => deliver('whatsapp', to, subject, () => sendWhatsApp(to, wa, doc, settings.whatsapp.defaultCountryCode))),
@@ -191,10 +212,95 @@ export async function notifySubmission({
       }),
     );
 
+    const cc = settings.whatsapp.defaultCountryCode;
+    await Promise.all(
+      extra.map(async (r) => {
+        const attach = r.attach === 'pdf' || r.attach === 'xlsx' ? r.attach : 'none';
+        if (r.channel === 'email' && emailOn && isValidEmail(r.to)) {
+          const doc = await fileFor(attach);
+          return deliver('email', r.to, subject, () => sendEmail(settings.smtp, r.to, subject, html, text, doc ? [doc] : undefined));
+        }
+        if (r.channel === 'telegram' && tgOn && TELEGRAM_CHAT_RE.test(r.to)) {
+          return deliver('telegram', r.to, subject, () => sendTelegram(settings.telegram.botToken, r.to, tg));
+        }
+        if (r.channel === 'whatsapp' && waOn && waNumber(r.to, cc)) {
+          const doc = await fileFor(attach);
+          return deliver('whatsapp', r.to, subject, () => sendWhatsApp(r.to, wa, doc, cc));
+        }
+      }),
+    );
+
     // Keep the delivery log bounded.
     await prisma.notificationLog.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 30 * 86_400_000) } } });
   } catch (err) {
     console.error('[formcraft] notification error', err);
+  }
+}
+
+export interface EventAlert {
+  /** "form" = form published / drafted / created / deleted; "system" = admin notices. */
+  kind: 'form' | 'system';
+  /** Who may receive it (already limited to people who can see the form). */
+  userIds: string[];
+  /** For form events: only people following this form get it. */
+  formId?: string;
+  subject: string;
+  text: string;
+  /** App path (/forms/…) or full URL. */
+  link?: string;
+}
+
+/**
+ * A short alert (form change or system notice) over each recipient's email / Telegram / WhatsApp,
+ * respecting what they chose and what an admin requires. Never throws.
+ */
+export async function sendEventAlerts({ kind, userIds, formId, subject, text, link }: EventAlert) {
+  try {
+    if (!userIds.length) return;
+    const settings = await getSettings();
+    const emailOn = settings.smtp.enabled && !!settings.smtp.host;
+    const tgOn = settings.telegram.enabled && !!settings.telegram.botToken;
+    const waOn = settings.whatsapp.enabled && waStatus().status === 'on';
+    if (!emailOn && !tgOn && !waOn) return;
+
+    const users = await prisma.user.findMany({ where: { id: { in: userIds }, active: true } });
+    const recipients = users.filter(
+      (u) => effectiveEvents(u).has(kind) && (!formId || u.notifyAllForms || safeJson<string[]>(u.notifyFormIds, []).includes(formId)),
+    );
+    if (!recipients.length) return;
+
+    const base = (settings.app.publicUrl || '').replace(/\/$/, '');
+    const url = !link ? '' : /^https?:\/\//.test(link) ? link : base ? base + link : '';
+    const html = emailLayout(
+      settings.app.name,
+      esc(subject),
+      `<p style="font-size:14px;color:#334155;margin:0">${esc(text)}</p>${
+        url ? `<a href="${esc(url)}" style="display:inline-block;margin-top:20px;background:#9b1b22;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600">Open</a>` : ''
+      }`,
+    );
+    const plain = url ? `${text}\n\n${url}` : text;
+    const tg = `🔔 ${esc(text)}${url ? `\n\n<a href="${esc(url)}">Open</a>` : ''}`;
+    const wa = `🔔 ${plain}`;
+
+    await Promise.all(
+      recipients.flatMap((u) => {
+        const jobs: Promise<unknown>[] = [];
+        if (emailOn && channelOn(u, 'email')) {
+          const to = u.notifyEmail || u.email;
+          jobs.push(deliver('email', to, subject, () => sendEmail(settings.smtp, to, `${subject} · ${settings.app.name}`, html, plain)));
+        }
+        if (tgOn && channelOn(u, 'telegram') && u.telegramChatId) {
+          jobs.push(deliver('telegram', u.telegramChatId, subject, () => sendTelegram(settings.telegram.botToken, u.telegramChatId!, tg)));
+        }
+        if (waOn && channelOn(u, 'whatsapp') && u.whatsappNumber) {
+          const to = u.whatsappNumber;
+          jobs.push(deliver('whatsapp', to, subject, () => sendWhatsApp(to, wa, undefined, settings.whatsapp.defaultCountryCode)));
+        }
+        return jobs;
+      }),
+    );
+  } catch (err) {
+    console.error('[formcraft] event alert error', err);
   }
 }
 
@@ -209,12 +315,12 @@ export async function sendTest(channel: Channel, target: string, overrides?: { s
   }
   if (channel === 'whatsapp') {
     return deliver('whatsapp', target, subject, () =>
-      sendWhatsApp(target, `✅ *${settings.app.name}*\nWhatsApp notifications are working. You'll get a message here for every new response on forms you follow.`, undefined, settings.whatsapp.defaultCountryCode),
+      sendWhatsApp(target, `✅ WhatsApp notifications are working. You'll get a message here for every new response on forms you follow.`, undefined, settings.whatsapp.defaultCountryCode),
     );
   }
   const token = overrides?.botToken ?? settings.telegram.botToken;
   return deliver('telegram', target, subject, () =>
-    sendTelegram(token, target, `✅ <b>${esc(settings.app.name)}</b>\nTelegram notifications are working. You'll get a message here for every new response on forms you follow.`),
+    sendTelegram(token, target, `✅ Telegram notifications are working. You'll get a message here for every new response on forms you follow.`),
   );
 }
 
@@ -222,14 +328,14 @@ export async function sendTest(channel: Channel, target: string, overrides?: { s
  * Sends a one-time code by WhatsApp or Telegram (two-factor sign-in and its setup).
  * The code is never logged: the delivery log only records the target and a generic subject.
  */
-export async function sendCodeMessage(channel: 'whatsapp' | 'telegram', target: string, appName: string, purpose: 'login' | 'setup', code: string, minutes: number) {
+export async function sendCodeMessage(channel: 'whatsapp' | 'telegram', target: string, appName: string, purpose: 'login' | 'setup' | 'reset', code: string, minutes: number) {
   const settings = await getSettings();
-  const what = purpose === 'login' ? 'sign-in code' : 'code to turn on two-factor sign-in';
-  const subject = purpose === 'login' ? 'Sign-in code' : 'Two-factor setup code';
+  const what = purpose === 'login' ? 'sign-in code' : purpose === 'reset' ? 'password reset code' : 'code to turn on two-factor sign-in';
+  const subject = purpose === 'login' ? 'Sign-in code' : purpose === 'reset' ? 'Password reset code' : 'Two-factor setup code';
   if (channel === 'whatsapp') {
-    const text = `🔐 *${appName}* ${what}: ${code} — expires in ${minutes} minutes. Never share it.`;
+    const text = `🔐 Your ${what}: *${code}* — expires in ${minutes} minutes. Never share it.`;
     return deliver('whatsapp', target, subject, () => sendWhatsApp(target, text, undefined, settings.whatsapp.defaultCountryCode));
   }
-  const html = `🔐 <b>${esc(appName)}</b> ${what}: <code>${code}</code>\nExpires in ${minutes} minutes. Never share it.`;
+  const html = `🔐 Your ${what}: <code>${code}</code>\nExpires in ${minutes} minutes. Never share it.`;
   return deliver('telegram', target, subject, () => sendTelegram(settings.telegram.botToken, target, html));
 }

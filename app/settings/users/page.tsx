@@ -3,6 +3,7 @@ import { getServerT } from '@/lib/i18n/server';
 import { UsersManager, type ManagedUser } from '@/components/settings/users-manager';
 import { requireAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { normalizeForced } from '@/lib/notify-prefs';
 import { getSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,7 @@ export default async function UsersPage() {
     active: u.active,
     whatsappNumber: u.whatsappNumber ?? '',
     whatsappNotifications: u.whatsappNotifications,
+    forcedNotify: normalizeForced(u.forcedNotify),
     lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
     twoFactor: u.totpEnabled || u.emailOtpEnabled || u.whatsappOtpEnabled || u.telegramOtpEnabled,
     require2fa: u.require2fa,

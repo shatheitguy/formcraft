@@ -88,6 +88,10 @@ model User {
   notifyAllForms        Boolean      @default(true)
   /// JSON-encoded string[] of form ids (when notifyAllForms is false)
   notifyFormIds         String       @default("[]")
+  /// JSON string[] of the kinds of alerts this user wants: "submission" | "form" | "system" (system = admins only)
+  notifyEvents          String       @default("[\"submission\",\"form\",\"system\"]")
+  /// Notifications an admin requires for this user: JSON { channels: ("email"|"telegram"|"whatsapp")[], events: ("submission"|"form"|"system")[] }
+  forcedNotify          String       @default("{\"channels\":[],\"events\":[]}")
   lastLoginAt           DateTime?
   /// Two-factor sign-in. totpSecret is base32; the pending one waits for a first valid code.
   totpSecret            String?

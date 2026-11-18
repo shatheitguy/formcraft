@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Bell, Camera, KeyRound, Mail, Palette, Send, Trash2, UserCircle2 } from 'lucide-react';
+import { AlertTriangle, Bell, Camera, KeyRound, Lock, Mail, Palette, Send, Trash2, UserCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
@@ -13,6 +13,7 @@ import { ThemeSwitch, useLocalePref } from '@/components/preferences';
 import { LOCALE_CODES, LOCALES, type Locale } from '@/lib/i18n';
 import { Button, Segmented, Spinner, Switch } from '@/components/ui';
 import { categoryStyle } from '@/lib/categories';
+import { EVENT_INFO, NOTIFY_EVENTS, type ForcedNotify, type NotifyEvent } from '@/lib/notify-prefs';
 import { ROLE_INFO, type Role } from '@/lib/roles';
 import { cn, formatDate } from '@/lib/utils';
 import { TelegramIcon } from './notification-settings';
@@ -36,6 +37,9 @@ interface Profile {
   telegramNotifications: boolean;
   notifyAllForms: boolean;
   notifyFormIds: string[];
+  notifyEvents: NotifyEvent[];
+  /** Channels and kinds an admin requires (always on, can't be turned off here). */
+  forcedNotify: ForcedNotify;
 }
 
 export function ProfileSettings({
@@ -56,13 +60,16 @@ export function ProfileSettings({
   const { t, locale } = useI18n();
 
   const [account, setAccount] = useState({ name: profile.name, username: profile.username, email: profile.email });
+  const forced = profile.forcedNotify;
   const [notify, setNotify] = useState({
     notifyEmail: profile.notifyEmail,
     telegramChatId: profile.telegramChatId,
-    emailNotifications: profile.emailNotifications,
-    telegramNotifications: profile.telegramNotifications,
+    // Required channels and kinds show (and save) as on.
+    emailNotifications: profile.emailNotifications || forced.channels.includes('email'),
+    telegramNotifications: profile.telegramNotifications || forced.channels.includes('telegram'),
     whatsappNumber: profile.whatsappNumber,
-    whatsappNotifications: profile.whatsappNotifications,
+    whatsappNotifications: profile.whatsappNotifications || forced.channels.includes('whatsapp'),
+    notifyEvents: NOTIFY_EVENTS.filter((e) => profile.notifyEvents.includes(e) || forced.events.includes(e)),
     whatsappAttach: profile.whatsappAttach,
     notifyAllForms: profile.notifyAllForms,
     notifyFormIds: profile.notifyFormIds,
@@ -72,6 +79,8 @@ export function ProfileSettings({
 
   const accountDirty = account.name !== profile.name || account.username !== profile.username || account.email !== profile.email;
   const setN = <K extends keyof typeof notify>(k: K, v: (typeof notify)[K]) => setNotify((x) => ({ ...x, [k]: v }));
+  const toggleEvent = (e: NotifyEvent, on: boolean) => setN('notifyEvents', NOTIFY_EVENTS.filter((x) => (x === e ? on : notify.notifyEvents.includes(x))));
+  const shownEvents = NOTIFY_EVENTS.filter((e) => e !== 'system' || isAdmin);
 
   async function saveAccount() {
     setBusy('account');
@@ -184,7 +193,7 @@ export function ProfileSettings({
         </div>
       </SettingsCard>
 
-      <TwoFactorCard status={twoFactor} emailAvailable={channels.email} email={profile.email} />
+      <TwoFactorCard status={twoFactor} />
 
       <SettingsCard
         title={t('Notifications')}
@@ -202,6 +211,7 @@ export function ProfileSettings({
             title={t('Email')}
             enabled={notify.emailNotifications}
             onToggle={(v) => setN('emailNotifications', v)}
+            forced={forced.channels.includes('email')}
             available={channels.email}
             isAdmin={isAdmin}
             onTest={() => test('email')}
@@ -216,6 +226,8 @@ export function ProfileSettings({
             title={t('Telegram')}
             enabled={notify.telegramNotifications}
             onToggle={(v) => setN('telegramNotifications', v)}
+            forced={forced.channels.includes('telegram')}
+            missingTarget={forced.channels.includes('telegram') && !notify.telegramChatId.trim() ? t('Your admin requires Telegram alerts — add your Telegram chat ID.') : undefined}
             available={channels.telegram}
             isAdmin={isAdmin}
             onTest={() => test('telegram')}
@@ -231,6 +243,8 @@ export function ProfileSettings({
             title={t('WhatsApp')}
             enabled={notify.whatsappNotifications}
             onToggle={(v) => setN('whatsappNotifications', v)}
+            forced={forced.channels.includes('whatsapp')}
+            missingTarget={forced.channels.includes('whatsapp') && !notify.whatsappNumber.trim() ? t('Your admin requires WhatsApp alerts — add your WhatsApp number.') : undefined}
             available={channels.whatsapp}
             isAdmin={isAdmin}
             onTest={() => test('whatsapp')}
@@ -253,6 +267,30 @@ export function ProfileSettings({
               />
             </div>
           </Channel>
+        </div>
+
+        <div className="mt-6">
+          <span className="label">{t('What to notify me about')}</span>
+          <div className="divide-y divide-slate-100 rounded-lg ring-1 ring-slate-200">
+            {shownEvents.map((e) => {
+              const locked = forced.events.includes(e);
+              return (
+                <div key={e} className="flex items-start justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-slate-900">{t(EVENT_INFO[e].label)}</div>
+                    <div className="text-xs text-slate-600">{t(EVENT_INFO[e].text)}</div>
+                    {locked && (
+                      <div className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
+                        <Lock className="h-3 w-3 shrink-0" /> {t('Required by your admin')}
+                      </div>
+                    )}
+                  </div>
+                  <Switch checked={locked || notify.notifyEvents.includes(e)} onChange={(v) => toggleEvent(e, v)} disabled={locked} label={t(EVENT_INFO[e].label)} />
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-1.5 text-xs text-slate-500">{t('Applies to the bell and to the email, Telegram and WhatsApp alerts you turned on above.')}</p>
         </div>
 
         <div className="mt-6">
@@ -404,20 +442,23 @@ function ProfilePhoto({ name, username, initial }: { name: string; username: str
         aria-label={t('Change profile photo')}
       >
         <Avatar name={name} fallback={username} src={url} className="h-16 w-16 text-lg" />
-        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 text-onaccent opacity-0 transition group-hover:opacity-100">
-          {busy ? <Spinner className="text-onaccent" /> : <Camera className="h-5 w-5" />}
+        {/* One control: tap the photo to upload or change it. The badge shows it's tappable (also on phones). */}
+        {busy ? (
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+            <Spinner className="text-onaccent" />
+          </span>
+        ) : (
+          <span className="absolute inset-0 rounded-full bg-black/0 transition group-hover:bg-black/20" />
+        )}
+        <span className="absolute -bottom-0.5 -end-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-600 text-onaccent shadow ring-2 ring-white">
+          <Camera className="h-3.5 w-3.5" />
         </span>
       </button>
-      <div className="flex flex-col gap-1">
-        <Button size="xs" onClick={() => input.current?.click()} disabled={busy}>
-          <Camera className="h-3.5 w-3.5" /> {url ? t('Change photo') : t('Upload photo')}
+      {url && (
+        <Button size="xs" variant="ghost" onClick={remove} disabled={busy} className="!text-rose-600" title={t('Remove photo')}>
+          <Trash2 className="h-3.5 w-3.5" /> {t('Remove')}
         </Button>
-        {url && (
-          <Button size="xs" variant="ghost" onClick={remove} disabled={busy} className="!text-rose-600">
-            <Trash2 className="h-3.5 w-3.5" /> {t('Remove')}
-          </Button>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -427,6 +468,8 @@ function Channel({
   title,
   enabled,
   onToggle,
+  forced,
+  missingTarget,
   available,
   isAdmin,
   onTest,
@@ -438,6 +481,10 @@ function Channel({
   title: string;
   enabled: boolean;
   onToggle: (v: boolean) => void;
+  /** Required by an admin: shown on and locked. */
+  forced?: boolean;
+  /** Required but there's nowhere to send it yet. */
+  missingTarget?: string;
   available: boolean;
   isAdmin: boolean;
   onTest: () => void;
@@ -447,14 +494,25 @@ function Channel({
 }) {
   const t = useT();
   return (
-    <div className={cn('rounded-xl border p-4 transition', enabled ? 'border-brand-200 bg-brand-50/30' : 'border-slate-200')}>
+    <div className={cn('min-w-0 rounded-xl border p-4 transition', enabled || forced ? 'border-brand-200 bg-brand-50/30' : 'border-slate-200')}>
       <div className="mb-3 flex items-center gap-2">
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-slate-600 ring-1 ring-slate-200">{icon}</span>
         <span className="text-sm font-semibold text-slate-900">{title}</span>
         <div className="ms-auto">
-          <Switch checked={enabled} onChange={onToggle} label={t('{channel} notifications', { channel: title })} />
+          <Switch checked={enabled || !!forced} onChange={onToggle} disabled={forced} label={t('{channel} notifications', { channel: title })} />
         </div>
       </div>
+      {forced && (
+        <p className="-mt-1.5 mb-3 flex items-center gap-1 text-xs text-slate-500">
+          <Lock className="h-3 w-3 shrink-0" /> {t('Required by your admin')}
+        </p>
+      )}
+      {missingTarget && (
+        <p className="mb-3 flex items-start gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 ring-1 ring-amber-300" role="alert">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700" />
+          <span>{missingTarget}</span>
+        </p>
+      )}
       {children}
       {!available ? (
         <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-700">
