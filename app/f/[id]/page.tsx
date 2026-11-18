@@ -7,7 +7,7 @@ import { PoweredBy } from '@/components/form/powered-by';
 import { Logo } from '@/components/icons';
 import { canViewForm, getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { toFormDTO } from '@/lib/forms';
+import { publicSchema, toFormDTO } from '@/lib/forms';
 import { formLanguages } from '@/lib/form-i18n';
 import { dirOf, makeT } from '@/lib/i18n';
 import { getSettings } from '@/lib/settings';
@@ -60,7 +60,7 @@ export default async function PublicFormPage({ params, searchParams }: { params:
               <p className="mt-1 text-sm text-slate-500">{t('This form is not accepting responses right now.')}</p>
             </div>
           ) : (
-            <FormRenderer formId={form.id} title={form.title} description={form.description} schema={form.schema} mode={preview ? 'preview' : 'live'} initialLanguage={searchParams.lang} />
+            <FormRenderer formId={form.id} title={form.title} description={form.description} schema={publicSchema(form.schema)} mode={preview ? 'preview' : 'live'} initialLanguage={searchParams.lang} />
           )}
         </FormFrame>
         <div className="flex-1" />

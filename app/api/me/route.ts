@@ -3,6 +3,7 @@ import { getCurrentUser, unauthorized } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { uniquenessProblem, validateUserInput, WHATSAPP_NUMBER_RE } from '@/lib/users';
 import { isLocale, isThemePref } from '@/lib/i18n';
+import { CHANNEL_FIELD, NOTIFY_CHANNELS, normalizeEvents, normalizeForced } from '@/lib/notify-prefs';
 import { hasTwoFactor } from '@/lib/two-factor';
 import { safeImageUrl } from '@/lib/uploads';
 import { isValidEmail } from '@/lib/validation';
@@ -61,6 +62,22 @@ export async function PATCH(req: Request) {
   }
   for (const k of ['emailNotifications', 'telegramNotifications', 'whatsappNotifications', 'notifyAllForms'] as const) {
     if (body[k] !== undefined) update[k] = !!body[k];
+  }
+  if (body.notifyEvents !== undefined) {
+    const events = normalizeEvents(body.notifyEvents);
+    if (!events) return NextResponse.json({ error: 'Choose what to be notified about.' }, { status: 400 });
+    update.notifyEvents = JSON.stringify(events);
+  }
+  // Notifications an admin requires can't be turned off here (and forcedNotify itself is never accepted).
+  const turnsOffChannel = NOTIFY_CHANNELS.some((c) => body[CHANNEL_FIELD[c]] !== undefined && !body[CHANNEL_FIELD[c]]);
+  if (turnsOffChannel || update.notifyEvents !== undefined) {
+    const { forcedNotify } = await prisma.user.findUniqueOrThrow({ where: { id: me.id }, select: { forcedNotify: true } });
+    const forced = normalizeForced(forcedNotify);
+    const chosen = update.notifyEvents !== undefined ? normalizeEvents(update.notifyEvents) ?? [] : null;
+    const blocked =
+      forced.channels.some((c) => body[CHANNEL_FIELD[c]] !== undefined && !body[CHANNEL_FIELD[c]]) ||
+      (chosen !== null && forced.events.some((e) => (e !== 'system' || me.role === 'ADMIN') && !chosen.includes(e)));
+    if (blocked) return NextResponse.json({ error: 'Your admin requires these notifications, so they can’t be turned off.' }, { status: 400 });
   }
   if (body.notifyFormIds !== undefined) {
     const ids: string[] = Array.isArray(body.notifyFormIds) ? body.notifyFormIds.filter((x: unknown) => typeof x === 'string') : [];

@@ -454,7 +454,7 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
                   onDelete={() => deleteField(selected.id)}
                 />
               ) : (
-                <FormSettingsPanel meta={draft} settings={draft.schema.settings} onMeta={setMeta} onSettings={setSettings} onBranding={setBranding} />
+                <FormSettingsPanel formId={initial.id} fields={fields} meta={draft} settings={draft.schema.settings} onMeta={setMeta} onSettings={setSettings} onBranding={setBranding} />
               )}
             </aside>
           </div>

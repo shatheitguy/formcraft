@@ -27,7 +27,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     return NextResponse.json({ ok: true });
   }
 
-  const { data, error } = validateUserInput(body, { partial: true });
+  const { data, error } = validateUserInput(body, { partial: true, admin: true });
   if (error) return NextResponse.json({ error }, { status: 400 });
   const clash = await uniquenessProblem(data.username, data.email, target.id);
   if (clash) return NextResponse.json({ error: clash }, { status: 409 });

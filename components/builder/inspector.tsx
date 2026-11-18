@@ -3,6 +3,7 @@
 import { AlertTriangle, AlignCenter, AlignLeft, ArrowDown, ArrowUp, Check, Heading, Languages, Monitor, Moon, PanelLeft, PanelTop, Palette, Plus, Settings2, Sun, Trash2, X } from 'lucide-react';
 import { useRef, useState, type ReactNode } from 'react';
 import { FIELD_ICONS } from '@/components/icons';
+import { NotificationsSection } from './notifications-section';
 import { useT } from '@/components/i18n';
 import { ImageUpload } from '@/components/image-upload';
 import { Switch } from '@/components/ui';
@@ -439,12 +440,16 @@ export interface FormMeta {
 }
 
 export function FormSettingsPanel({
+  formId,
+  fields,
   meta,
   settings,
   onMeta,
   onSettings,
   onBranding,
 }: {
+  formId: string;
+  fields: FormField[];
   meta: FormMeta;
   settings: FormSettings;
   onMeta: (patch: Partial<FormMeta>) => void;
@@ -523,6 +528,10 @@ export function FormSettingsPanel({
         </div>
 
         <ResponseLimitSection settings={settings} onSettings={onSettings} />
+
+        <div className="h-px bg-slate-100" />
+
+        <NotificationsSection formId={formId} fields={fields} settings={settings} onSettings={onSettings} />
       </div>
     </div>
   );
@@ -715,7 +724,7 @@ function HeaderSection({ branding, onChange }: { branding: FormBranding; onChang
   );
 }
 
-function PillRow<T extends string>({ label, value, onChange, options }: { label: string; value: T; onChange: (v: T) => void; options: { value: T; label: string; icon?: React.ReactNode }[] }) {
+export function PillRow<T extends string>({ label, value, onChange, options }: { label: string; value: T; onChange: (v: T) => void; options: { value: T; label: string; icon?: React.ReactNode }[] }) {
   return (
     <div>
       <div className="mb-1.5 text-xs text-slate-500">{label}</div>
@@ -775,7 +784,7 @@ function BrandingSection({ branding, onChange }: { branding: FormBranding; onCha
   );
 }
 
-function ToggleRow({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (v: boolean) => void }) {
+export function ToggleRow({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <div>
@@ -827,7 +836,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) 
   );
 }
 
-function Section({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+export function Section({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <div>
       <div className="mb-1.5 flex items-baseline justify-between">

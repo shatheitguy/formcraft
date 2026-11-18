@@ -9,6 +9,7 @@
 [![Docker image](https://img.shields.io/badge/ghcr.io-shatheitguy%2Fformcraft-2496ed?logo=docker&logoColor=white)](https://github.com/shatheitguy/formcraft/pkgs/container/formcraft)
 [![Build](https://github.com/shatheitguy/formcraft/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/shatheitguy/formcraft/actions/workflows/docker-publish.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Android app](https://img.shields.io/badge/Android-download%20APK-3ddc84?logo=android&logoColor=white)](https://github.com/shatheitguy/formcraft/releases/latest/download/FormCraft.apk)
 
 ![FormCraft dashboard](docs/img/dashboard.png)
 
@@ -208,11 +209,23 @@ Or start from a **blank form**. The template picker has search and category filt
 - **Admins can require two-factor sign-in** for admins, for everyone, or for chosen users (*Users & roles*). Until a required user turns a method on, they can only reach *My profile* to set it up
 - **Notification bell** in the top bar for every user: forms published, moved back to draft, created or deleted (by you or a teammate), new responses grouped per form ("12 new responses on …"), and — for admins — a notice when a newer FormCraft version is out, with the update command. Unread badge, mark as read, clear; updates every minute and in each user's language
 
+### 🔔 Notifications
+**Channels** (set up once by an admin in *Settings → Notifications*, each with a test button and a delivery log):
+- **Email (SMTP)**: any SMTP server, with Gmail / Outlook / SendGrid / Mailgun presets
+- **Telegram**: your own bot (token from @BotFather). Send to a person's chat ID, a group (negative ID; add the bot to the group) or a channel (`@channelname`)
+
+**Who gets what**
+- **Team members** choose for themselves in *My profile → Notifications*: new responses, form changes (published, moved to draft, created, deleted) and, for admins, system alerts (new version, failed automatic backup); which channels; all forms or selected ones; and on WhatsApp optionally the response as PDF or Excel. The same choices drive the bell. **Admins can require notifications** (*Users & roles → Edit user*): required channels and alert types show as locked in that user's profile
+- **People outside FormCraft** (builder → *Form settings → Notifications → Alerts for this form*): up to 10 extra recipients per form by email, WhatsApp or Telegram, with the response attached as PDF or Excel (email / WhatsApp). Invalid addresses are never saved
+- **The person who filled the form** (*Message to the person who filled it*): a thank-you on WhatsApp and/or email, sent to the number or address they typed in a chosen Phone / Email question. Placeholders such as `{Full name}`, `{Form title}` and `{Date}` (click to insert), optionally their own answers as a PDF, and *Send me a test* to try it on your own number / email. Limited to 60 messages per form per 10 minutes so a public form can't be used to spam people
+- **Only when…**: alert only when a question's answer *is* / *contains* a value (e.g. *Priority is Urgent*). It applies to everyone's new-response alerts for that form, team members included
+- **Daily summary**: instead of one message per response, extra recipients can get one message a day at a set time with the count of new responses and an Excel file of them (Telegram gets a link). Days without responses send nothing
+
 ### ⚙️ Settings
 - **Per-form logo & title** (top of the builder's form settings): upload a form logo, choose its size (small/medium/large) and placement (above or beside the title), align the header left or center, and hide the title when the logo already shows the name.
 - **Per-form branding**: a cover banner and a form color that overrides the workspace accent. Uploads accept PNG, JPG, GIF or WebP up to 2 MB, are checked by file signature, and are stored on the data volume
 - **Customization**: app name, tagline, uploaded logo, accent color (8 palettes, previewed live), public URL for links, and the "Powered by" footer
-- **Notifications**: SMTP email (with Gmail/Outlook/SendGrid/Mailgun presets), a Telegram bot and **WhatsApp**, test buttons, and a log of recent deliveries
+- **Notifications**: email (SMTP), Telegram and WhatsApp set-up, test buttons, and a log of recent deliveries — see [🔔 Notifications](#-notifications)
 - **WhatsApp**: link the workspace's WhatsApp by scanning a QR code (Linked devices, like WhatsApp Web). Users then get new-response alerts on WhatsApp — optionally with the response attached as PDF or Excel — and anyone can send reports from the Responses page. Numbers are saved in *My profile* or by an admin in *Users*. It isn't the official WhatsApp API: use a business number and don't send unexpected bulk messages
 - **About**: version, install type, database, counts and server details; **Check for updates**; one-click **Update** for native (git) installs, and the exact Docker / one-line installer command for Docker installs
 - **Database**: connection status, engine and version, size, row counts, JSON export, SQLite snapshot download, purging old responses, optimize (VACUUM), session cleanup, and a guide to switching engines
@@ -226,7 +239,11 @@ Or start from a **blank form**. The template picker has search and category filt
 - Adding a language: add it to `LOCALES` in `lib/i18n/index.ts` and its strings to `lib/i18n/dict/*.ts` (English text is the key; anything missing falls back to English).
 
 ### 📱 Android app
-An Android app (APK) opens your FormCraft like Nextcloud does: enter your server address once, then sign in and use every feature in the phone layout. Build it from `mobile/` — see [mobile/README.md](mobile/README.md).
+**[⬇ Download FormCraft for Android (APK)](https://github.com/shatheitguy/formcraft/releases/latest/download/FormCraft.apk)** — always the latest version.
+
+The app opens your FormCraft like Nextcloud does: enter your server address once, then sign in and use every feature in the phone layout. To install, open the link on your phone and allow installing apps from your browser when Android asks. New versions install over the old one.
+
+To build it yourself, see [mobile/README.md](mobile/README.md).
 
 ### 🔒 Validation everywhere
 The same validation runs in the browser and on the server: required fields, email and phone format, allowed option values and scale bounds. Quiz scores are always calculated on the server. Draft forms reject submissions.

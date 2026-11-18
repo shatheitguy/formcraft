@@ -6,6 +6,8 @@ import { isValidSchema, normalizeTags, toFormDTO } from '@/lib/forms';
 import { syncPortListeners } from '@/lib/port-router';
 import { getTemplate } from '@/lib/templates';
 import { notifyFormEvent } from '@/lib/activity';
+import { sanitizeFormNotify } from '@/lib/form-alerts';
+import { getSettings } from '@/lib/settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +31,10 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const template = getTemplate(body.templateId);
   const schema = isValidSchema(body.schema) ? body.schema : template.build();
+  if (isValidSchema(body.schema)) {
+    const { whatsapp } = await getSettings();
+    schema.settings = { ...schema.settings, ...sanitizeFormNotify(schema.settings as unknown as Record<string, unknown>, schema.fields, whatsapp.defaultCountryCode) };
+  }
 
   const title = typeof body.title === 'string' && body.title.trim() ? body.title.trim().slice(0, 200) : template.title;
   const form = await prisma.form.create({

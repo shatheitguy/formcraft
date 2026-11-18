@@ -89,6 +89,43 @@ export interface FormSettings {
   limitByIp?: boolean;
   /** Shown to someone who already used up their responses. */
   limitMessage?: string;
+  /** Extra alert recipients for this form who don't need a FormCraft account. */
+  alerts?: FormAlertRecipient[];
+  /** When set, new-response alerts for this form (team members' and extra recipients') only fire if it matches. */
+  alertWhen?: FormAlertCondition;
+  /** Extra recipients get each response straight away, or one summary a day. */
+  alertDelivery?: FormAlertDelivery;
+  /** Message sent to the person who filled the form. */
+  confirm?: FormConfirm;
+}
+
+export type AlertChannel = 'email' | 'whatsapp' | 'telegram';
+
+export interface FormAlertRecipient {
+  channel: AlertChannel;
+  /** Email address, WhatsApp number (+country code) or Telegram chat ID / @channel. */
+  to: string;
+  /** Attach the response as a file (email / WhatsApp only). */
+  attach: 'none' | 'pdf' | 'xlsx';
+}
+
+export interface FormAlertCondition {
+  fieldId: string;
+  op: 'is' | 'contains';
+  value: string;
+}
+
+export interface FormAlertDelivery {
+  mode: 'instant' | 'daily';
+  /** "HH:MM", server time (daily only). */
+  time: string;
+}
+
+export interface FormConfirm {
+  whatsapp?: { enabled: boolean; fieldId: string; message: string };
+  email?: { enabled: boolean; fieldId: string; subject: string; message: string };
+  /** Attach the person's own response as a PDF. */
+  attachPdf?: boolean;
 }
 
 /** Per-language overrides. Anything missing falls back to the primary language. */

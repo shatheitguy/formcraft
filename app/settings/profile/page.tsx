@@ -3,6 +3,7 @@ import { getServerT } from '@/lib/i18n/server';
 import { ProfileSettings } from '@/components/settings/profile-settings';
 import { formWhere, notifyFormIds, requireUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { normalizeForced, parseNotifyEvents } from '@/lib/notify-prefs';
 import { getSettings } from '@/lib/settings';
 import { waStatus } from '@/lib/whatsapp';
 import { ShieldAlert } from 'lucide-react';
@@ -66,6 +67,8 @@ export default async function ProfilePage() {
         whatsappAttach: user.whatsappAttach === 'pdf' || user.whatsappAttach === 'xlsx' ? user.whatsappAttach : 'none',
         notifyAllForms: user.notifyAllForms,
         notifyFormIds: notifyFormIds(user),
+        notifyEvents: parseNotifyEvents(user.notifyEvents),
+        forcedNotify: normalizeForced(user.forcedNotify),
       }}
       forms={forms}
       channels={channels}

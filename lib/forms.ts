@@ -70,6 +70,12 @@ export function sanitizeBranding(b: unknown): FormBranding | undefined {
   return customized ? out : undefined;
 }
 
+/** The schema as respondents may see it: who gets alerted and confirmation settings stay on the server. */
+export function publicSchema(schema: FormSchema): FormSchema {
+  const { alerts: _a, alertWhen: _w, alertDelivery: _d, confirm: _c, ...settings } = schema.settings;
+  return { ...schema, settings };
+}
+
 /** Minimal structural check for schemas coming from the client. */
 export function isValidSchema(s: unknown): s is FormSchema {
   if (!s || typeof s !== 'object') return false;
