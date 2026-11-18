@@ -1,7 +1,8 @@
 import type { Form, Submission } from '@prisma/client';
 import { DEFAULT_SETTINGS } from './fields';
+import { isFormLayout } from './form-layout';
 import { isAccent } from './theme';
-import type { Answers, FormBranding, FormDTO, FormSchema, FormStatus, SubmissionDTO } from './types';
+import type { Answers, FormBranding, FormDTO, FormLayout, FormSchema, FormStatus, SubmissionDTO } from './types';
 import { safeImageUrl } from './uploads';
 import { safeJson } from './utils';
 
@@ -68,6 +69,11 @@ export function sanitizeBranding(b: unknown): FormBranding | undefined {
   };
   const customized = out.logoUrl || out.coverUrl || out.accent || out.hideTitle || out.logoAlign === 'center';
   return customized ? out : undefined;
+}
+
+/** Form look: only the known layouts are stored; classic (the default) is stored as nothing. */
+export function sanitizeLayout(v: unknown): FormLayout | undefined {
+  return isFormLayout(v) && v !== 'classic' ? v : undefined;
 }
 
 /** The schema as respondents may see it: who gets alerted and confirmation settings stay on the server. */

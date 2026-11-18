@@ -275,15 +275,17 @@ function StarRating({
   );
 }
 
-export function FieldLabel({ field, htmlFor }: { field: FormField; htmlFor?: string }) {
+/** `size="lg"`: the big one-question-per-screen label of the Steps look. */
+export function FieldLabel({ field, htmlFor, size }: { field: FormField; htmlFor?: string; size?: 'lg' }) {
   const t = useT();
+  const lg = size === 'lg';
   return (
-    <div className="mb-2">
-      <label htmlFor={htmlFor} className="block text-[15px] font-medium leading-snug text-slate-900">
+    <div className={lg ? 'mb-5' : 'mb-2'}>
+      <label htmlFor={htmlFor} className={cn('block leading-snug text-slate-900', lg ? 'text-xl font-semibold sm:text-2xl' : 'text-[15px] font-medium')}>
         {field.label || <span className="italic text-slate-400">{t('Untitled question')}</span>}
         {field.required && <span className="ms-0.5 text-rose-500">*</span>}
       </label>
-      {field.helpText && <p className="mt-0.5 text-sm text-slate-500">{field.helpText}</p>}
+      {field.helpText && <p className={cn('text-slate-500', lg ? 'mt-1.5 text-base' : 'mt-0.5 text-sm')}>{field.helpText}</p>}
     </div>
   );
 }

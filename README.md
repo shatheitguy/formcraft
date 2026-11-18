@@ -133,7 +133,7 @@ FormCraft backs itself up on a schedule, out of the box: every form (published a
 
 ### Locked out? Reset a password
 
-The sign-in page shows *Forgot password?* only when email (SMTP) is set up. Otherwise, another admin can set a new password in **Settings → Users**. If no admin can sign in, reset it from the server:
+The sign-in page shows *Forgot password?* when email (SMTP), WhatsApp or Telegram is set up. Otherwise, another admin can set a new password in **Settings → Users**. If no admin can sign in, reset it from the server:
 
 ```bash
 docker exec -it formcraft reset-password <username-or-email> <new-password>
@@ -179,6 +179,7 @@ Or start from a **blank form**. The template picker has search and category filt
 - **Inspector** for each field: label, help text, placeholder, required, compatible type switching, and an option editor (press Enter to add the next option; duplicate and empty labels are flagged)
 - **Quiz mode**: mark correct answers and assign points; respondents can see their score after submitting
 - **Autosave** (plus <kbd>Ctrl/⌘</kbd>+<kbd>S</kbd>), a live **preview** with desktop and mobile widths, and one-click **Publish**
+- **Form looks:** pick how respondents see each form, when creating it or later in the form settings: **Classic** (card on a dotted background), **Minimal** (clean full-width page with a large title and a full-width cover, ideal for embedding), **Steps** (one question per screen with a progress bar, Next / Back and Enter to continue) or **Split** (cover, logo and title in a side panel beside the questions; stacks on phones). Every look keeps the form's theme, accent colour, logo and cover, language switch and right-to-left support
 
 **Field types:** short text · paragraph · email (validated) · phone (validated) · multiple choice · checkboxes · dropdown · date picker · star rating (1–5 / 1–10) · linear scale (0/1 → 3–10, with end labels) · **terms & conditions** (terms text, optional link, *I agree* checkbox) · **file upload** (images, PDF, documents, spreadsheets; 1–10 files up to 25 MB each, checked by file signature and stored privately)
 
@@ -204,8 +205,8 @@ Or start from a **blank form**. The template picker has search and category filt
 - **Viewer**: read-only access to submissions and insights, plus CSV export
 - Each editor or viewer can be limited to **all forms** or **selected forms only**. Forms an editor creates are added to their access automatically
 - Admins can reset passwords (which signs the user out everywhere) and disable accounts. The last active admin can't be removed
-- **Forgot password by email:** with email set up, the sign-in page offers *Forgot password?*, which emails a 6-digit code (10 minutes, 5 tries) to set a new password and signs the account out everywhere. It answers the same whether or not the account exists
-- **Two-factor sign-in for every user** (*My profile → Two-factor sign-in*): an authenticator app (TOTP: Google/Microsoft Authenticator, 1Password, Authy…) and codes by **email, WhatsApp or Telegram** — any combination — plus 10 single-use recovery codes. At sign-in the user picks a method; codes can't be replayed, resends are limited, wrong codes are limited, and turning a method off asks for the password. Admins can *Reset two-factor* for someone who lost their phone
+- **Forgot password by email, WhatsApp or Telegram:** with any of them set up, the sign-in page offers *Forgot password?*. The user enters their username or email and picks where to get a 6-digit code (only channels the workspace has set up are shown; WhatsApp and Telegram need the number / chat ID saved in the profile). The code lasts 3 minutes (5 tries, one resend a minute, rate-limited per IP and per account), then they choose a new password and the account is signed out everywhere. It answers the same whether or not the account exists or has that channel
+- **Two-factor sign-in for every user** (*My profile → Two-factor sign-in*): an authenticator app (TOTP: Google/Microsoft Authenticator, 1Password, Authy…) and/or **codes by message** — one switch that covers **email, WhatsApp and Telegram** together (setup sends one code to all of them at once) — plus 10 single-use recovery codes. At sign-in the code goes to email by default and the user can tap WhatsApp or Telegram instead; sign-in codes expire after 3 minutes, can't be replayed, resends and wrong codes are limited, and turning a method off asks for the password. Admins can *Reset two-factor* for someone who lost their phone
 - **Admins can require two-factor sign-in** for admins, for everyone, or for chosen users (*Users & roles*). Until a required user turns a method on, they can only reach *My profile* to set it up
 - **Notification bell** in the top bar for every user: forms published, moved back to draft, created or deleted (by you or a teammate), new responses grouped per form ("12 new responses on …"), and — for admins — a notice when a newer FormCraft version is out, with the update command. Unread badge, mark as read, clear; updates every minute and in each user's language
 

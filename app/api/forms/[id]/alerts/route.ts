@@ -57,7 +57,7 @@ export async function POST(req: Request, { params }: Ctx) {
   const on = workspaceChannels(settings);
   if (!on[channel]) {
     return NextResponse.json(
-      { error: channel === 'email' ? 'Email isn’t set up yet. An admin can configure SMTP in Settings → Notifications.' : 'WhatsApp isn’t set up yet. An admin can link it in Settings → Notifications.' },
+      { error: channel === 'email' ? 'Email isn’t set up yet. An admin can configure SMTP in Settings → Notification channel setup.' : 'WhatsApp isn’t set up yet. An admin can link it in Settings → Notification channel setup.' },
       { status: 400 },
     );
   }

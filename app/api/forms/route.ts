@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { canCreateForms, forbidden, formWhere, getCurrentUser, unauthorized } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { newFormLinks } from '@/lib/form-links';
-import { isValidSchema, normalizeTags, toFormDTO } from '@/lib/forms';
+import { isValidSchema, normalizeTags, sanitizeLayout, toFormDTO } from '@/lib/forms';
 import { syncPortListeners } from '@/lib/port-router';
 import { getTemplate } from '@/lib/templates';
 import { notifyFormEvent } from '@/lib/activity';
@@ -35,6 +35,8 @@ export async function POST(req: Request) {
     const { whatsapp } = await getSettings();
     schema.settings = { ...schema.settings, ...sanitizeFormNotify(schema.settings as unknown as Record<string, unknown>, schema.fields, whatsapp.defaultCountryCode) };
   }
+  // Form look chosen in the "Create a new form" picker (body.layout), else whatever the schema carries.
+  schema.settings = { ...schema.settings, layout: sanitizeLayout(body.layout ?? schema.settings?.layout) };
 
   const title = typeof body.title === 'string' && body.title.trim() ? body.title.trim().slice(0, 200) : template.title;
   const form = await prisma.form.create({

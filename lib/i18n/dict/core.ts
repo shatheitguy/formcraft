@@ -23,6 +23,10 @@ const dict: AreaDict = {
     '{n} of {max}': '{n} من {max}',
     'Untitled question': 'سؤال بدون عنوان',
     'Untitled form': 'نموذج بدون عنوان',
+    // Steps look
+    "{n} of {total}": "{n} من {total}",
+    "Form progress": "التقدّم في النموذج",
+    "press Enter ↵": "اضغط Enter ↵",
     // Public form
     'Language': 'اللغة',
     'Required': 'مطلوب',
@@ -154,6 +158,10 @@ const dict: AreaDict = {
     '{n} of {max}': '{max} இல் {n}',
     'Untitled question': 'தலைப்பில்லாத கேள்வி',
     'Untitled form': 'தலைப்பில்லாத படிவம்',
+    // Steps look
+    "{n} of {total}": "{total} இல் {n}",
+    "Form progress": "படிவ முன்னேற்றம்",
+    "press Enter ↵": "Enter ↵ அழுத்தவும்",
     // Public form
     'Language': 'மொழி',
     'Required': 'கட்டாயம்',

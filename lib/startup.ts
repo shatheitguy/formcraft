@@ -12,7 +12,7 @@ export async function startup() {
     startUpdateChecks();
     startAutoBackups();
     startFormAlertDigests();
-    // WhatsApp linked in Settings → Notifications: connect again.
+    // WhatsApp linked in Settings → Notification channel setup: connect again.
     import('./whatsapp').then((m) => m.waResume()).catch((e) => console.error('[formcraft] whatsapp', e?.message || e));
   } catch (err) {
     // The schema may not exist yet on the very first boot of a dev checkout.

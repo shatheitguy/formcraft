@@ -105,7 +105,7 @@ function Unavailable({ channel, status }: { channel: AlertChannel; status: Statu
         {t(CHANNEL_NEEDS[channel])}{' '}
         {status.isAdmin ? (
           <Link href="/settings/notifications" className="font-semibold underline">
-            {t('Settings → Notifications')}
+            {t('Settings → Notification channel setup')}
           </Link>
         ) : (
           t('Ask an admin to set it up.')

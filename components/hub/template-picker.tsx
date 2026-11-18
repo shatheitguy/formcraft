@@ -3,6 +3,7 @@
 import { ArrowRight, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { LookPicker } from '@/components/form/look-picker';
 import { useT } from '@/components/i18n';
 import { FIELD_ICONS, TEMPLATE_ICONS } from '@/components/icons';
 import { useToast } from '@/components/toast';
@@ -10,6 +11,7 @@ import { Button, Modal, Spinner } from '@/components/ui';
 import { categoryStyle } from '@/lib/categories';
 import { FIELD_META } from '@/lib/fields';
 import { TEMPLATES, type TemplateId } from '@/lib/templates';
+import type { FormLayout } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 export function TemplatePicker({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -18,6 +20,8 @@ export function TemplatePicker({ open, onClose }: { open: boolean; onClose: () =
   const t = useT();
   const [selected, setSelected] = useState<TemplateId>('contact');
   const [creating, setCreating] = useState<TemplateId | null>(null);
+  // Form look for the new form (changeable later in the builder's form settings).
+  const [layout, setLayout] = useState<FormLayout>('classic');
   // Build each template once so the preview shows its exact fields.
   const previews = useMemo(() => Object.fromEntries(TEMPLATES.map((t) => [t.id, t.build()])), []);
   const current = TEMPLATES.find((t) => t.id === selected)!;
@@ -41,7 +45,7 @@ export function TemplatePicker({ open, onClose }: { open: boolean; onClose: () =
       const res = await fetch('/api/forms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ templateId: id }),
+        body: JSON.stringify({ templateId: id, layout }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => null);
@@ -101,7 +105,7 @@ export function TemplatePicker({ open, onClose }: { open: boolean; onClose: () =
               })}
             </div>
           </div>
-          <div className="scrollbar-thin grid content-start gap-3 overflow-y-auto p-5 sm:grid-cols-2 md:max-h-[58vh]">
+          <div className="scrollbar-thin grid auto-rows-max content-start gap-3 overflow-y-auto p-5 sm:grid-cols-2 md:max-h-[58vh]">
             {visible.length === 0 && (
               <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-600 sm:col-span-2">{t('No templates match your search.')}</p>
             )}
@@ -121,7 +125,7 @@ export function TemplatePicker({ open, onClose }: { open: boolean; onClose: () =
                     tpl.id === 'blank' && 'sm:col-span-2',
                   )}
                 >
-                  <div className={cn('flex items-center gap-3 p-4', tpl.id !== 'blank' && 'pb-3')}>
+                  <div className={cn('flex items-start gap-3 p-4', tpl.id !== 'blank' && 'pb-3')}>
                     <div
                       className={cn(
                         'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-onaccent shadow-sm',
@@ -178,7 +182,8 @@ export function TemplatePicker({ open, onClose }: { open: boolean; onClose: () =
               })}
             </ol>
           </div>
-          <div className="border-t border-slate-100 p-4">
+          <div className="space-y-4 border-t border-slate-100 p-4">
+            <LookPicker value={layout} onChange={setLayout} />
             <Button variant="primary" size="md" className="w-full" onClick={() => create(selected)} loading={creating === selected} disabled={!!creating}>
               {current.id === 'blank' ? t('Use blank form') : t('Use this template')} <ArrowRight className="h-4 w-4 rtl:rotate-180" />
             </Button>

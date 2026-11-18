@@ -18,8 +18,18 @@ const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…'
 
 /* ------------------------------ transports ------------------------------ */
 
+/* Every message starts with the workspace's name and, smaller underneath, its tagline (Settings → Customization). */
+async function brand() {
+  const { app } = await getSettings();
+  return { name: app.name.trim() || 'FormCraft', tagline: app.tagline.trim() };
+}
+const TAGLINE_SLOT = '<!--fc-tagline-->';
+
 export async function sendEmail(smtp: SmtpSettings, to: string, subject: string, html: string, text: string, files?: WaDocument[]) {
   if (!smtp.host) throw new Error('SMTP host is not configured.');
+  const b = await brand();
+  html = html.replace(TAGLINE_SLOT, b.tagline ? `<div style="font-size:12px;color:#64748b;margin-top:2px">${esc(b.tagline)}</div>` : '');
+  text = `${b.name}${b.tagline ? `\n${b.tagline}` : ''}\n\n${text}`;
   const transport = nodemailer.createTransport({
     host: smtp.host,
     port: Number(smtp.port) || 587,
@@ -34,6 +44,8 @@ export async function sendEmail(smtp: SmtpSettings, to: string, subject: string,
 
 export async function sendTelegram(botToken: string, chatId: string, html: string) {
   if (!botToken) throw new Error('Telegram bot token is not configured.');
+  const b = await brand();
+  html = `<b>${esc(b.name)}</b>${b.tagline ? `\n<i>${esc(b.tagline)}</i>` : ''}\n\n${html}`;
   const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -47,6 +59,9 @@ export async function sendTelegram(botToken: string, chatId: string, html: strin
 /** Sends over the linked WhatsApp; throws a readable error when it can't. */
 export async function sendWhatsApp(phone: string, text: string, doc?: WaDocument, defaultCountry = '') {
   const num = waNumber(phone, defaultCountry);
+  const b = await brand();
+  // WhatsApp can't make text smaller, so the tagline goes in italics under the bold name.
+  text = `*${b.name}*${b.tagline ? `\n_${b.tagline}_` : ''}\n\n${text}`;
   const r = await waSend(num, text, doc);
   if (r !== 'ok') throw new Error(WA_ERRORS[r]);
 }
@@ -69,14 +84,14 @@ export function emailLayout(appName: string, title: string, body: string) {
   return `<!doctype html><html><body style="margin:0;background:#f8fafc;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a">
 <div style="max-width:560px;margin:24px auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden">
 <div style="height:6px;background:linear-gradient(90deg,#b8262d,#7f151b)"></div>
-<div style="padding:24px 28px"><div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em">${esc(appName)}</div>
+<div style="padding:24px 28px"><div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em">${esc(appName)}</div>${TAGLINE_SLOT}
 <h1 style="font-size:18px;margin:6px 0 16px">${title}</h1>${body}</div></div></body></html>`;
 }
 
 const CODE_COPY = {
   reset: { subject: 'Your password reset code', title: 'Reset your password', intro: 'Use this code to choose a new password.' },
   login: { subject: 'Your sign-in code', title: 'Your sign-in code', intro: 'Use this code to finish signing in.' },
-  'email-setup': { subject: 'Confirm two-factor sign-in', title: 'Confirm your email', intro: 'Use this code to turn on email two-factor sign-in.' },
+  'email-setup': { subject: 'Confirm two-factor sign-in', title: 'Confirm your email', intro: 'Use this code to turn on sign-in codes by email, WhatsApp and Telegram.' },
 } as const;
 
 /** Emails a one-time code (password reset, sign-in or two-factor setup). */
@@ -300,12 +315,12 @@ export async function sendTest(channel: Channel, target: string, overrides?: { s
   }
   if (channel === 'whatsapp') {
     return deliver('whatsapp', target, subject, () =>
-      sendWhatsApp(target, `✅ *${settings.app.name}*\nWhatsApp notifications are working. You'll get a message here for every new response on forms you follow.`, undefined, settings.whatsapp.defaultCountryCode),
+      sendWhatsApp(target, `✅ WhatsApp notifications are working. You'll get a message here for every new response on forms you follow.`, undefined, settings.whatsapp.defaultCountryCode),
     );
   }
   const token = overrides?.botToken ?? settings.telegram.botToken;
   return deliver('telegram', target, subject, () =>
-    sendTelegram(token, target, `✅ <b>${esc(settings.app.name)}</b>\nTelegram notifications are working. You'll get a message here for every new response on forms you follow.`),
+    sendTelegram(token, target, `✅ Telegram notifications are working. You'll get a message here for every new response on forms you follow.`),
   );
 }
 
@@ -313,14 +328,14 @@ export async function sendTest(channel: Channel, target: string, overrides?: { s
  * Sends a one-time code by WhatsApp or Telegram (two-factor sign-in and its setup).
  * The code is never logged: the delivery log only records the target and a generic subject.
  */
-export async function sendCodeMessage(channel: 'whatsapp' | 'telegram', target: string, appName: string, purpose: 'login' | 'setup', code: string, minutes: number) {
+export async function sendCodeMessage(channel: 'whatsapp' | 'telegram', target: string, appName: string, purpose: 'login' | 'setup' | 'reset', code: string, minutes: number) {
   const settings = await getSettings();
-  const what = purpose === 'login' ? 'sign-in code' : 'code to turn on two-factor sign-in';
-  const subject = purpose === 'login' ? 'Sign-in code' : 'Two-factor setup code';
+  const what = purpose === 'login' ? 'sign-in code' : purpose === 'reset' ? 'password reset code' : 'code to turn on two-factor sign-in';
+  const subject = purpose === 'login' ? 'Sign-in code' : purpose === 'reset' ? 'Password reset code' : 'Two-factor setup code';
   if (channel === 'whatsapp') {
-    const text = `🔐 *${appName}* ${what}: ${code} — expires in ${minutes} minutes. Never share it.`;
+    const text = `🔐 Your ${what}: *${code}* — expires in ${minutes} minutes. Never share it.`;
     return deliver('whatsapp', target, subject, () => sendWhatsApp(target, text, undefined, settings.whatsapp.defaultCountryCode));
   }
-  const html = `🔐 <b>${esc(appName)}</b> ${what}: <code>${code}</code>\nExpires in ${minutes} minutes. Never share it.`;
+  const html = `🔐 Your ${what}: <code>${code}</code>\nExpires in ${minutes} minutes. Never share it.`;
   return deliver('telegram', target, subject, () => sendTelegram(settings.telegram.botToken, target, html));
 }

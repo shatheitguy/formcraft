@@ -271,11 +271,22 @@ const dict: AreaDict = {
     "Email needs SMTP set up.": "يتطلب البريد الإلكتروني إعداد SMTP.",
     "Telegram needs a bot token.": "يتطلب Telegram رمز بوت.",
     "WhatsApp needs to be linked and turned on.": "يجب ربط WhatsApp وتشغيله.",
-    "Settings → Notifications": "الإعدادات ← الإشعارات",
+    "Settings → Notification channel setup": "الإعدادات ← إعداد قنوات الإشعارات",
     "{n} on": "{n} مفعّل",
-    "Email isn’t set up yet. An admin can configure SMTP in Settings → Notifications.": "لم يُعدّ البريد الإلكتروني بعد. يمكن للمسؤول إعداد SMTP من الإعدادات ← الإشعارات.",
-    "WhatsApp isn’t set up yet. An admin can link it in Settings → Notifications.": "لم يُعدّ WhatsApp بعد. يمكن للمسؤول ربطه من الإعدادات ← الإشعارات.",
+    "Email isn’t set up yet. An admin can configure SMTP in Settings → Notification channel setup.": "لم يُعدّ البريد الإلكتروني بعد. يمكن للمسؤول إعداد SMTP من الإعدادات ← إعداد قنوات الإشعارات.",
+    "WhatsApp isn’t set up yet. An admin can link it in Settings → Notification channel setup.": "لم يُعدّ WhatsApp بعد. يمكن للمسؤول ربطه من الإعدادات ← إعداد قنوات الإشعارات.",
     "Too many test messages — wait a few minutes and try again.": "رسائل تجربة كثيرة — انتظر بضع دقائق ثم حاول مجددًا.",
+    // Form looks
+    "Form look": "شكل النموذج",
+    "Classic": "كلاسيكي",
+    "Minimal": "بسيط",
+    "Steps": "خطوات",
+    "Split": "مقسوم",
+    "A card on a dotted background, cover banner on top.": "بطاقة على خلفية منقّطة، مع صورة الغلاف في الأعلى.",
+    "A clean full-width page with a large title. Great for embedding.": "صفحة نظيفة بعرض كامل وعنوان كبير. مثالية للتضمين.",
+    "One question per screen with a progress bar and Next / Back buttons.": "سؤال واحد في كل شاشة مع شريط تقدّم وزرَّي التالي / رجوع.",
+    "Cover, logo and title on the left, questions on the right. Stacks on phones.": "الغلاف والشعار والعنوان في جانب والأسئلة في الجانب الآخر. تُعرض فوق بعضها على الهواتف.",
+    // Per-form notifications
   },
   ta: {
     // Header & tabs
@@ -546,11 +557,22 @@ const dict: AreaDict = {
     "Email needs SMTP set up.": "மின்னஞ்சலுக்கு SMTP அமைக்க வேண்டும்.",
     "Telegram needs a bot token.": "Telegram-க்கு bot token தேவை.",
     "WhatsApp needs to be linked and turned on.": "WhatsApp இணைக்கப்பட்டு இயக்கப்பட வேண்டும்.",
-    "Settings → Notifications": "அமைப்புகள் → அறிவிப்புகள்",
+    "Settings → Notification channel setup": "அமைப்புகள் → அறிவிப்பு சேனல் அமைப்பு",
     "{n} on": "{n} இயக்கத்தில்",
-    "Email isn’t set up yet. An admin can configure SMTP in Settings → Notifications.": "மின்னஞ்சல் இன்னும் அமைக்கப்படவில்லை. நிர்வாகி அமைப்புகள் → அறிவிப்புகள் இல் SMTP-ஐ அமைக்கலாம்.",
-    "WhatsApp isn’t set up yet. An admin can link it in Settings → Notifications.": "WhatsApp இன்னும் அமைக்கப்படவில்லை. நிர்வாகி அமைப்புகள் → அறிவிப்புகள் இல் இணைக்கலாம்.",
+    "Email isn’t set up yet. An admin can configure SMTP in Settings → Notification channel setup.": "மின்னஞ்சல் இன்னும் அமைக்கப்படவில்லை. நிர்வாகி அமைப்புகள் → அறிவிப்பு சேனல் அமைப்பு இல் SMTP-ஐ அமைக்கலாம்.",
+    "WhatsApp isn’t set up yet. An admin can link it in Settings → Notification channel setup.": "WhatsApp இன்னும் அமைக்கப்படவில்லை. நிர்வாகி அமைப்புகள் → அறிவிப்பு சேனல் அமைப்பு இல் இணைக்கலாம்.",
     "Too many test messages — wait a few minutes and try again.": "சோதனைச் செய்திகள் அதிகம் — சில நிமிடங்கள் காத்திருந்து மீண்டும் முயலுங்கள்.",
+    // Form looks
+    "Form look": "படிவ வடிவமைப்பு",
+    "Classic": "கிளாசிக்",
+    "Minimal": "எளிமையானது",
+    "Steps": "படிப்படியாக",
+    "Split": "இரு பகுதி",
+    "A card on a dotted background, cover banner on top.": "புள்ளி பின்னணியில் ஒரு அட்டை, மேலே அட்டைப் படம்.",
+    "A clean full-width page with a large title. Great for embedding.": "பெரிய தலைப்புடன் முழு அகல எளிய பக்கம். உட்பொதிக்க ஏற்றது.",
+    "One question per screen with a progress bar and Next / Back buttons.": "ஒரு திரையில் ஒரு கேள்வி, முன்னேற்றப் பட்டி மற்றும் அடுத்து / பின்செல் பொத்தான்களுடன்.",
+    "Cover, logo and title on the left, questions on the right. Stacks on phones.": "அட்டைப் படம், லோகோ, தலைப்பு ஒரு பக்கம்; கேள்விகள் மறு பக்கம். தொலைபேசிகளில் ஒன்றன் கீழ் ஒன்றாக.",
+    // Per-form notifications
   },
 };
 

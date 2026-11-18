@@ -5,11 +5,13 @@ import { useRef, useState, type ReactNode } from 'react';
 import { FIELD_ICONS } from '@/components/icons';
 import { NotificationsSection } from './notifications-section';
 import { useT } from '@/components/i18n';
+import { LookPicker } from '@/components/form/look-picker';
 import { ImageUpload } from '@/components/image-upload';
 import { Switch } from '@/components/ui';
 import { SUGGESTED_CATEGORIES } from '@/lib/categories';
 import { DEFAULT_AGREE_LABEL, FIELD_META, isChoice, opt, safeTermsUrl } from '@/lib/fields';
 import { FILE_KINDS, fileLimits, MAX_FILE_MB_LIMIT, MAX_FILES_LIMIT, type FileKind } from '@/lib/files';
+import { formLayout } from '@/lib/form-layout';
 import { isLocale, LOCALE_CODES, LOCALES } from '@/lib/i18n';
 import { ACCENTS, ACCENT_KEYS } from '@/lib/theme';
 import type { FieldOption, FieldType, FormBranding, FormField, FormSettings } from '@/lib/types';
@@ -505,6 +507,8 @@ export function FormSettingsPanel({
         <div className="h-px bg-slate-100" />
 
         <LanguagesSection settings={settings} onSettings={onSettings} />
+
+        <LookPicker value={formLayout(settings)} onChange={(layout) => onSettings({ layout })} />
 
         <PillRow
           label={t('Form theme')}

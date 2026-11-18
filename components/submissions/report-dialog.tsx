@@ -218,10 +218,10 @@ export function ReportDialog({
               {t('WhatsApp isn’t linked for this workspace yet.')}{' '}
               {whatsapp.isAdmin ? (
                 <Link href="/settings/notifications" className="font-semibold underline">
-                  {t('Link it in Settings → Notifications')}
+                  {t('Link it in Settings → Notification channel setup')}
                 </Link>
               ) : (
-                t('Ask an admin to link it in Settings → Notifications.')
+                t('Ask an admin to link it in Settings → Notification channel setup.')
               )}
             </p>
           ))}

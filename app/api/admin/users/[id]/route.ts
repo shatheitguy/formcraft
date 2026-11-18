@@ -45,10 +45,6 @@ export async function PATCH(req: Request, { params }: Ctx) {
       data: {
         ...rest,
         ...(password ? { passwordHash: await hashPassword(password) } : {}),
-        // A new WhatsApp number hasn't been confirmed by the user, so sign-in codes stop going there.
-        ...(rest.whatsappNumber !== undefined && rest.whatsappNumber !== target.whatsappNumber && target.whatsappOtpEnabled
-          ? { whatsappOtpEnabled: false, ...(target.totpEnabled || target.emailOtpEnabled || target.telegramOtpEnabled ? {} : { recoveryCodes: '[]' }) }
-          : {}),
       },
     });
     if (formIds !== undefined) {

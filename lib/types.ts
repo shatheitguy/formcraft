@@ -70,6 +70,9 @@ export interface FormBranding {
   accent?: string;
 }
 
+/** How the public form is laid out (see lib/form-layout.ts). */
+export type FormLayout = 'classic' | 'minimal' | 'steps' | 'split';
+
 export interface FormSettings {
   submitLabel: string;
   successMessage: string;
@@ -81,6 +84,8 @@ export interface FormSettings {
   languages?: string[];
   /** Colour theme for respondents: follow their device, or force light / dark. */
   theme?: 'auto' | 'light' | 'dark';
+  /** Form look for respondents; missing = classic. */
+  layout?: FormLayout;
   /** Language the form opens in; empty = the visitor's browser language (then the primary language). */
   openLanguage?: string;
   /** How many times one person (device, optionally network) may respond; 0 / missing = unlimited. */

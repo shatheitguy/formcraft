@@ -29,6 +29,7 @@ import { Button, buttonClass, Spinner, StatusBadge } from '@/components/ui';
 import { cloneField, createField, isChoice } from '@/lib/fields';
 import type { FieldType, FormBranding, FormDTO, FormField, FormSchema, FormSettings, FormStatus } from '@/lib/types';
 import { formLanguages } from '@/lib/form-i18n';
+import { formLayout, LAYOUT_PAGE } from '@/lib/form-layout';
 import { accentVars } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 import { CanvasField, FieldOverlay } from './canvas-field';
@@ -275,6 +276,7 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
 
   const branding = draft.schema.settings.branding;
   const multilingual = formLanguages(draft.schema).length > 1;
+  const layout = formLayout(draft.schema.settings);
   const formTheme = draft.schema.settings.theme === 'light' || draft.schema.settings.theme === 'dark' ? draft.schema.settings.theme : '';
   // Centered stacked header: center the editable title/description text too.
   const centered = branding?.logoAlign === 'center' && branding?.logoPlacement !== 'inline';
@@ -344,7 +346,8 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
         </div>
       ) : mode === 'preview' ? (
         // The preview honours the form's forced theme (light/dark), like the published form.
-        <div className={cn('bg-grid flex-1 overflow-y-auto bg-slate-50', formTheme)}>
+        // It also shows the chosen form look (page background, width and arrangement).
+        <div className={cn('flex-1 overflow-y-auto', LAYOUT_PAGE[layout].bg, formTheme)}>
           <div className="sticky top-0 z-10 flex justify-center py-3">
             <div className="inline-flex rounded-lg bg-white p-0.5 shadow-card ring-1 ring-slate-200">
               {(
@@ -359,9 +362,14 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
               ))}
             </div>
           </div>
-          <div className={cn('mx-auto px-4 pb-16 transition-all', device === 'mobile' ? 'max-w-[400px]' : 'max-w-2xl')}>
-            <FormFrame branding={branding} category={draft.category}>
-              <FormRenderer title={draft.title} description={draft.description} schema={draft.schema} mode="preview" />
+          <div className={cn('mx-auto pb-16 transition-all', LAYOUT_PAGE[layout].flush ? 'px-0' : 'px-4', device === 'mobile' ? 'max-w-[400px]' : LAYOUT_PAGE[layout].width)}>
+            <FormFrame
+              branding={branding}
+              category={draft.category}
+              layout={layout}
+              className={cn(device === 'mobile' && LAYOUT_PAGE[layout].flush && 'overflow-hidden rounded-2xl ring-1 ring-slate-200')}
+            >
+              <FormRenderer title={draft.title} description={draft.description} schema={draft.schema} mode="preview" narrow={device === 'mobile'} />
             </FormFrame>
             <p className="mt-4 text-center text-xs text-slate-400">{t('Preview — responses are not saved.')}</p>
           </div>

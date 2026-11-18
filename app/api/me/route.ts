@@ -4,7 +4,6 @@ import { prisma } from '@/lib/db';
 import { uniquenessProblem, validateUserInput, WHATSAPP_NUMBER_RE } from '@/lib/users';
 import { isLocale, isThemePref } from '@/lib/i18n';
 import { CHANNEL_FIELD, NOTIFY_CHANNELS, normalizeEvents, normalizeForced } from '@/lib/notify-prefs';
-import { hasTwoFactor } from '@/lib/two-factor';
 import { safeImageUrl } from '@/lib/uploads';
 import { isValidEmail } from '@/lib/validation';
 
@@ -84,15 +83,9 @@ export async function PATCH(req: Request) {
     update.notifyFormIds = JSON.stringify(ids);
   }
 
-  // A changed or removed WhatsApp number / Telegram chat ID turns off sign-in codes sent there,
-  // so codes never go to a destination that wasn't confirmed with a setup code.
-  if (update.whatsappNumber !== undefined || update.telegramChatId !== undefined) {
-    const cur = await prisma.user.findUniqueOrThrow({ where: { id: me.id } });
-    const flags = { totpEnabled: cur.totpEnabled, emailOtpEnabled: cur.emailOtpEnabled, whatsappOtpEnabled: cur.whatsappOtpEnabled, telegramOtpEnabled: cur.telegramOtpEnabled };
-    if (update.whatsappNumber !== undefined && update.whatsappNumber !== cur.whatsappNumber && cur.whatsappOtpEnabled) flags.whatsappOtpEnabled = update.whatsappOtpEnabled = false;
-    if (update.telegramChatId !== undefined && update.telegramChatId !== cur.telegramChatId && cur.telegramOtpEnabled) flags.telegramOtpEnabled = update.telegramOtpEnabled = false;
-    if (hasTwoFactor(cur) && !hasTwoFactor(flags)) update.recoveryCodes = '[]';
-  }
+  // A changed or removed WhatsApp number / Telegram chat ID doesn't turn off codes by message:
+  // each sign-in code goes to whichever destination works at that moment (email, WhatsApp,
+  // Telegram), and the profile shows which ones are available.
 
   await prisma.user.update({ where: { id: me.id }, data: update });
   return NextResponse.json({ ok: true });

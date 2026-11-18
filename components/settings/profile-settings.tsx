@@ -193,7 +193,7 @@ export function ProfileSettings({
         </div>
       </SettingsCard>
 
-      <TwoFactorCard status={twoFactor} emailAvailable={channels.email} email={profile.email} />
+      <TwoFactorCard status={twoFactor} />
 
       <SettingsCard
         title={t('Notifications')}
@@ -442,20 +442,23 @@ function ProfilePhoto({ name, username, initial }: { name: string; username: str
         aria-label={t('Change profile photo')}
       >
         <Avatar name={name} fallback={username} src={url} className="h-16 w-16 text-lg" />
-        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 text-onaccent opacity-0 transition group-hover:opacity-100">
-          {busy ? <Spinner className="text-onaccent" /> : <Camera className="h-5 w-5" />}
+        {/* One control: tap the photo to upload or change it. The badge shows it's tappable (also on phones). */}
+        {busy ? (
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+            <Spinner className="text-onaccent" />
+          </span>
+        ) : (
+          <span className="absolute inset-0 rounded-full bg-black/0 transition group-hover:bg-black/20" />
+        )}
+        <span className="absolute -bottom-0.5 -end-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-600 text-onaccent shadow ring-2 ring-white">
+          <Camera className="h-3.5 w-3.5" />
         </span>
       </button>
-      <div className="flex flex-col gap-1">
-        <Button size="xs" onClick={() => input.current?.click()} disabled={busy}>
-          <Camera className="h-3.5 w-3.5" /> {url ? t('Change photo') : t('Upload photo')}
+      {url && (
+        <Button size="xs" variant="ghost" onClick={remove} disabled={busy} className="!text-rose-600" title={t('Remove photo')}>
+          <Trash2 className="h-3.5 w-3.5" /> {t('Remove')}
         </Button>
-        {url && (
-          <Button size="xs" variant="ghost" onClick={remove} disabled={busy} className="!text-rose-600">
-            <Trash2 className="h-3.5 w-3.5" /> {t('Remove')}
-          </Button>
-        )}
-      </div>
+      )}
     </div>
   );
 }
