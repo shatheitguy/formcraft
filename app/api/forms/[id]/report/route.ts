@@ -55,7 +55,7 @@ export async function POST(req: Request, { params }: Ctx) {
   let to = '';
   if (action === 'whatsapp') {
     if (!settings.whatsapp.enabled || waStatus().status !== 'on') {
-      return NextResponse.json({ error: 'WhatsApp isn’t linked. An admin can link it in Settings → Notification channel setup.' }, { status: 400 });
+      return NextResponse.json({ error: 'WhatsApp isn’t linked. An admin can link it in Settings → Notifications.' }, { status: 400 });
     }
     to = waNumber(typeof body.to === 'string' ? body.to : '', settings.whatsapp.defaultCountryCode);
     if (!to) return NextResponse.json({ error: 'Enter the WhatsApp number with its country code, e.g. +971 50 123 4567.' }, { status: 400 });

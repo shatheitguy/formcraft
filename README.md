@@ -114,7 +114,7 @@ If you expose ports directly instead of through a tunnel, restrict the range wit
 
 ### Backups
 
-- **Full system backup** (**Settings → Database**): one `.fcbackup` file with every table (users and roles with password hashes, forms, responses, settings including SMTP/Telegram credentials, alert log) plus all uploaded images. **Restore** previews the file's contents, requires typing `RESTORE`, saves a safety snapshot of the current data to `/app/data/backups/` first, then replaces everything in one transaction. Backups don't depend on the database engine, so they also move a SQLite install to PostgreSQL or back. Everyone is signed out after a restore.
+- **Full system backup** (**Settings → Database & Backup**): one `.fcbackup` file with every table (users and roles with password hashes, forms, responses, settings including SMTP/Telegram credentials, alert log) plus all uploaded images. **Restore** previews the file's contents, requires typing `RESTORE`, saves a safety snapshot of the current data to `/app/data/backups/` first, then replaces everything in one transaction. Backups don't depend on the database engine, so they also move a SQLite install to PostgreSQL or back. Everyone is signed out after a restore.
 - Lighter exports: JSON (no passwords) and a raw SQLite `.db` snapshot.
 - Bundled PostgreSQL: `docker compose exec db pg_dump -U formcraft formcraft > backup.sql`
 - SQLite: `docker compose cp formcraft:/app/data/formcraft.db ./backup.db`
@@ -125,7 +125,7 @@ To remove everything, including data: `docker compose down -v`.
 
 FormCraft backs itself up on a schedule, out of the box: every form (published and draft), every response, users, settings, uploaded images and files attached to responses, in the same `.fcbackup` format as the full system backup.
 
-- **Default:** on, daily at 02:00 (server time), keeping the newest **14** automatic backups. Change the schedule (hourly / daily / weekly), retention (1–365) and whether uploaded files are included in **Settings → Database → Automatic backups**.
+- **Default:** on, daily at 02:00 (server time), keeping the newest **14** automatic backups. Change the schedule (hourly / daily / weekly), retention (1–365) and whether uploaded files are included in **Settings → Database & Backup → Automatic backups**.
 - **Where:** `/app/data/backups/` inside the `formcraft-data` volume (`data/backups/` in a local checkout). Set `BACKUP_DIR` to store them elsewhere, e.g. a mounted network share.
 - **Missed runs** (server was off at the scheduled time) run once as soon as it starts again; a failed run is retried every 30 minutes and admins get a notification in the bell.
 - **Back up now** creates a manual backup that is never pruned. Stored backups can be downloaded, restored (type `RESTORE` to confirm) or deleted from the same card. Only automatic backups count toward retention; manual ones and pre-restore snapshots stay until you delete them.

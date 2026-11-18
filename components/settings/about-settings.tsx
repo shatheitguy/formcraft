@@ -8,7 +8,6 @@ import { Logo } from '@/components/icons';
 import { useToast } from '@/components/toast';
 import { Button } from '@/components/ui';
 import type { AboutInfo } from '@/lib/about';
-import { POWERED_BY_NAME, POWERED_BY_URL } from '@/lib/brand';
 import { cn, formatDateTime } from '@/lib/utils';
 import { SettingsCard, sendJson } from './settings-ui';
 
@@ -234,14 +233,6 @@ export function AboutSettings({ initial }: { initial: AboutInfo }) {
           ))}
         </dl>
       </SettingsCard>
-
-      <p className="text-center text-sm text-slate-600">
-        {t('Made by')}{' '}
-        <a href={POWERED_BY_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-900 underline underline-offset-2">
-          {POWERED_BY_NAME}
-        </a>{' '}
-        · MIT
-      </p>
     </div>
   );
 }

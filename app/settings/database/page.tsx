@@ -7,7 +7,7 @@ import { databaseInfo } from '@/lib/database';
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getServerT();
-  return { title: t('Database') };
+  return { title: t('Database & Backup') };
 }
 
 export default async function DatabasePage() {

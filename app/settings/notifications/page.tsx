@@ -8,7 +8,7 @@ import { getSettings, redactSettings } from '@/lib/settings';
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getServerT();
-  return { title: t('Notification channel setup') };
+  return { title: t('Notifications') };
 }
 
 export default async function NotificationsPage() {

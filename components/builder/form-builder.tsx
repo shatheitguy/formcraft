@@ -30,6 +30,7 @@ import { cloneField, createField, isChoice } from '@/lib/fields';
 import type { FieldType, FormBranding, FormDTO, FormField, FormSchema, FormSettings, FormStatus } from '@/lib/types';
 import { formLanguages } from '@/lib/form-i18n';
 import { formLayout, LAYOUT_PAGE } from '@/lib/form-layout';
+import { LOOK_LABELS } from '@/components/form/look-picker';
 import { accentVars } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 import { CanvasField, FieldOverlay } from './canvas-field';
@@ -386,11 +387,32 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
               />
             </aside>
 
-            <main className={cn('scrollbar-thin bg-grid min-h-0 min-w-0 flex-1 overflow-y-auto lg:block', panel === 'canvas' ? 'block' : 'hidden')} onClick={() => setSelectedId(null)}>
-              <div className="mx-auto max-w-2xl px-3 py-5 sm:px-4 sm:py-8" style={accentVars(branding?.accent)}>
-                {/* Form header card */}
-                <div onClick={(e) => e.stopPropagation()}>
-                <FormFrame branding={branding} category={draft.category} className={cn('mb-4 transition', selectedId === null && 'ring-2 ring-brand-500/20')}>
+            <main
+              className={cn('scrollbar-thin min-h-0 min-w-0 flex-1 overflow-y-auto lg:block', layout === 'minimal' ? 'bg-white' : 'bg-grid', panel === 'canvas' ? 'block' : 'hidden')}
+              onClick={() => setSelectedId(null)}
+            >
+              {/* The canvas follows the form's look (Classic, Minimal, Steps, Split); Preview shows it exactly. */}
+              <div
+                className={cn('mx-auto px-3 py-5 sm:px-4 sm:py-8', layout === 'split' ? 'max-w-5xl' : layout === 'minimal' ? 'max-w-3xl' : 'max-w-2xl')}
+                style={accentVars(branding?.accent)}
+              >
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600" onClick={(e) => e.stopPropagation()}>
+                  <span>
+                    {t('Look')}: <strong className="font-semibold text-slate-800">{t(LOOK_LABELS[layout].label)}</strong>
+                  </span>
+                  <button type="button" onClick={() => setMode('preview')} className="font-semibold text-brand-700 hover:underline">
+                    {t('See it in Preview')}
+                  </button>
+                </div>
+                <div className={cn(layout === 'split' && 'lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-5')}>
+                {/* Form header: a card (Classic / Steps), plain with a full-width banner (Minimal), or a side panel (Split) */}
+                <div onClick={(e) => e.stopPropagation()} className={cn(layout === 'split' && 'lg:sticky lg:top-4')}>
+                <FormFrame
+                  branding={branding}
+                  category={draft.category}
+                  layout={layout === 'minimal' ? 'minimal' : 'classic'}
+                  className={cn('mb-4 transition', layout === 'minimal' && 'rounded-xl', selectedId === null && 'ring-2 ring-brand-500/20')}
+                >
                   <div className="p-6 [&>header]:mb-0">
                     <FormHeader
                       branding={branding}
@@ -419,11 +441,15 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
                 </FormFrame>
                 </div>
 
+                <div className="min-w-0">
                 <CanvasDropZone empty={fields.length === 0} highlight={activeDrag?.kind === 'palette' && overId === CANVAS_ID}>
                   <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
                     <div className="space-y-3">
                       {fields.map((field, i) => (
                         <div key={field.id} onClick={(e) => e.stopPropagation()}>
+                          {layout === 'steps' && (
+                            <div className="mb-1 ms-1 text-[11px] font-semibold uppercase tracking-wide text-brand-700">{t('Step {n} of {total}', { n: i + 1, total: fields.length })}</div>
+                          )}
                           <CanvasField
                             field={field}
                             index={i}
@@ -445,6 +471,8 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
                     </div>
                   </SortableContext>
                 </CanvasDropZone>
+                </div>
+                </div>
               </div>
             </main>
 
