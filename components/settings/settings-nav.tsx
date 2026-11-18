@@ -11,7 +11,7 @@ const ACCOUNT = [{ href: '/settings/profile', label: 'My profile', icon: UserCir
 const WORKSPACE = [
   { href: '/settings/general', label: 'Customization', icon: Palette },
   { href: '/settings/users', label: 'Users & roles', icon: Users },
-  { href: '/settings/notifications', label: 'Notification channel setup', icon: Bell },
+  { href: '/settings/notifications', label: 'Notifications', icon: Bell },
   { href: '/settings/database', label: 'Database', icon: Database },
   { href: '/settings/about', label: 'About', icon: Info },
 ];
