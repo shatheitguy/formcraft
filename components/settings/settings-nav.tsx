@@ -3,6 +3,7 @@
 import { Bell, Database, Info, Palette, UserCircle2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import { useT } from '@/components/i18n';
 import { cn } from '@/lib/utils';
 
@@ -19,10 +20,21 @@ export function SettingsNav({ isAdmin }: { isAdmin: boolean }) {
   const path = usePathname();
   const t = useT();
   const groups = [{ title: 'Account', items: ACCOUNT }, ...(isAdmin ? [{ title: 'Workspace', items: WORKSPACE }] : [])];
+  const navRef = useRef<HTMLElement>(null);
+  // Phones show the tabs in a sideways-scrolling row: keep the open one in view.
+  useEffect(() => {
+    const nav = navRef.current;
+    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (nav && active && nav.scrollWidth > nav.clientWidth) {
+      const n = nav.getBoundingClientRect();
+      const a = active.getBoundingClientRect();
+      nav.scrollTo({ left: nav.scrollLeft + (a.left - n.left) - n.width / 2 + a.width / 2, behavior: 'smooth' });
+    }
+  }, [path]);
   return (
-    <nav className="scrollbar-thin -mx-4 flex gap-1 overflow-x-auto px-4 lg:mx-0 lg:block lg:space-y-6 lg:overflow-visible lg:px-0">
+    <nav ref={navRef} className="scrollbar-thin -mx-4 flex gap-1 overflow-x-auto px-4 lg:mx-0 lg:block lg:space-y-6 lg:overflow-visible lg:px-0">
       {groups.map((g) => (
-        <div key={g.title} className="flex gap-1 lg:block lg:space-y-0.5">
+        <div key={g.title} className="flex shrink-0 gap-1 lg:block lg:space-y-0.5">
           <div className="label hidden px-3 !text-[10px] lg:block">{t(g.title)}</div>
           {g.items.map(({ href, label, icon: Icon }) => {
             const active = path.startsWith(href);
@@ -30,6 +42,7 @@ export function SettingsNav({ isAdmin }: { isAdmin: boolean }) {
               <Link
                 key={href}
                 href={href}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition',
                   active ? 'bg-white text-brand-700 shadow-card ring-1 ring-slate-200' : 'text-slate-600 hover:bg-white/70 hover:text-slate-900',

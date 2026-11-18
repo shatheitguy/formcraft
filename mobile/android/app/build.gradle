@@ -1,9 +1,12 @@
 apply plugin: 'com.android.application'
 
-// versionName = FormCraft's VERSION file (two folders up from mobile/android); FC_VERSION_CODE overrides versionCode
+// versionName = FormCraft's VERSION file (two folders up from mobile/android).
+// versionCode comes from it too (1.1.1 → 10101), so every new release installs over the old one;
+// FC_VERSION_CODE overrides it.
 def fcVersionFile = rootProject.file('../../VERSION')
 def fcVersionName = fcVersionFile.exists() ? fcVersionFile.text.trim() : '1.0.0'
-def fcVersionCode = (System.getenv('FC_VERSION_CODE') ?: '1') as int
+def fcParts = (fcVersionName.tokenize('.') + ['0', '0', '0']).take(3).collect { (it.replaceAll(/\D/, '') ?: '0') as int }
+def fcVersionCode = (System.getenv('FC_VERSION_CODE') ?: (fcParts[0] * 10000 + fcParts[1] * 100 + fcParts[2]).toString()) as int
 
 // Release signing (optional): FC_KEYSTORE (path), FC_KEYSTORE_PASSWORD, FC_KEY_ALIAS, FC_KEY_PASSWORD
 def fcKeystore = System.getenv('FC_KEYSTORE')

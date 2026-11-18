@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui';
 import { SUGGESTED_CATEGORIES } from '@/lib/categories';
 import { DEFAULT_AGREE_LABEL, FIELD_META, isChoice, opt, safeTermsUrl } from '@/lib/fields';
 import { FILE_KINDS, fileLimits, MAX_FILE_MB_LIMIT, MAX_FILES_LIMIT, type FileKind } from '@/lib/files';
-import { LOCALE_CODES, LOCALES } from '@/lib/i18n';
+import { isLocale, LOCALE_CODES, LOCALES } from '@/lib/i18n';
 import { ACCENTS, ACCENT_KEYS } from '@/lib/theme';
 import type { FieldOption, FieldType, FormBranding, FormField, FormSettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -639,6 +639,24 @@ function LanguagesSection({ settings, onSettings }: { settings: FormSettings; on
           })}
         </div>
       </div>
+      {langs.length > 1 && (
+        <div>
+          <div className="mb-1.5 text-xs text-slate-500">{t('Opens in')}</div>
+          <select
+            className="input"
+            value={settings.openLanguage && langs.includes(settings.openLanguage) ? settings.openLanguage : ''}
+            onChange={(e) => onSettings({ openLanguage: e.target.value || undefined })}
+          >
+            <option value="">{t('Visitor’s browser language')}</option>
+            {langs.map((l) => (
+              <option key={l} value={l}>
+                {isLocale(l) ? LOCALES[l].native : l}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1.5 text-xs text-slate-500">{t('The language people see first. A link with ?lang= still wins.')}</p>
+        </div>
+      )}
       {langs.length > 1 && <p className="text-xs text-slate-500">{t('Respondents can switch language on the form. Translate the texts in the Translate tab.')}</p>}
     </div>
   );

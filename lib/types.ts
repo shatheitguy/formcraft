@@ -81,6 +81,8 @@ export interface FormSettings {
   languages?: string[];
   /** Colour theme for respondents: follow their device, or force light / dark. */
   theme?: 'auto' | 'light' | 'dark';
+  /** Language the form opens in; empty = the visitor's browser language (then the primary language). */
+  openLanguage?: string;
   /** How many times one person (device, optionally network) may respond; 0 / missing = unlimited. */
   perPersonLimit?: number;
   /** Also count responses from the same network (IP address). */

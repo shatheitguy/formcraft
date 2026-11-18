@@ -88,7 +88,7 @@ export function GeneralSettingsForm({ initial }: { initial: AppSettings }) {
             </select>
           </Field>
           <Field label={t('Workspace logo')} hint={t('Optional. A square image works best. Remove it to use the default logo.')} className="md:col-span-2">
-            <div className="max-w-xs">
+            <div className="sm:max-w-xs">
               <ImageUpload value={s.logoUrl} onChange={(v) => set('logoUrl', v)} />
             </div>
           </Field>

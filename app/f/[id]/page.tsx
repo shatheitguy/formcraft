@@ -36,7 +36,8 @@ export default async function PublicFormPage({ params, searchParams }: { params:
   const closed = form.status !== 'ACTIVE' && !preview;
   // Page chrome follows the requested form language (?lang=) or the form's primary language.
   const langs = formLanguages(form.schema);
-  const lang = searchParams.lang && langs.includes(searchParams.lang) ? searchParams.lang : langs[0];
+  const open = form.schema.settings.openLanguage;
+  const lang = searchParams.lang && langs.includes(searchParams.lang) ? searchParams.lang : open && langs.includes(open) ? open : langs[0];
   const t = makeT(lang);
   // Forms can force a theme; "auto" follows the respondent's device.
   const theme = form.schema.settings.theme === 'light' || form.schema.settings.theme === 'dark' ? form.schema.settings.theme : '';

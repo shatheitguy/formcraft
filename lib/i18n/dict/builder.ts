@@ -207,6 +207,10 @@ const dict: AreaDict = {
     "Stricter, but everyone on the same Wi-Fi or office network counts as one person.": "أكثر صرامة، لكن كل من على نفس شبكة Wi-Fi أو المكتب يُحسب شخصًا واحدًا.",
     "Message when the limit is reached": "الرسالة عند بلوغ الحد",
     "This form accepts a limited number of responses per person, and you’ve reached it. Thank you!": "يقبل هذا النموذج عددًا محدودًا من الردود لكل شخص، وقد وصلت إليه. شكرًا لك!",
+    // WhatsApp & reports
+    "Opens in": "يُفتح بلغة",
+    "Visitor’s browser language": "لغة متصفح الزائر",
+    "The language people see first. A link with ?lang= still wins.": "اللغة التي يراها الناس أولًا. الرابط الذي يحتوي ?lang= له الأولوية.",
   },
   ta: {
     // Header & tabs
@@ -413,6 +417,10 @@ const dict: AreaDict = {
     "Stricter, but everyone on the same Wi-Fi or office network counts as one person.": "கடுமையானது, ஆனால் ஒரே Wi-Fi அல்லது அலுவலக நெட்வொர்க்கில் உள்ள அனைவரும் ஒருவராகக் கணக்கிடப்படுவர்.",
     "Message when the limit is reached": "வரம்பை அடைந்தால் காட்டும் செய்தி",
     "This form accepts a limited number of responses per person, and you’ve reached it. Thank you!": "இந்தப் படிவம் ஒருவருக்கு குறிப்பிட்ட எண்ணிக்கையிலான பதில்களை மட்டுமே ஏற்கும்; நீங்கள் அதை அடைந்துவிட்டீர்கள். நன்றி!",
+    // WhatsApp & reports
+    "Opens in": "திறக்கும் மொழி",
+    "Visitor’s browser language": "பார்வையாளரின் உலாவி மொழி",
+    "The language people see first. A link with ?lang= still wins.": "மக்கள் முதலில் பார்க்கும் மொழி. ?lang= உள்ள இணைப்பு இன்னும் முன்னுரிமை பெறும்.",
   },
 };
 

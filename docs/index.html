@@ -6,6 +6,9 @@
 <title>FormCraft — self-hosted form builder</title>
 <meta name="description" content="FormCraft is a self-hosted form builder: drag-and-drop forms, templates and quizzes, submissions with charts and CSV export, roles, email, Telegram and WhatsApp alerts, PDF and Excel reports, file uploads, an Android app, multilingual forms with Arabic RTL, dark mode and full backups. One-line Docker install.">
 <link rel="canonical" href="https://shatheitguy.github.io/formcraft/">
+<link rel="alternate" hreflang="en" href="https://shatheitguy.github.io/formcraft/">
+<link rel="alternate" hreflang="ar" href="https://shatheitguy.github.io/formcraft/?lang=ar">
+<link rel="alternate" hreflang="ta" href="https://shatheitguy.github.io/formcraft/?lang=ta">
 <meta name="theme-color" content="#9b1b22">
 <meta property="og:title" content="FormCraft — self-hosted form builder">
 <meta property="og:description" content="Drag-and-drop forms, submissions and insights, roles, multilingual forms and dark mode. Your server, your data. One-line Docker install.">
@@ -16,7 +19,7 @@
 <link rel="icon" href="img/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Arabic:wght@400;500;600;700;800&family=Noto+Sans+Tamil:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"FormCraft","applicationCategory":"BusinessApplication","operatingSystem":"Linux, Windows, macOS (Docker)","description":"Self-hosted form builder with drag-and-drop builder, submissions, roles, multilingual forms and dark mode.","url":"https://shatheitguy.github.io/formcraft/","downloadUrl":"https://github.com/shatheitguy/formcraft","license":"https://opensource.org/licenses/MIT","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Sha The IT Guy","url":"https://shatheitguy.in/"}}
 </script>
@@ -24,11 +27,12 @@
 :root{--ground:#eceef1;--panel:#f7f8fa;--panel-2:#fdfdfe;--rule:#c9ced6;--rule-soft:#dde1e6;--text:#15171b;--text-2:#4b515b;--text-3:#737a85;--accent:#9b1b22;--accent-2:#7f151b;--accent-soft:rgba(155,27,34,.08);--ok:#1f6e46;--code:#14161a;--code-text:#e8eaee;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--ground:#0f1115;--panel:#161920;--panel-2:#1c2028;--rule:#2b3038;--rule-soft:#22262d;--text:#eef0f3;--text-2:#a9b0ba;--text-3:#7f8792;--accent:#ff6b6f;--accent-2:#ff9a9c;--accent-soft:rgba(255,107,111,.12);--ok:#4fb98a;--code:#0b0d10;--code-text:#e8eaee;color-scheme:dark}}
 :root[data-theme=dark]{--ground:#0f1115;--panel:#161920;--panel-2:#1c2028;--rule:#2b3038;--rule-soft:#22262d;--text:#eef0f3;--text-2:#a9b0ba;--text-3:#7f8792;--accent:#ff6b6f;--accent-2:#ff9a9c;--accent-soft:rgba(255,107,111,.12);--ok:#4fb98a;--code:#0b0d10;--code-text:#e8eaee;color-scheme:dark}
+:root{--sans:Archivo,"Noto Sans Arabic","Noto Sans Tamil",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--ground);color:var(--text);font:16px/1.65 Archivo,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--ground);color:var(--text);font:16px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
 a{color:var(--accent)}
-img{max-width:100%;display:block}
+img{max-width:100%;height:auto;display:block}
 .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
 .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
 /* nav */
@@ -43,7 +47,14 @@ img{max-width:100%;display:block}
 .btn:hover{border-color:var(--text-3)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.primary:hover{filter:brightness(1.08)}
-.icon-btn{background:none;border:1px solid var(--rule);border-radius:8px;color:var(--text-2);width:34px;height:34px;cursor:pointer;display:grid;place-items:center}
+.icon-btn{background:none;border:1px solid var(--rule);border-radius:8px;color:var(--text-2);width:34px;height:34px;cursor:pointer;display:grid;place-items:center;flex:none}
+/* language switch */
+.lang{display:flex;flex:none;height:34px;border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin-inline-end:-12px}
+.lang button{background:none;border:0;color:var(--text-2);font:600 13px/1 var(--sans);padding:0 9px;cursor:pointer}
+.lang button+button{border-inline-start:1px solid var(--rule)}
+.lang button:hover{color:var(--text);background:var(--panel)}
+.lang button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent)}
+.lang button:focus-visible,.icon-btn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 /* hero */
 .hero{padding:72px 0 40px}
 .kicker{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
@@ -66,13 +77,13 @@ h1 em{font-style:normal;color:var(--accent)}
 section.reg{padding:72px 0;border-top:1px solid var(--rule-soft)}
 h2{font-size:clamp(28px,4vw,42px);letter-spacing:-.03em;line-height:1.08;margin:10px 0 14px;font-weight:800}
 .sub{color:var(--text-2);max-width:66ch;margin:0 0 34px;font-size:17px}
-.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
 .card{background:var(--panel);border:1px solid var(--rule-soft);border-radius:14px;padding:22px}
 .card h3{margin:10px 0 6px;font-size:18px;letter-spacing:-.01em}
 .card p{margin:0;color:var(--text-2);font-size:15px}
 .card .ico{width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
 .card .ico svg{width:20px;height:20px}
-.shots{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.shots{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
 figure{margin:0;background:var(--panel);border:1px solid var(--rule-soft);border-radius:14px;overflow:hidden}
 figure button{all:unset;cursor:zoom-in;display:block}
 figure img{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid var(--rule-soft)}
@@ -85,7 +96,7 @@ figcaption b{display:block;color:var(--text);font-size:15px;margin-bottom:2px}
 .list li b{color:var(--text)}
 .dot{flex:none;width:22px;height:22px;border-radius:6px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:700 12px "IBM Plex Mono",monospace;margin-top:2px}
 .frame{border-radius:14px;border:1px solid var(--rule);overflow:hidden;background:var(--panel)}
-.db{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.db{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr))}
 .db .card{position:relative}
 .tag{position:absolute;top:16px;inset-inline-end:16px;font:600 11px "IBM Plex Mono",monospace;color:var(--ok);border:1px solid currentColor;border-radius:999px;padding:2px 8px}
 pre{background:var(--code);color:var(--code-text);border-radius:12px;padding:18px;overflow:auto;font:13.5px/1.6 "IBM Plex Mono",monospace;border:1px solid var(--rule);margin:0}
@@ -107,7 +118,21 @@ footer a{color:var(--text-2)}
 dialog{border:0;padding:0;background:transparent;max-width:min(1400px,96vw)}
 dialog::backdrop{background:rgba(0,0,0,.75)}
 dialog img{border-radius:12px;max-height:90vh;width:auto}
-@media (max-width:640px){.nav .links a:not(.gh){display:none}.hero{padding-top:48px}}
+@media (max-width:640px){.nav .links a:not(.gh){display:none}.hero{padding-top:48px}.nav .wrap{gap:10px}.lang{margin-inline-end:0}}
+@media (max-width:480px){.nav .links{display:none}.lang{margin-inline-start:auto}.brand{font-size:16px;gap:8px}.lang button{font-size:12px;padding:0 7px}}
+/* Arabic and Tamil: no tracking on connected/complex scripts, roomier line height, sans labels */
+:root:is([lang=ar],[lang=ta]) :is(h1,h2,h3,.kicker,th,.badge,.tag,.copy){letter-spacing:0}
+:root:is([lang=ar],[lang=ta]) :is(.kicker,th,.badge,.tag,.copy){font-family:var(--sans)}
+:root:is([lang=ar],[lang=ta]) .kicker{font-size:13px}
+:root:is([lang=ar],[lang=ta]) th{font-size:13px}
+:root:is([lang=ar],[lang=ta]) h1{line-height:1.3;max-width:20ch}
+:root:is([lang=ar],[lang=ta]) h2{line-height:1.35}
+:root:is([lang=ar],[lang=ta]) :is(h1,h2,h3){overflow-wrap:break-word}
+:root[lang=ta] h1{font-size:clamp(30px,4.8vw,54px);max-width:24ch}
+:root[lang=ta] h2{font-size:clamp(24px,3.2vw,36px)}
+/* right-to-left: code, commands and paths stay left-to-right */
+[dir=rtl] :is(pre,code,.mono,.cmd,.tabs){direction:ltr;unicode-bidi:isolate}
+[dir=rtl] pre{text-align:left}
 </style>
 </head>
 <body>
@@ -116,78 +141,83 @@ dialog img{border-radius:12px;max-height:90vh;width:auto}
   <div class="wrap">
     <a class="brand" href="#top"><img src="img/icon.png" alt="">FormCraft</a>
     <div class="links">
-      <a href="#screens">Screens</a>
-      <a href="#features">Features</a>
-      <a href="#languages">Languages</a>
-      <a href="#database">Database</a>
-      <a href="#install">Install</a>
+      <a href="#screens" data-i18n="nav.screens">Screens</a>
+      <a href="#features" data-i18n="nav.features">Features</a>
+      <a href="#languages" data-i18n="nav.languages">Languages</a>
+      <a href="#database" data-i18n="nav.database">Database</a>
+      <a href="#install" data-i18n="nav.install">Install</a>
       <a class="gh" href="https://github.com/shatheitguy/formcraft">GitHub</a>
     </div>
-    <button class="icon-btn" id="theme" aria-label="Toggle light or dark">◐</button>
+    <div class="lang" role="group" aria-label="Language" data-i18n-attr="aria-label:nav.lang">
+      <button type="button" data-lang="en" lang="en" aria-pressed="true" title="English">EN</button>
+      <button type="button" data-lang="ar" lang="ar" dir="rtl" aria-pressed="false" title="العربية">العربية</button>
+      <button type="button" data-lang="ta" lang="ta" aria-pressed="false" title="தமிழ்">தமிழ்</button>
+    </div>
+    <button class="icon-btn" id="theme" aria-label="Toggle light or dark" data-i18n-attr="aria-label:nav.theme">◐</button>
   </div>
 </nav>
 
 <header class="hero" id="top">
   <div class="wrap">
-    <div class="kicker">Self-hosted · Open source · MIT</div>
-    <h1>Forms you own. <em>Answers you keep.</em></h1>
-    <p class="lede">FormCraft is a self-hosted form builder. Build forms by drag-and-drop, share a link or a QR code, and read every response in a table with charts. It runs on your server, in English, Arabic and Tamil, light or dark.</p>
+    <div class="kicker" data-i18n="hero.kicker">Self-hosted · Open source · MIT</div>
+    <h1 data-i18n="hero.title">Forms you own. <em>Answers you keep.</em></h1>
+    <p class="lede" data-i18n="hero.lede">FormCraft is a self-hosted form builder. Build forms by drag-and-drop, share a link or a QR code, and read every response in a table with charts. It runs on your server, in English, Arabic and Tamil, light or dark.</p>
     <div class="cta">
-      <a class="btn primary" href="#install">Install in one line</a>
-      <a class="btn" href="https://github.com/shatheitguy/formcraft">View on GitHub</a>
+      <a class="btn primary" href="#install" data-i18n="hero.ctaInstall">Install in one line</a>
+      <a class="btn" href="https://github.com/shatheitguy/formcraft" data-i18n="hero.ctaGithub">View on GitHub</a>
     </div>
-    <div class="install" role="region" aria-label="Install command">
-      <div class="tabs" role="tablist">
+    <div class="install" role="region" aria-label="Install command" data-i18n-attr="aria-label:hero.installLabel">
+      <div class="tabs" role="tablist" dir="ltr">
         <button role="tab" aria-selected="true" data-cmd="curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash">Linux / macOS</button>
         <button role="tab" aria-selected="false" data-cmd="irm https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.ps1 | iex">Windows</button>
         <button role="tab" aria-selected="false" data-cmd="docker run -d -p 3000:3000 -v formcraft-data:/app/data --name formcraft ghcr.io/shatheitguy/formcraft:latest">Docker</button>
       </div>
-      <div class="cmd"><code id="cmd">curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash</code><button class="copy" data-copy="#cmd">Copy</button></div>
+      <div class="cmd" dir="ltr"><code id="cmd">curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash</code><button class="copy" data-copy="#cmd" data-i18n="install.copy">Copy</button></div>
     </div>
     <div class="badges">
-      <span class="badge">Docker · amd64 + arm64</span>
-      <span class="badge">SQLite or PostgreSQL</span>
+      <span class="badge" dir="ltr">Docker · amd64 + arm64</span>
+      <span class="badge" data-i18n="badge.db">SQLite or PostgreSQL</span>
       <span class="badge">EN · العربية · தமிழ்</span>
-      <span class="badge">Light + dark</span>
-      <span class="badge">Unraid template</span>
+      <span class="badge" data-i18n="badge.theme">Light + dark</span>
+      <span class="badge" data-i18n="badge.unraid">Unraid template</span>
     </div>
-    <div class="hero-shot"><img src="img/dashboard.png" alt="FormCraft dashboard with form cards, response counts and sparklines" width="1440" height="900"></div>
+    <div class="hero-shot"><img src="img/dashboard.png" alt="FormCraft dashboard with form cards, response counts and sparklines" data-i18n-attr="alt:hero.shotAlt" width="1440" height="900"></div>
   </div>
 </header>
 
 <section class="reg" id="screens">
   <div class="wrap">
-    <div class="kicker">The product</div>
-    <h2>What you actually get.</h2>
-    <p class="sub">Every screen below is the real app, not a mock-up.</p>
+    <div class="kicker" data-i18n="screens.kicker">The product</div>
+    <h2 data-i18n="screens.title">What you actually get.</h2>
+    <p class="sub" data-i18n="screens.sub">Every screen below is the real app, not a mock-up.</p>
     <div class="shots">
-      <figure><button data-full="img/builder.png"><img src="img/builder.png" alt="Form builder" loading="lazy"></button><figcaption><b>Drag-and-drop builder</b>Ten field types, a properties panel, autosave, undo and a live preview.</figcaption></figure>
-      <figure><button data-full="img/submissions.png"><img src="img/submissions.png" alt="Submissions table" loading="lazy"></button><figcaption><b>Submissions table</b>Search, filter by date or by answer, sort any column, open a response, export CSV.</figcaption></figure>
-      <figure><button data-full="img/insights.png"><img src="img/insights.png" alt="Insights charts" loading="lazy"></button><figcaption><b>Insights</b>Answer distributions, rating histograms and an automatic Net Promoter Score.</figcaption></figure>
-      <figure><button data-full="img/share.png"><img src="img/share.png" alt="Share dialog" loading="lazy"></button><figcaption><b>Share</b>A unique link, a dedicated port with a built-in port test, a custom domain and a QR code.</figcaption></figure>
-      <figure><button data-full="img/translate.png"><img src="img/translate.png" alt="Translation editor" loading="lazy"></button><figcaption><b>Translate</b>Every text side by side with the original, with progress per language.</figcaption></figure>
-      <figure><button data-full="img/dashboard-dark-tamil.png"><img src="img/dashboard-dark-tamil.png" alt="Dashboard in Tamil, dark mode" loading="lazy"></button><figcaption><b>Dark mode, in Tamil</b>The whole app follows the device's theme, or the one each user chooses.</figcaption></figure>
+      <figure><button data-full="img/builder.png"><img src="img/builder.png" alt="Form builder" data-i18n-attr="alt:shot.builder.alt" loading="lazy"></button><figcaption data-i18n="shot.builder.cap"><b>Drag-and-drop builder</b>Ten field types, a properties panel, autosave, undo and a live preview.</figcaption></figure>
+      <figure><button data-full="img/submissions.png"><img src="img/submissions.png" alt="Submissions table" data-i18n-attr="alt:shot.submissions.alt" loading="lazy"></button><figcaption data-i18n="shot.submissions.cap"><b>Submissions table</b>Search, filter by date or by answer, sort any column, open a response, export CSV.</figcaption></figure>
+      <figure><button data-full="img/insights.png"><img src="img/insights.png" alt="Insights charts" data-i18n-attr="alt:shot.insights.alt" loading="lazy"></button><figcaption data-i18n="shot.insights.cap"><b>Insights</b>Answer distributions, rating histograms and an automatic Net Promoter Score.</figcaption></figure>
+      <figure><button data-full="img/share.png"><img src="img/share.png" alt="Share dialog" data-i18n-attr="alt:shot.share.alt" loading="lazy"></button><figcaption data-i18n="shot.share.cap"><b>Share</b>A unique link, a dedicated port with a built-in port test, a custom domain and a QR code.</figcaption></figure>
+      <figure><button data-full="img/translate.png"><img src="img/translate.png" alt="Translation editor" data-i18n-attr="alt:shot.translate.alt" loading="lazy"></button><figcaption data-i18n="shot.translate.cap"><b>Translate</b>Every text side by side with the original, with progress per language.</figcaption></figure>
+      <figure><button data-full="img/dashboard-dark-tamil.png"><img src="img/dashboard-dark-tamil.png" alt="Dashboard in Tamil, dark mode" data-i18n-attr="alt:shot.dark.alt" loading="lazy"></button><figcaption data-i18n="shot.dark.cap"><b>Dark mode, in Tamil</b>The whole app follows the device's theme, or the one each user chooses.</figcaption></figure>
     </div>
   </div>
 </section>
 
 <section class="reg" id="features">
   <div class="wrap">
-    <div class="kicker">Features</div>
-    <h2>Everything a form needs, nothing it doesn't.</h2>
-    <p class="sub">Built for teams who want Google-Forms simplicity without sending their data to someone else.</p>
+    <div class="kicker" data-i18n="features.kicker">Features</div>
+    <h2 data-i18n="features.title">Everything a form needs, nothing it doesn't.</h2>
+    <p class="sub" data-i18n="features.sub">Built for teams who want Google-Forms simplicity without sending their data to someone else.</p>
     <div class="grid">
-      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg></div><h3>Builder and templates</h3><p>Text, choices, date, rating and scale, plus terms &amp; conditions and file uploads. Start from 13 templates: job application, registration, orders, leave, IT tickets, surveys and more.</p></div>
-      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/></svg></div><h3>Quizzes with scoring</h3><p>Mark the correct answers, give each one points, and show respondents their score when they submit.</p></div>
-      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>Submissions and insights</h3><p>A filterable table, per-question charts, NPS and CSV export. Choice answers are stored the same way in every language.</p></div>
-      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 11l2 2 4-4"/></svg></div><h3>Users and roles</h3><p>Admins, editors and viewers. Give each person all forms or only the ones they need, read-only or editable.</p></div>
-      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></div><h3>Email, Telegram and WhatsApp</h3><p>SMTP, your own Telegram bot, and WhatsApp linked by QR code. Alerts can carry the response as PDF or Excel, and reports go out on WhatsApp in one tap.</p></div>
-      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></div><h3>Links, ports, domains</h3><p>Every form gets a unique link and its own port, served without a restart. Point a Cloudflare Tunnel at it and add a QR code.</p></div>
-      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/><path d="M12 22a10 10 0 1 1 10-10"/></svg></div><h3>Branding</h3><p>Workspace name, logo and accent colour, plus a logo, cover image and colour for each form. Your own footer text, too.</p></div>
-      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><h3>Automatic backups</h3><p>Hourly, daily or weekly backups of every form, response and uploaded file, with retention. Restore previews the file, takes a safety snapshot first, and also moves SQLite to PostgreSQL.</p></div>
-      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>Private by design</h3><p>Hashed passwords, throttled logins, two-factor sign-in, secrets kept server-side, uploads checked by file signature. No telemetry, no cloud.</p></div>
-      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg></div><h3>Phones and the Android app</h3><p>Every screen works on a phone, including the builder. The Android app connects to your server like Nextcloud: enter the address once, then everything is there.</p></div>
-      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></div><h3>Updates from Settings</h3><p>Settings → About shows your version and checks for a new one. Native installs update in one click; Docker installs get the exact command.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg></div><h3 data-i18n="feat.builder.h">Builder and templates</h3><p data-i18n="feat.builder.p">Text, choices, date, rating and scale, plus terms &amp; conditions and file uploads. Start from 13 templates: job application, registration, orders, leave, IT tickets, surveys and more.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/></svg></div><h3 data-i18n="feat.quiz.h">Quizzes with scoring</h3><p data-i18n="feat.quiz.p">Mark the correct answers, give each one points, and show respondents their score when they submit.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3 data-i18n="feat.insights.h">Submissions and insights</h3><p data-i18n="feat.insights.p">A filterable table, per-question charts, NPS, and CSV, PDF and Excel reports — sent to WhatsApp in one tap. Choice answers are stored the same way in every language.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 11l2 2 4-4"/></svg></div><h3 data-i18n="feat.roles.h">Users and roles</h3><p data-i18n="feat.roles.p">Admins, editors and viewers. Give each person all forms or only the ones they need, read-only or editable.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></div><h3 data-i18n="feat.alerts.h">Email, Telegram and WhatsApp</h3><p data-i18n="feat.alerts.p">SMTP, your own Telegram bot, and WhatsApp linked by QR code. Alerts can carry the response as PDF or Excel, and reports go out on WhatsApp in one tap.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></div><h3 data-i18n="feat.links.h">Links, ports, domains</h3><p data-i18n="feat.links.p">Every form gets a unique link and its own port, served without a restart. Point a Cloudflare Tunnel at it and add a QR code.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/><path d="M12 22a10 10 0 1 1 10-10"/></svg></div><h3 data-i18n="feat.brand.h">Branding</h3><p data-i18n="feat.brand.p">Workspace name, logo and accent colour, plus a logo, cover image and colour for each form. Your own footer text, too.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><h3 data-i18n="feat.backup.h">Automatic backups</h3><p data-i18n="feat.backup.p">Hourly, daily or weekly backups of every form, response and uploaded file, with retention. Restore previews the file, takes a safety snapshot first, and also moves SQLite to PostgreSQL.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3 data-i18n="feat.privacy.h">Private by design</h3><p data-i18n="feat.privacy.p">Hashed passwords, throttled logins, two-factor sign-in, secrets kept server-side, uploads checked by file signature. No telemetry, no cloud.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg></div><h3 data-i18n="feat.mobile.h">Phones and the Android app</h3><p data-i18n="feat.mobile.p">Every screen works on a phone, including the builder. The Android app connects to your server like Nextcloud: enter the address once, then everything is there.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></div><h3 data-i18n="feat.updates.h">Updates from Settings</h3><p data-i18n="feat.updates.p">Settings → About shows your version and checks for a new one. Native installs update in one click; Docker installs get the exact command.</p></div>
     </div>
   </div>
 </section>
@@ -195,55 +225,55 @@ dialog img{border-radius:12px;max-height:90vh;width:auto}
 <section class="reg" id="languages">
   <div class="wrap split">
     <div>
-      <div class="kicker">Languages</div>
-      <h2>One form, two languages. Switch at any time.</h2>
-      <p class="sub">The app is fully translated into English, Arabic and Tamil, and Arabic turns every screen right-to-left. Forms can be offered in several languages at once.</p>
+      <div class="kicker" data-i18n="langs.kicker">Languages</div>
+      <h2 data-i18n="langs.title">One form, two languages. Switch at any time.</h2>
+      <p class="sub" data-i18n="langs.sub">The app is fully translated into English, Arabic and Tamil, and Arabic turns every screen right-to-left. Forms can be offered in several languages at once.</p>
       <ul class="list">
-        <li><span class="dot">1</span><span><b>Pick the languages</b> in the form settings, then fill in the Translate tab. Anything you leave empty falls back to the original.</span></li>
-        <li><span class="dot">2</span><span><b>Respondents switch language while filling in.</b> Their answers stay, and the errors and confirmation follow the new language.</span></li>
-        <li><span class="dot">3</span><span><b>Reports stay consistent.</b> Every response records its language, and choice answers group together whichever language they were given in.</span></li>
-        <li><span class="dot">4</span><span><b>Set a language in the link</b> with <span class="mono">?lang=ar</span>. Otherwise the visitor's browser language is used.</span></li>
+        <li><span class="dot">1</span><span data-i18n="langs.step1"><b>Pick the languages</b> in the form settings, then fill in the Translate tab. Anything you leave empty falls back to the original.</span></li>
+        <li><span class="dot">2</span><span data-i18n="langs.step2"><b>Respondents switch language while filling in.</b> Their answers stay, and the errors and confirmation follow the new language.</span></li>
+        <li><span class="dot">3</span><span data-i18n="langs.step3"><b>Reports stay consistent.</b> Every response records its language, and choice answers group together whichever language they were given in.</span></li>
+        <li><span class="dot">4</span><span data-i18n="langs.step4"><b>Set a language in the link</b> with <span class="mono" dir="ltr">?lang=ar</span>. Otherwise the visitor's browser language is used.</span></li>
       </ul>
     </div>
-    <div class="frame"><img src="img/form-arabic.png" alt="A registration form shown in Arabic, right-to-left" loading="lazy"></div>
+    <div class="frame"><img src="img/form-arabic.png" alt="A registration form shown in Arabic, right-to-left" data-i18n-attr="alt:langs.shotAlt" loading="lazy"></div>
   </div>
 </section>
 
 <section class="reg" id="database">
   <div class="wrap">
-    <div class="kicker">Database</div>
-    <h2>Bring your own. Or don't.</h2>
-    <p class="sub">The installer asks. The tables build themselves on first start and update themselves on every upgrade.</p>
+    <div class="kicker" data-i18n="db.kicker">Database</div>
+    <h2 data-i18n="db.title">Bring your own. Or don't.</h2>
+    <p class="sub" data-i18n="db.sub">The installer asks. The tables build themselves on first start and update themselves on every upgrade.</p>
     <div class="db">
-      <div class="card"><span class="tag">recommended</span><h3>Install PostgreSQL for me</h3><p>A separate <span class="mono">postgres:16</span> container with its own volume. The password is generated unless you type one. Adminer is optional.</p></div>
-      <div class="card"><h3>Use my own PostgreSQL</h3><p>Enter host, port, database, user and password. The installer tests the connection before it writes anything.</p></div>
-      <div class="card"><h3>Embedded SQLite</h3><p>One container and one file on a volume. Nothing else to run, which suits personal use and small teams.</p></div>
+      <div class="card"><span class="tag" data-i18n="db.recommended">recommended</span><h3 data-i18n="db.bundled.h">Install PostgreSQL for me</h3><p data-i18n="db.bundled.p">A separate <span class="mono" dir="ltr">postgres:16</span> container with its own volume. The password is generated unless you type one. Adminer is optional.</p></div>
+      <div class="card"><h3 data-i18n="db.external.h">Use my own PostgreSQL</h3><p data-i18n="db.external.p">Enter host, port, database, user and password. The installer tests the connection before it writes anything.</p></div>
+      <div class="card"><h3 data-i18n="db.sqlite.h">Embedded SQLite</h3><p data-i18n="db.sqlite.p">One container and one file on a volume. Nothing else to run, which suits personal use and small teams.</p></div>
     </div>
   </div>
 </section>
 
 <section class="reg" id="install">
   <div class="wrap">
-    <div class="kicker">Install</div>
-    <h2>One line, then open your browser.</h2>
-    <p class="sub">The installer checks Docker and asks three questions: database, ports and demo data. It writes <span class="mono">.env</span>, pulls the image and starts FormCraft. Open the address and create your admin account; there is no default password.</p>
+    <div class="kicker" data-i18n="install.kicker">Install</div>
+    <h2 data-i18n="install.title">One line, then open your browser.</h2>
+    <p class="sub" data-i18n="install.sub">The installer checks Docker and asks three questions: database, ports and demo data. It writes <span class="mono" dir="ltr">.env</span>, pulls the image and starts FormCraft. Open the address and create your admin account; there is no default password.</p>
     <div class="split" style="align-items:start">
       <div>
         <ol class="steps">
-          <li><div><b>Linux or macOS</b><pre style="margin-top:8px">curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash</pre></div></li>
-          <li><div><b>Windows (PowerShell)</b><pre style="margin-top:8px">irm https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.ps1 | iex</pre></div></li>
-          <li><div><b>Update later</b><pre style="margin-top:8px">docker compose pull &amp;&amp; docker compose up -d</pre></div></li>
+          <li><div><b data-i18n="install.step.unix">Linux or macOS</b><pre dir="ltr" style="margin-top:8px">curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash</pre></div></li>
+          <li><div><b>Windows (PowerShell)</b><pre dir="ltr" style="margin-top:8px">irm https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.ps1 | iex</pre></div></li>
+          <li><div><b data-i18n="install.step.update">Update later</b><pre dir="ltr" style="margin-top:8px">docker compose pull &amp;&amp; docker compose up -d</pre></div></li>
         </ol>
       </div>
       <div>
         <table>
-          <thead><tr><th>Image tag</th><th>Use it for</th></tr></thead>
+          <thead><tr><th data-i18n="install.th.tag">Image tag</th><th data-i18n="install.th.use">Use it for</th></tr></thead>
           <tbody>
-            <tr><td><code>latest</code></td><td>Follows main. Works with SQLite and PostgreSQL. What the installer uses.</td></tr>
-            <tr><td><code>1.0.0</code></td><td>Pinning a known-good release in production.</td></tr>
+            <tr><td><code dir="ltr">latest</code></td><td data-i18n="install.td.latest">Follows main. Works with SQLite and PostgreSQL. What the installer uses.</td></tr>
+            <tr><td><code dir="ltr">1.0.0</code></td><td data-i18n="install.td.pinned">Pinning a known-good release in production.</td></tr>
           </tbody>
         </table>
-        <p style="color:var(--text-2);font-size:15px;margin:16px 0 0"><b style="color:var(--text)">Unraid:</b> the template is in <a href="https://github.com/shatheitguy/unraid-templates">shatheitguy/unraid-templates</a>, with my other Unraid templates. It uses SQLite in <span class="mono">/mnt/user/appdata/formcraft</span> with PUID 99 and PGID 100.</p>
+        <p style="color:var(--text-2);font-size:15px;margin:16px 0 0" data-i18n="install.unraid"><b style="color:var(--text)">Unraid:</b> the template is in <a href="https://github.com/shatheitguy/unraid-templates">shatheitguy/unraid-templates</a>, with my other Unraid templates. It uses SQLite in <span class="mono" dir="ltr">/mnt/user/appdata/formcraft</span> with PUID 99 and PGID 100.</p>
       </div>
     </div>
   </div>
@@ -251,8 +281,8 @@ dialog img{border-radius:12px;max-height:90vh;width:auto}
 
 <footer>
   <div class="wrap">
-    <div>FormCraft · MIT licence · <a href="https://github.com/shatheitguy/formcraft">Source</a> · <a href="https://github.com/shatheitguy/formcraft/issues">Issues</a></div>
-    <div class="credit">Powered by <a href="https://shatheitguy.in/" target="_blank" rel="noopener">Sha The IT Guy</a></div>
+    <div data-i18n="footer.links">FormCraft · MIT licence · <a href="https://github.com/shatheitguy/formcraft">Source</a> · <a href="https://github.com/shatheitguy/formcraft/issues">Issues</a></div>
+    <div class="credit" data-i18n="footer.credit">Powered by <a href="https://shatheitguy.in/" target="_blank" rel="noopener">Sha The IT Guy</a></div>
   </div>
 </footer>
 
@@ -260,19 +290,298 @@ dialog img{border-radius:12px;max-height:90vh;width:auto}
 
 <script>
 (() => {
+  /* ---------- i18n ----------
+     English lives in the HTML. Elements carry data-i18n="key" (innerHTML is swapped)
+     or data-i18n-attr="attr:key;attr2:key2" (attributes are swapped). The English
+     originals are captured once at start-up so switching back restores them exactly.
+     Keys starting with "meta." and "js." are used from script only. */
+  const GH = 'https://github.com/shatheitguy/formcraft';
+  const UNRAID = 'https://github.com/shatheitguy/unraid-templates';
+  const CREDIT = '<a href="https://shatheitguy.in/" target="_blank" rel="noopener">Sha The IT Guy</a>';
+  const EN = { 'js.copied': 'Copied' };
+  const DICT = {
+    ar: {
+      'meta.title': 'FormCraft — منشئ نماذج باستضافة ذاتية',
+      'meta.desc': 'FormCraft منشئ نماذج تستضيفه على خادمك: نماذج بالسحب والإفلات، وقوالب واختبارات، وردود مع رسوم بيانية وتصدير CSV، وأدوار للمستخدمين، وتنبيهات عبر البريد الإلكتروني وTelegram وWhatsApp، وتقارير PDF وExcel، ورفع ملفات، وتطبيق Android، ونماذج متعددة اللغات تدعم العربية من اليمين إلى اليسار، ووضع داكن، ونسخ احتياطية كاملة. تثبيت عبر Docker بسطر واحد.',
+      'js.copied': 'تم النسخ',
+      'nav.screens': 'الشاشات',
+      'nav.features': 'المزايا',
+      'nav.languages': 'اللغات',
+      'nav.database': 'قاعدة البيانات',
+      'nav.install': 'التثبيت',
+      'nav.lang': 'اللغة',
+      'nav.theme': 'التبديل بين الوضع الفاتح والداكن',
+      'hero.kicker': 'استضافة ذاتية · مفتوح المصدر · MIT',
+      'hero.title': 'نماذج تملكها. <em>وردود تحتفظ بها.</em>',
+      'hero.lede': 'FormCraft منشئ نماذج تستضيفه بنفسك. صمّم النماذج بالسحب والإفلات، وشاركها برابط أو رمز QR، واطّلع على كل رد في جدول مع رسوم بيانية. يعمل على خادمك بالإنجليزية والعربية والتاميلية، بالوضع الفاتح أو الداكن.',
+      'hero.ctaInstall': 'ثبّته بسطر واحد',
+      'hero.ctaGithub': 'اعرضه على GitHub',
+      'hero.installLabel': 'أمر التثبيت',
+      'install.copy': 'نسخ',
+      'badge.db': 'SQLite أو PostgreSQL',
+      'badge.theme': 'فاتح + داكن',
+      'badge.unraid': 'قالب Unraid',
+      'hero.shotAlt': 'لوحة التحكم في FormCraft مع بطاقات النماذج وأعداد الردود ومخططات مصغّرة',
+      'screens.kicker': 'المنتج',
+      'screens.title': 'ما ستحصل عليه فعلًا.',
+      'screens.sub': 'كل شاشة أدناه من التطبيق الفعلي، وليست تصميمًا تخيليًا.',
+      'shot.builder.alt': 'منشئ النماذج',
+      'shot.builder.cap': '<b>منشئ بالسحب والإفلات</b>عشرة أنواع من الحقول، ولوحة خصائص، وحفظ تلقائي، وتراجع، ومعاينة مباشرة.',
+      'shot.submissions.alt': 'جدول الردود',
+      'shot.submissions.cap': '<b>جدول الردود</b>ابحث، وصفِّ حسب التاريخ أو الإجابة، ورتّب أي عمود، وافتح أي رد، وصدّر إلى CSV.',
+      'shot.insights.alt': 'الرسوم البيانية للتحليلات',
+      'shot.insights.cap': '<b>التحليلات</b>توزيع الإجابات، ومدرّجات التقييم، وحساب تلقائي لمؤشر صافي نقاط الترويج (NPS).',
+      'shot.share.alt': 'نافذة المشاركة',
+      'shot.share.cap': '<b>المشاركة</b>رابط فريد، ومنفذ مخصص مع اختبار منفذ مدمج، ونطاق مخصص، ورمز QR.',
+      'shot.translate.alt': 'محرر الترجمة',
+      'shot.translate.cap': '<b>الترجمة</b>كل نص بجانب النص الأصلي، مع نسبة الإنجاز لكل لغة.',
+      'shot.dark.alt': 'لوحة التحكم باللغة التاميلية في الوضع الداكن',
+      'shot.dark.cap': '<b>الوضع الداكن باللغة التاميلية</b>يتبع التطبيق بأكمله مظهر الجهاز، أو المظهر الذي يختاره كل مستخدم.',
+      'features.kicker': 'المزايا',
+      'features.title': 'كل ما يحتاجه النموذج، دون أي زيادة.',
+      'features.sub': 'صُمّم للفرق التي تريد بساطة Google Forms دون إرسال بياناتها إلى طرف آخر.',
+      'feat.builder.h': 'المنشئ والقوالب',
+      'feat.builder.p': 'نصوص، وخيارات، وتواريخ، وتقييمات ومقاييس، إضافة إلى الشروط والأحكام ورفع الملفات. ابدأ من 13 قالبًا: طلب توظيف، وتسجيل، وطلبات، وإجازات، وتذاكر دعم تقني، واستبيانات، وغيرها.',
+      'feat.quiz.h': 'اختبارات مع احتساب الدرجات',
+      'feat.quiz.p': 'حدّد الإجابات الصحيحة، وامنح كل إجابة نقاطًا، واعرض على المستجيبين درجاتهم عند الإرسال.',
+      'feat.insights.h': 'الردود والتحليلات',
+      'feat.insights.p': 'جدول قابل للتصفية، ورسوم بيانية لكل سؤال، وNPS، وتقارير CSV وPDF وExcel — تُرسَل إلى WhatsApp بلمسة واحدة. تُخزَّن إجابات الخيارات بالطريقة نفسها في كل اللغات.',
+      'feat.roles.h': 'المستخدمون والأدوار',
+      'feat.roles.p': 'مسؤولون ومحررون ومشاهدون. امنح كل شخص الوصول إلى جميع النماذج أو إلى ما يحتاجه منها فقط، للقراءة فقط أو مع صلاحية التعديل.',
+      'feat.alerts.h': 'البريد الإلكتروني وTelegram وWhatsApp',
+      'feat.alerts.p': 'SMTP، وبوت Telegram خاص بك، وWhatsApp يُربط عبر رمز QR. يمكن أن تتضمن التنبيهات الرد بصيغة PDF أو Excel، وتُرسَل التقارير عبر WhatsApp بلمسة واحدة.',
+      'feat.links.h': 'الروابط والمنافذ والنطاقات',
+      'feat.links.p': 'يحصل كل نموذج على رابط فريد ومنفذ خاص به، ويعمل دون إعادة تشغيل. وجّه إليه Cloudflare Tunnel وأضف رمز QR.',
+      'feat.brand.h': 'الهوية البصرية',
+      'feat.brand.p': 'اسم مساحة العمل وشعارها ولونها المميز، إضافة إلى شعار وصورة غلاف ولون لكل نموذج. ونص تذييل خاص بك أيضًا.',
+      'feat.backup.h': 'نسخ احتياطية تلقائية',
+      'feat.backup.p': 'نسخ احتياطية كل ساعة أو يوميًا أو أسبوعيًا لكل نموذج ورد وملف مرفوع، مع مدة احتفاظ قابلة للضبط. تعرض الاستعادة معاينة للملف وتأخذ لقطة أمان أولًا، ويمكنها أيضًا نقل البيانات من SQLite إلى PostgreSQL.',
+      'feat.privacy.h': 'الخصوصية في صميم التصميم',
+      'feat.privacy.p': 'كلمات مرور مجزّأة (Hashed)، وتقييد لمحاولات تسجيل الدخول، وتحقق بخطوتين، وأسرار محفوظة على الخادم، وفحص الملفات المرفوعة حسب توقيعها. لا تتبّع ولا سحابة.',
+      'feat.mobile.h': 'الهواتف وتطبيق Android',
+      'feat.mobile.p': 'كل شاشة تعمل على الهاتف، بما فيها المنشئ. يتصل تطبيق Android بخادمك كما يفعل Nextcloud: أدخل العنوان مرة واحدة، وستجد كل شيء هناك.',
+      'feat.updates.h': 'التحديثات من الإعدادات',
+      'feat.updates.p': 'تعرض صفحة «الإعدادات ← حول» إصدارك الحالي وتتحقق من توفر إصدار جديد. تُحدَّث التثبيتات الأصلية بنقرة واحدة، أما تثبيتات Docker فتحصل على الأمر الدقيق.',
+      'langs.kicker': 'اللغات',
+      'langs.title': 'نموذج واحد بلغتين. بدّل بينهما في أي وقت.',
+      'langs.sub': 'التطبيق مترجم بالكامل إلى الإنجليزية والعربية والتاميلية، وتحوّل العربية كل شاشة إلى الاتجاه من اليمين إلى اليسار. ويمكن تقديم النماذج بعدة لغات في آن واحد.',
+      'langs.step1': '<b>اختر اللغات</b> من إعدادات النموذج، ثم املأ تبويب الترجمة. أي نص تتركه فارغًا يُعرض بلغته الأصلية.',
+      'langs.step2': '<b>يبدّل المستجيبون اللغة أثناء التعبئة.</b> تبقى إجاباتهم كما هي، وتظهر رسائل الخطأ والتأكيد باللغة الجديدة.',
+      'langs.step3': '<b>تبقى التقارير متّسقة.</b> يسجّل كل رد لغته، وتُجمَّع إجابات الخيارات معًا أيًّا كانت اللغة التي قُدّمت بها.',
+      'langs.step4': '<b>حدّد اللغة في الرابط</b> باستخدام <span class="mono" dir="ltr">?lang=ar</span>. وإلا فستُستخدم لغة متصفح الزائر.',
+      'langs.shotAlt': 'نموذج تسجيل معروض بالعربية من اليمين إلى اليسار',
+      'db.kicker': 'قاعدة البيانات',
+      'db.title': 'استخدم قاعدة بياناتك، أو لا داعي لذلك.',
+      'db.sub': 'يسألك المثبّت. تُنشأ الجداول تلقائيًا عند التشغيل الأول، وتُحدَّث تلقائيًا مع كل ترقية.',
+      'db.recommended': 'موصى به',
+      'db.bundled.h': 'ثبّت PostgreSQL نيابةً عني',
+      'db.bundled.p': 'حاوية <span class="mono" dir="ltr">postgres:16</span> منفصلة بوحدة تخزين خاصة بها. تُولَّد كلمة المرور تلقائيًا ما لم تُدخل كلمة مرور بنفسك. أداة Adminer اختيارية.',
+      'db.external.h': 'استخدم PostgreSQL الخاص بي',
+      'db.external.p': 'أدخل المضيف والمنفذ واسم قاعدة البيانات واسم المستخدم وكلمة المرور. يختبر المثبّت الاتصال قبل أن يكتب أي شيء.',
+      'db.sqlite.h': 'SQLite مدمج',
+      'db.sqlite.p': 'حاوية واحدة وملف واحد على وحدة تخزين. لا شيء آخر لتشغيله، وهذا يناسب الاستخدام الشخصي والفرق الصغيرة.',
+      'install.kicker': 'التثبيت',
+      'install.title': 'سطر واحد، ثم افتح متصفحك.',
+      'install.sub': 'يتحقق المثبّت من Docker ويطرح ثلاثة أسئلة: قاعدة البيانات، والمنافذ، والبيانات التجريبية. ثم يكتب ملف <span class="mono" dir="ltr">.env</span>، ويسحب الصورة، ويشغّل FormCraft. افتح العنوان وأنشئ حساب المسؤول؛ لا توجد كلمة مرور افتراضية.',
+      'install.step.unix': 'Linux أو macOS',
+      'install.step.update': 'التحديث لاحقًا',
+      'install.th.tag': 'وسم الصورة',
+      'install.th.use': 'الاستخدام',
+      'install.td.latest': 'يتبع الفرع <span class="mono" dir="ltr">main</span>. يعمل مع SQLite وPostgreSQL، وهو ما يستخدمه المثبّت.',
+      'install.td.pinned': 'تثبيت إصدار موثوق ومُجرَّب في بيئة الإنتاج.',
+      'install.unraid': '<b style="color:var(--text)">Unraid:</b> القالب موجود في <a href="' + UNRAID + '" dir="ltr">shatheitguy/unraid-templates</a> مع قوالب Unraid الأخرى الخاصة بي. يستخدم SQLite في <span class="mono" dir="ltr">/mnt/user/appdata/formcraft</span> مع <span dir="ltr">PUID 99</span> و<span dir="ltr">PGID 100</span>.',
+      'footer.links': 'FormCraft · رخصة MIT · <a href="' + GH + '">الشيفرة المصدرية</a> · <a href="' + GH + '/issues">المشكلات</a>',
+      'footer.credit': 'مدعوم من ' + CREDIT
+    },
+    ta: {
+      'meta.title': 'FormCraft — சுய-ஹோஸ்டிங் படிவ உருவாக்கி',
+      'meta.desc': 'FormCraft ஒரு சுய-ஹோஸ்டிங் படிவ உருவாக்கி: இழுத்து-விடும் படிவங்கள், வார்ப்புருக்கள் மற்றும் வினாடி வினாக்கள், வரைபடங்கள் மற்றும் CSV ஏற்றுமதியுடன் சமர்ப்பிப்புகள், பாத்திரங்கள், மின்னஞ்சல், Telegram மற்றும் WhatsApp அறிவிப்புகள், PDF மற்றும் Excel அறிக்கைகள், கோப்புப் பதிவேற்றங்கள், Android செயலி, அரபு RTL ஆதரவுடன் பன்மொழிப் படிவங்கள், இருள் பயன்முறை மற்றும் முழுமையான காப்புப்பிரதிகள். ஒரே வரியில் Docker நிறுவல்.',
+      'js.copied': 'நகலெடுக்கப்பட்டது',
+      'nav.screens': 'திரைகள்',
+      'nav.features': 'அம்சங்கள்',
+      'nav.languages': 'மொழிகள்',
+      'nav.database': 'தரவுத்தளம்',
+      'nav.install': 'நிறுவல்',
+      'nav.lang': 'மொழி',
+      'nav.theme': 'ஒளி அல்லது இருள் பயன்முறைக்கு மாற்று',
+      'hero.kicker': 'சுய-ஹோஸ்டிங் · திறந்த மூலம் · MIT',
+      'hero.title': 'உங்கள் படிவங்கள். <em>உங்களிடமே பதில்கள்.</em>',
+      'hero.lede': 'FormCraft என்பது நீங்களே ஹோஸ்ட் செய்யும் படிவ உருவாக்கி. இழுத்து-விடுவதன் மூலம் படிவங்களை உருவாக்குங்கள், இணைப்பு அல்லது QR குறியீடு மூலம் பகிருங்கள், ஒவ்வொரு பதிலையும் வரைபடங்களுடன் கூடிய அட்டவணையில் பாருங்கள். இது உங்கள் சர்வரில், ஆங்கிலம், அரபு, தமிழ் மொழிகளில், ஒளி அல்லது இருள் பயன்முறையில் இயங்குகிறது.',
+      'hero.ctaInstall': 'ஒரே வரியில் நிறுவுங்கள்',
+      'hero.ctaGithub': 'GitHub-இல் பாருங்கள்',
+      'hero.installLabel': 'நிறுவல் கட்டளை',
+      'install.copy': 'நகலெடு',
+      'badge.db': 'SQLite அல்லது PostgreSQL',
+      'badge.theme': 'ஒளி + இருள்',
+      'badge.unraid': 'Unraid வார்ப்புரு',
+      'hero.shotAlt': 'படிவ அட்டைகள், பதில் எண்ணிக்கைகள் மற்றும் சிறு வரைபடங்களுடன் FormCraft டாஷ்போர்டு',
+      'screens.kicker': 'தயாரிப்பு',
+      'screens.title': 'உண்மையில் உங்களுக்குக் கிடைப்பது.',
+      'screens.sub': 'கீழே உள்ள ஒவ்வொரு திரையும் உண்மையான செயலியே, மாதிரி வடிவமைப்பு அல்ல.',
+      'shot.builder.alt': 'படிவ உருவாக்கி',
+      'shot.builder.cap': '<b>இழுத்து-விடும் உருவாக்கி</b>பத்து வகைப் புலங்கள், பண்புகள் பலகம், தானியங்கு சேமிப்பு, செயல்தவிர்ப்பு மற்றும் நேரடி முன்னோட்டம்.',
+      'shot.submissions.alt': 'சமர்ப்பிப்புகள் அட்டவணை',
+      'shot.submissions.cap': '<b>சமர்ப்பிப்புகள் அட்டவணை</b>தேடுங்கள், தேதி அல்லது பதில் மூலம் வடிகட்டுங்கள், எந்த நெடுவரிசையையும் வரிசைப்படுத்துங்கள், ஒரு பதிலைத் திறங்கள், CSV ஆக ஏற்றுமதி செய்யுங்கள்.',
+      'shot.insights.alt': 'நுண்ணறிவு வரைபடங்கள்',
+      'shot.insights.cap': '<b>நுண்ணறிவுகள்</b>பதில் பரவல்கள், மதிப்பீட்டு ஹிஸ்டோகிராம்கள் மற்றும் தானாகக் கணக்கிடப்படும் Net Promoter Score (NPS).',
+      'shot.share.alt': 'பகிர்வு உரையாடல்',
+      'shot.share.cap': '<b>பகிர்வு</b>தனித்துவமான இணைப்பு, உள்ளமைந்த போர்ட் சோதனையுடன் கூடிய பிரத்யேக போர்ட், தனிப்பயன் டொமைன் மற்றும் QR குறியீடு.',
+      'shot.translate.alt': 'மொழிபெயர்ப்புத் திருத்தி',
+      'shot.translate.cap': '<b>மொழிபெயர்ப்பு</b>ஒவ்வொரு உரையும் மூல உரைக்கு அருகருகே, ஒவ்வொரு மொழிக்குமான முன்னேற்றத்துடன்.',
+      'shot.dark.alt': 'தமிழில் டாஷ்போர்டு, இருள் பயன்முறை',
+      'shot.dark.cap': '<b>இருள் பயன்முறை, தமிழில்</b>முழு செயலியும் சாதனத்தின் தீமைப் பின்பற்றும், அல்லது ஒவ்வொரு பயனரும் தேர்ந்தெடுக்கும் தீமைப் பின்பற்றும்.',
+      'features.kicker': 'அம்சங்கள்',
+      'features.title': 'படிவத்துக்குத் தேவையான அனைத்தும், தேவையற்றது எதுவுமில்லை.',
+      'features.sub': 'தங்கள் தரவை வேறொருவருக்கு அனுப்பாமல் Google Forms போன்ற எளிமையை விரும்பும் குழுக்களுக்காக உருவாக்கப்பட்டது.',
+      'feat.builder.h': 'உருவாக்கி மற்றும் வார்ப்புருக்கள்',
+      'feat.builder.p': 'உரை, தேர்வுகள், தேதி, மதிப்பீடு மற்றும் அளவுகோல், அத்துடன் விதிமுறைகள் &amp; நிபந்தனைகள் மற்றும் கோப்புப் பதிவேற்றங்கள். 13 வார்ப்புருக்களில் இருந்து தொடங்குங்கள்: வேலை விண்ணப்பம், பதிவு, ஆர்டர்கள், விடுப்பு, IT டிக்கெட்டுகள், கருத்துக்கணிப்புகள் மற்றும் பல.',
+      'feat.quiz.h': 'மதிப்பெண்ணுடன் வினாடி வினாக்கள்',
+      'feat.quiz.p': 'சரியான பதில்களைக் குறியிடுங்கள், ஒவ்வொன்றுக்கும் புள்ளிகள் வழங்குங்கள், சமர்ப்பிக்கும்போது பதிலளிப்பவர்களுக்கு அவர்களின் மதிப்பெண்ணைக் காட்டுங்கள்.',
+      'feat.insights.h': 'சமர்ப்பிப்புகள் மற்றும் நுண்ணறிவுகள்',
+      'feat.insights.p': 'வடிகட்டக்கூடிய அட்டவணை, ஒவ்வொரு கேள்விக்குமான வரைபடங்கள், NPS, மற்றும் CSV, PDF, Excel அறிக்கைகள் — ஒரே தட்டலில் WhatsApp-க்கு அனுப்பலாம். தேர்வுப் பதில்கள் எல்லா மொழிகளிலும் ஒரே மாதிரியாகச் சேமிக்கப்படுகின்றன.',
+      'feat.roles.h': 'பயனர்கள் மற்றும் பாத்திரங்கள்',
+      'feat.roles.p': 'நிர்வாகிகள், திருத்துநர்கள் மற்றும் பார்வையாளர்கள். ஒவ்வொருவருக்கும் அனைத்துப் படிவங்களையும் அல்லது தேவையானவற்றை மட்டும், படிக்க மட்டும் அல்லது திருத்தக்கூடிய அனுமதியுடன் வழங்குங்கள்.',
+      'feat.alerts.h': 'மின்னஞ்சல், Telegram மற்றும் WhatsApp',
+      'feat.alerts.p': 'SMTP, உங்கள் சொந்த Telegram பாட், QR குறியீடு மூலம் இணைக்கப்பட்ட WhatsApp. அறிவிப்புகளில் பதிலை PDF அல்லது Excel கோப்பாக இணைக்கலாம்; அறிக்கைகளை ஒரே தட்டலில் WhatsApp-இல் அனுப்பலாம்.',
+      'feat.links.h': 'இணைப்புகள், போர்ட்கள், டொமைன்கள்',
+      'feat.links.p': 'ஒவ்வொரு படிவத்துக்கும் தனித்துவமான இணைப்பும் தனி போர்ட்டும் கிடைக்கும்; மறுதொடக்கம் இல்லாமலேயே செயல்படும். அதற்கு ஒரு Cloudflare Tunnel-ஐ இணைத்து, QR குறியீட்டையும் சேருங்கள்.',
+      'feat.brand.h': 'பிராண்டிங்',
+      'feat.brand.p': 'பணியிடப் பெயர், லோகோ மற்றும் முதன்மை நிறம், அத்துடன் ஒவ்வொரு படிவத்துக்கும் லோகோ, அட்டைப் படம் மற்றும் நிறம். உங்கள் சொந்த அடிக்குறிப்பு உரையும் கூட.',
+      'feat.backup.h': 'தானியங்கு காப்புப்பிரதிகள்',
+      'feat.backup.p': 'ஒவ்வொரு படிவம், பதில் மற்றும் பதிவேற்றிய கோப்புக்கும் மணிநேர, தினசரி அல்லது வாராந்திர காப்புப்பிரதிகள், தக்கவைப்பு வசதியுடன். மீட்டமைக்கும்போது கோப்பை முன்னோட்டமிட்டு, முதலில் ஒரு பாதுகாப்பு ஸ்னாப்ஷாட்டை எடுக்கும்; SQLite-இலிருந்து PostgreSQL-க்கு மாற்றவும் உதவும்.',
+      'feat.privacy.h': 'வடிவமைப்பிலேயே தனியுரிமை',
+      'feat.privacy.p': 'ஹாஷ் செய்யப்பட்ட கடவுச்சொற்கள், கட்டுப்படுத்தப்பட்ட உள்நுழைவு முயற்சிகள், இரு-காரணி உள்நுழைவு, சர்வரிலேயே வைக்கப்படும் ரகசியங்கள், கோப்புக் கையொப்பம் மூலம் சரிபார்க்கப்படும் பதிவேற்றங்கள். தொலை அளவீடு இல்லை, கிளவுட் இல்லை.',
+      'feat.mobile.h': 'தொலைபேசிகள் மற்றும் Android செயலி',
+      'feat.mobile.p': 'உருவாக்கி உட்பட ஒவ்வொரு திரையும் தொலைபேசியில் இயங்கும். Android செயலி Nextcloud போலவே உங்கள் சர்வருடன் இணைகிறது: முகவரியை ஒருமுறை உள்ளிட்டால் போதும், அனைத்தும் அங்கே இருக்கும்.',
+      'feat.updates.h': 'அமைப்புகளிலிருந்தே புதுப்பிப்புகள்',
+      'feat.updates.p': 'அமைப்புகள் → பற்றி பகுதி உங்கள் பதிப்பைக் காட்டி, புதிய பதிப்பு உள்ளதா எனச் சரிபார்க்கும். நேரடி நிறுவல்கள் ஒரே கிளிக்கில் புதுப்பிக்கப்படும்; Docker நிறுவல்களுக்குச் சரியான கட்டளை காட்டப்படும்.',
+      'langs.kicker': 'மொழிகள்',
+      'langs.title': 'ஒரே படிவம், இரண்டு மொழிகள். எப்போது வேண்டுமானாலும் மாற்றலாம்.',
+      'langs.sub': 'செயலி ஆங்கிலம், அரபு, தமிழ் ஆகிய மொழிகளில் முழுமையாக மொழிபெயர்க்கப்பட்டுள்ளது; அரபு மொழியில் ஒவ்வொரு திரையும் வலமிருந்து இடமாக மாறும். படிவங்களைப் பல மொழிகளில் ஒரே நேரத்தில் வழங்கலாம்.',
+      'langs.step1': 'படிவ அமைப்புகளில் <b>மொழிகளைத் தேர்ந்தெடுங்கள்</b>, பிறகு மொழிபெயர்ப்புத் தாவலை நிரப்புங்கள். காலியாக விடப்படும் எதுவும் மூல உரையையே காட்டும்.',
+      'langs.step2': '<b>பதிலளிப்பவர்கள் நிரப்பும்போதே மொழியை மாற்றலாம்.</b> அவர்களின் பதில்கள் அப்படியே இருக்கும்; பிழைச் செய்திகளும் உறுதிப்படுத்தலும் புதிய மொழியில் தோன்றும்.',
+      'langs.step3': '<b>அறிக்கைகள் சீராக இருக்கும்.</b> ஒவ்வொரு பதிலும் அதன் மொழியைப் பதிவுசெய்கிறது; தேர்வுப் பதில்கள் எந்த மொழியில் அளிக்கப்பட்டாலும் ஒன்றாகத் தொகுக்கப்படும்.',
+      'langs.step4': '<span class="mono" dir="ltr">?lang=ar</span> மூலம் <b>இணைப்பிலேயே மொழியை அமைக்கலாம்</b>. இல்லையெனில் பார்வையாளரின் உலாவி மொழி பயன்படுத்தப்படும்.',
+      'langs.shotAlt': 'அரபு மொழியில், வலமிருந்து இடமாகக் காட்டப்படும் பதிவுப் படிவம்',
+      'db.kicker': 'தரவுத்தளம்',
+      'db.title': 'உங்களுடையதைப் பயன்படுத்துங்கள். அல்லது வேண்டாம்.',
+      'db.sub': 'நிறுவி உங்களிடம் கேட்கும். முதல் தொடக்கத்திலேயே அட்டவணைகள் தானாக உருவாகும்; ஒவ்வொரு மேம்படுத்தலின்போதும் தானாகப் புதுப்பிக்கப்படும்.',
+      'db.recommended': 'பரிந்துரைக்கப்படுகிறது',
+      'db.bundled.h': 'எனக்காக PostgreSQL-ஐ நிறுவு',
+      'db.bundled.p': 'தனி வால்யூமுடன் கூடிய தனியான <span class="mono" dir="ltr">postgres:16</span> கண்டெய்னர். நீங்கள் கடவுச்சொல்லை உள்ளிடாவிட்டால் அது தானாக உருவாக்கப்படும். Adminer விருப்பத்தேர்வு.',
+      'db.external.h': 'எனது சொந்த PostgreSQL-ஐப் பயன்படுத்து',
+      'db.external.p': 'ஹோஸ்ட், போர்ட், தரவுத்தளம், பயனர் மற்றும் கடவுச்சொல்லை உள்ளிடுங்கள். எதையும் எழுதுவதற்கு முன் நிறுவி இணைப்பைச் சோதிக்கும்.',
+      'db.sqlite.h': 'உள்ளமைந்த SQLite',
+      'db.sqlite.p': 'ஒரு கண்டெய்னர், ஒரு வால்யூமில் ஒரு கோப்பு. வேறு எதையும் இயக்கத் தேவையில்லை; தனிப்பட்ட பயன்பாட்டுக்கும் சிறிய குழுக்களுக்கும் ஏற்றது.',
+      'install.kicker': 'நிறுவல்',
+      'install.title': 'ஒரே வரி, பிறகு உங்கள் உலாவியைத் திறங்கள்.',
+      'install.sub': 'நிறுவி Docker-ஐச் சரிபார்த்து மூன்று கேள்விகளைக் கேட்கும்: தரவுத்தளம், போர்ட்கள், டெமோ தரவு. பிறகு <span class="mono" dir="ltr">.env</span> கோப்பை எழுதி, இமேஜைப் பதிவிறக்கி, FormCraft-ஐத் தொடங்கும். முகவரியைத் திறந்து உங்கள் நிர்வாகி கணக்கை உருவாக்குங்கள்; இயல்புநிலைக் கடவுச்சொல் எதுவும் இல்லை.',
+      'install.step.unix': 'Linux அல்லது macOS',
+      'install.step.update': 'பின்னர் புதுப்பிக்க',
+      'install.th.tag': 'இமேஜ் டேக்',
+      'install.th.use': 'எதற்குப் பயன்படுத்தலாம்',
+      'install.td.latest': '<span class="mono" dir="ltr">main</span> கிளையைப் பின்தொடர்கிறது. SQLite, PostgreSQL இரண்டிலும் இயங்கும். நிறுவி பயன்படுத்துவது இதுவே.',
+      'install.td.pinned': 'உற்பத்திச் சூழலில் நம்பகமான, சோதிக்கப்பட்ட வெளியீட்டை நிலையாகப் பயன்படுத்த.',
+      'install.unraid': '<b style="color:var(--text)">Unraid:</b> இதன் வார்ப்புரு எனது மற்ற Unraid வார்ப்புருக்களுடன் <a href="' + UNRAID + '">shatheitguy/unraid-templates</a>-இல் உள்ளது. இது <span class="mono" dir="ltr">/mnt/user/appdata/formcraft</span>-இல் SQLite-ஐ PUID 99, PGID 100 உடன் பயன்படுத்துகிறது.',
+      'footer.links': 'FormCraft · MIT உரிமம் · <a href="' + GH + '">மூலக் குறியீடு</a> · <a href="' + GH + '/issues">சிக்கல்கள்</a>',
+      'footer.credit': 'உருவாக்கியவர்: ' + CREDIT
+    }
+  };
+  const SUPPORTED = ['en', 'ar', 'ta'];
+  const STORE_KEY = 'fc-site-lang';
+  const root = document.documentElement;
+  const metaDesc = document.querySelector('meta[name="description"]');
+
+  // Capture the English originals once, before anything is swapped.
+  const textNodes = [...document.querySelectorAll('[data-i18n]')].map((el) => ({ el, key: el.dataset.i18n, en: el.innerHTML }));
+  const attrNodes = [];
+  document.querySelectorAll('[data-i18n-attr]').forEach((el) => {
+    el.dataset.i18nAttr.split(';').forEach((pair) => {
+      const [attr, key] = pair.split(':').map((s) => s.trim());
+      if (attr && key) attrNodes.push({ el, attr, key, en: el.getAttribute(attr) });
+    });
+  });
+  const enTitle = document.title;
+  const enDesc = metaDesc ? metaDesc.content : '';
+  let current = 'en';
+
+  const t = (key) => {
+    const d = DICT[current];
+    if (d && d[key] != null) return d[key];
+    if (EN[key] != null) return EN[key];
+    const n = textNodes.find((x) => x.key === key);
+    return n ? n.en : key;
+  };
+
+  function apply(lang) {
+    if (!SUPPORTED.includes(lang)) lang = 'en';
+    current = lang;
+    const d = lang === 'en' ? null : DICT[lang];
+    const pick = (key, en) => (d && d[key] != null ? d[key] : en);
+    textNodes.forEach(({ el, key, en }) => { el.innerHTML = pick(key, en); });
+    attrNodes.forEach(({ el, attr, key, en }) => { el.setAttribute(attr, pick(key, en)); });
+    document.title = pick('meta.title', enTitle);
+    if (metaDesc) metaDesc.content = pick('meta.desc', enDesc);
+    root.lang = lang;
+    if (lang === 'ar') root.dir = 'rtl'; else root.removeAttribute('dir');
+    document.querySelectorAll('.lang [data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+  }
+
+  function initialLang() {
+    try {
+      const q = (new URLSearchParams(location.search).get('lang') || '').toLowerCase();
+      if (SUPPORTED.includes(q)) return q;
+    } catch {}
+    try {
+      const s = localStorage.getItem(STORE_KEY);
+      if (SUPPORTED.includes(s)) return s;
+    } catch {}
+    const nav = String(navigator.language || '').toLowerCase();
+    if (nav.startsWith('ar')) return 'ar';
+    if (nav.startsWith('ta')) return 'ta';
+    return 'en';
+  }
+
+  const first = initialLang();
+  if (first !== 'en') apply(first);
+
+  document.querySelectorAll('.lang [data-lang]').forEach((b) => b.addEventListener('click', () => {
+    const lang = b.dataset.lang;
+    apply(lang);
+    try { localStorage.setItem(STORE_KEY, lang); } catch {}
+    try {
+      const u = new URL(location.href);
+      if (!/^(https?|file):$/.test(u.protocol)) return;
+      if (lang === 'en') u.searchParams.delete('lang'); else u.searchParams.set('lang', lang);
+      history.replaceState(history.state, '', u);
+    } catch {}
+  }));
+
+  // Developer check: run fcI18nCheck() in the console to list missing or unused keys per language.
+  window.fcI18nCheck = () => {
+    const used = new Set([...textNodes.map((n) => n.key), ...attrNodes.map((n) => n.key), 'meta.title', 'meta.desc', ...Object.keys(EN)]);
+    const report = {};
+    Object.keys(DICT).forEach((lang) => {
+      const keys = Object.keys(DICT[lang]);
+      report[lang] = { missing: [...used].filter((k) => !(k in DICT[lang])), unused: keys.filter((k) => !used.has(k)) };
+    });
+    console.table(Object.fromEntries(Object.entries(report).map(([l, r]) => [l, { missing: r.missing.join(', ') || '—', unused: r.unused.join(', ') || '—' }])));
+    return report;
+  };
+
+  /* ---------- page behaviour ---------- */
   const cmd = document.getElementById('cmd');
   document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
     document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
     cmd.textContent = b.dataset.cmd;
   }));
   document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(document.querySelector(b.dataset.copy).textContent); b.textContent = 'Copied'; setTimeout(() => (b.textContent = 'Copy'), 1500); } catch {}
+    try { await navigator.clipboard.writeText(document.querySelector(b.dataset.copy).textContent); b.textContent = t('js.copied'); setTimeout(() => (b.textContent = t('install.copy')), 1500); } catch {}
   }));
   const dlg = document.getElementById('viewer');
   document.querySelectorAll('[data-full]').forEach((b) => b.addEventListener('click', () => { dlg.querySelector('img').src = b.dataset.full; dlg.showModal(); }));
   dlg.addEventListener('click', () => dlg.close());
-  const root = document.documentElement;
-  try { const t = localStorage.getItem('fc-site-theme'); if (t) root.dataset.theme = t; } catch {}
+  try { const th = localStorage.getItem('fc-site-theme'); if (th) root.dataset.theme = th; } catch {}
   document.getElementById('theme').addEventListener('click', () => {
     const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     root.dataset.theme = dark ? 'light' : 'dark';

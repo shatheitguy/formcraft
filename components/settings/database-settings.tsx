@@ -108,19 +108,19 @@ export function DatabaseSettings({ initial }: { initial: DatabaseInfo }) {
           <Stat icon={<HardDrive />} label={t('Size on disk')} value={fmtBytes(info.sizeBytes)} />
           <Stat icon={<Activity />} label={t('Active sessions')} value={num(info.counts.sessions)} />
         </div>
-        <div className="mt-4 rounded-lg bg-slate-900 px-4 py-3 font-mono text-xs text-slate-200" dir="ltr">
+        <div className="mt-4 min-w-0 rounded-lg bg-[#0f172a] px-4 py-3 font-mono text-xs text-[#e2e8f0]" dir="ltr">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-slate-300">DATABASE_URL</span>
+            <span className="text-[#cbd5e1]">DATABASE_URL</span>
             <button
               onClick={() => navigator.clipboard?.writeText(info.url).then(() => toast(t('Copied')))}
-              className="rounded p-1 text-slate-300 hover:bg-white/10 hover:text-slate-100"
+              className="rounded p-1 text-[#cbd5e1] hover:bg-white/10 hover:text-white"
               aria-label={t('Copy')}
             >
               <Copy className="h-3.5 w-3.5" />
             </button>
           </div>
           <div className="mt-1 break-all">{info.url}</div>
-          {info.file && <div className="mt-1 break-all text-slate-300">→ {info.file}</div>}
+          {info.file && <div className="mt-1 break-all text-[#cbd5e1]">→ {info.file}</div>}
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
           {Object.entries(info.counts).map(([k, n]) => (
@@ -204,7 +204,7 @@ export function DatabaseSettings({ initial }: { initial: DatabaseInfo }) {
             ? t('Embedded, zero-configuration option: everything runs in one container and data lives in a single file. Fine for personal use and small teams.')
             : t('The default Docker setup. The database runs in its own container with its own volume, so it can be backed up, inspected and scaled independently. Tables are created automatically on start.')}
         </p>
-        <pre dir="ltr" className="scrollbar-thin overflow-x-auto rounded-lg bg-slate-900 p-4 font-mono text-xs leading-relaxed text-slate-200">{SNIPPETS[guide]}</pre>
+        <pre dir="ltr" className="scrollbar-thin overflow-x-auto rounded-lg bg-[#0f172a] p-4 font-mono text-xs leading-relaxed text-[#e2e8f0]">{SNIPPETS[guide]}</pre>
         <p className="mt-3 text-xs text-slate-500">
           {t('Moving data between engines: download a JSON export first, then re-create forms on the new deployment. Switching engines does not migrate data automatically.')}
         </p>

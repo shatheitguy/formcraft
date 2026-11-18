@@ -32,11 +32,18 @@ interface Props {
  */
 export function FormRenderer(props: Props) {
   const languages = formLanguages(props.schema);
-  const [lang, setLang] = useState(() => (props.initialLanguage && languages.includes(props.initialLanguage) ? props.initialLanguage : languages[0]));
+  // Language order: the link's ?lang=, then the form's "Opens in" choice, then the visitor's browser, then the primary language.
+  const openLanguage = props.schema.settings.openLanguage && languages.includes(props.schema.settings.openLanguage) ? props.schema.settings.openLanguage : null;
+  const [lang, setLang] = useState(() => (props.initialLanguage && languages.includes(props.initialLanguage) ? props.initialLanguage : openLanguage ?? languages[0]));
 
-  // Prefer the browser's language when the link didn't ask for one.
+  // Prefer the browser's language when neither the link nor the form chose one.
   useEffect(() => {
     if (props.initialLanguage && languages.includes(props.initialLanguage)) return;
+    if (openLanguage) {
+      if (openLanguage !== lang) setLang(openLanguage);
+      window.dispatchEvent(new CustomEvent(FORM_LANG_EVENT, { detail: openLanguage }));
+      return;
+    }
     const match = matchLocale(navigator.languages, languages);
     if (match && match !== lang) {
       setLang(match);
