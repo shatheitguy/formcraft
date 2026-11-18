@@ -409,6 +409,7 @@ const dict: AreaDict = {
     "They need to add their Telegram chat ID in My profile.": "عليه إضافة معرّف محادثة تيليجرام في ملفه الشخصي.",
     "Choose where your alerts go — email, Telegram or WhatsApp — and what you want to hear about.": "اختر أين تصلك التنبيهات — البريد الإلكتروني أو تيليجرام أو واتساب — وما الذي تريد معرفته.",
     "Remove photo": "إزالة الصورة",
+    "Database & Backup": "قاعدة البيانات والنسخ الاحتياطي",
   },
   ta: {
     // Layout & navigation
@@ -817,6 +818,7 @@ const dict: AreaDict = {
     "They need to add their Telegram chat ID in My profile.": "அவர் தன் சுயவிவரத்தில் டெலிகிராம் அரட்டை ID-ஐச் சேர்க்க வேண்டும்.",
     "Choose where your alerts go — email, Telegram or WhatsApp — and what you want to hear about.": "உங்கள் விழிப்பூட்டல்கள் எங்கு செல்ல வேண்டும் — மின்னஞ்சல், டெலிகிராம் அல்லது வாட்ஸ்அப் — மற்றும் எதைப் பற்றி அறிய வேண்டும் என்பதைத் தேர்வுசெய்யவும்.",
     "Remove photo": "புகைப்படத்தை அகற்று",
+    "Database & Backup": "தரவுத்தளம் & காப்புப்பிரதி",
   },
 };
 

@@ -12,7 +12,7 @@ const WORKSPACE = [
   { href: '/settings/general', label: 'Customization', icon: Palette },
   { href: '/settings/users', label: 'Users & roles', icon: Users },
   { href: '/settings/notifications', label: 'Notifications', icon: Bell },
-  { href: '/settings/database', label: 'Database', icon: Database },
+  { href: '/settings/database', label: 'Database & Backup', icon: Database },
   { href: '/settings/about', label: 'About', icon: Info },
 ];
 
