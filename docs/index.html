@@ -40,6 +40,8 @@ try { const th = localStorage.getItem('fc-site-theme'); if (th === 'light' || th
   --header:rgba(255,255,255,.8);--grid-dot:#d8dfe8;
   --shadow-card:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.06);
   --shadow-lift:0 10px 30px -12px rgba(15,23,42,.25),0 4px 10px -6px rgba(15,23,42,.1);
+  --shadow-device:0 30px 60px -24px rgba(15,23,42,.35),0 12px 24px -12px rgba(15,23,42,.18);
+  --bezel:#0f172a;--bezel-ring:#334155;--chrome:#eef2f6;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){
@@ -51,6 +53,8 @@ try { const th = localStorage.getItem('fc-site-theme'); if (th === 'light' || th
   --header:rgba(15,23,42,.8);--grid-dot:#1e293b;
   --shadow-card:0 1px 2px rgba(0,0,0,.3),0 1px 3px rgba(0,0,0,.4);
   --shadow-lift:0 10px 30px -12px rgba(0,0,0,.7),0 4px 10px -6px rgba(0,0,0,.5);
+  --shadow-device:0 30px 60px -24px rgba(0,0,0,.85),0 12px 24px -12px rgba(0,0,0,.6);
+  --bezel:#000000;--bezel-ring:#2e3d54;--chrome:#111c30;
   color-scheme:dark;
 }}
 :root[data-theme=dark]{
@@ -62,6 +66,8 @@ try { const th = localStorage.getItem('fc-site-theme'); if (th === 'light' || th
   --header:rgba(15,23,42,.8);--grid-dot:#1e293b;
   --shadow-card:0 1px 2px rgba(0,0,0,.3),0 1px 3px rgba(0,0,0,.4);
   --shadow-lift:0 10px 30px -12px rgba(0,0,0,.7),0 4px 10px -6px rgba(0,0,0,.5);
+  --shadow-device:0 30px 60px -24px rgba(0,0,0,.85),0 12px 24px -12px rgba(0,0,0,.6);
+  --bezel:#000000;--bezel-ring:#2e3d54;--chrome:#111c30;
   color-scheme:dark;
 }
 :root{
@@ -112,7 +118,9 @@ img{max-width:100%;height:auto;display:block}
 .menu a{display:block;color:var(--s700);text-decoration:none;font-weight:500;font-size:14px;padding:9px 12px;border-radius:8px}
 .menu a:hover{background:var(--s100)}
 .nav.open .menu{display:block}
-@media (max-width:1080px){.links{display:none}#menu-btn{display:grid}.tools{margin-inline-start:auto}}
+/* Tamil nav labels are longer: tighter links so the brand keeps its full name */
+:root[lang=ta] .links a{padding:6px 6px;font-size:13px}
+@media (max-width:1180px){.links{display:none}#menu-btn{display:grid}.tools{margin-inline-start:auto}}
 @media (max-width:560px){.sh-chip{display:none}.nav .bar{gap:8px}.wrap{padding:0 16px}.tools{gap:6px}.lang button{padding:0 7px;font-size:12px}}
 @media (max-width:380px){.brand{gap:8px}.brand-name{font-size:14px}.lang button{padding:0 6px}}
 
@@ -122,13 +130,16 @@ img{max-width:100%;height:auto;display:block}
 .btn.primary{background:var(--btn);border-color:var(--btn);color:#fff}
 .btn.primary:hover{background:var(--btn-hover);border-color:var(--btn-hover)}
 .btn svg{width:16px;height:16px;flex:none}
+.btn{max-width:100%}
+@media (max-width:420px){.btn{white-space:normal;text-align:center}}
 .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;color:var(--s600);background:var(--white);box-shadow:inset 0 0 0 1px var(--s200)}
 .chip::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--b500)}
 .chip.ok{background:var(--ok-bg);color:var(--ok-text);box-shadow:inset 0 0 0 1px var(--ok-ring)}
 .chip.ok::before{background:currentColor}
 
 /* ---------- section headers ---------- */
-section.reg{padding:72px 0;border-top:1px solid var(--s200)}
+section.reg{padding:80px 0;border-top:1px solid var(--s200)}
+@media (max-width:600px){section.reg{padding:56px 0}.sec-head{margin-bottom:24px}}
 .sec-head{max-width:720px;margin:0 0 32px}
 .eyebrow{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-text)}
 h1,h2,h3{color:var(--s900)}
@@ -151,8 +162,33 @@ h1 em{font-style:normal;color:var(--accent-text)}
 .tabs button[aria-selected=true]{background:var(--b50);color:var(--accent-text)}
 .install-card .cmdbox{margin:0 8px 8px}
 .hero-note{font-size:13px;color:var(--s500);margin:4px 14px 12px}
-.hero-shot{margin-top:48px;padding:8px;border-radius:18px}
-.hero-shot img{border-radius:12px;border:1px solid var(--s200)}
+.hero-shot{margin-top:48px}
+
+/* ---------- device frames: a browser window on wide screens, a phone on narrow ones ---------- */
+.device{position:relative;background:var(--white);border:1px solid var(--s200);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-device)}
+.device img{width:100%;height:auto;aspect-ratio:auto;object-fit:fill;border:0;background:var(--s100)}
+.device-bar{display:grid;grid-template-columns:64px minmax(0,1fr) 64px;align-items:center;height:40px;padding:0 14px;background:var(--chrome);border-bottom:1px solid var(--s200)}
+.device-bar .dots{display:flex;gap:7px}
+.device-bar .dots i{width:11px;height:11px;border-radius:50%;background:#ff5f57}
+.device-bar .dots i+i{background:#febc2e}
+.device-bar .dots i+i+i{background:#28c840}
+.addr{justify-self:center;display:flex;align-items:center;justify-content:center;gap:6px;width:min(100%,340px);height:24px;padding:0 12px;border-radius:999px;background:var(--white);box-shadow:inset 0 0 0 1px var(--s200);color:var(--s500);font:500 12px/1 var(--sans);white-space:nowrap;overflow:hidden}
+.addr svg{width:12px;height:12px;flex:none;color:var(--s400)}
+.device.is-phone{width:100%;max-width:260px;margin:0 auto;padding:9px;border:0;border-radius:40px;background:var(--bezel);box-shadow:0 0 0 1px var(--bezel-ring),var(--shadow-device);overflow:visible}
+.is-phone .device-screen{border-radius:31px;overflow:hidden;background:#fff}
+.is-phone .device-bar{display:block;position:relative;height:26px;padding:0;background:#fff;border:0}
+.is-phone .device-bar>*{display:none}
+.is-phone .device-bar::after{content:"";position:absolute;top:7px;left:50%;width:76px;height:18px;margin-left:-38px;border-radius:999px;background:var(--bezel)}
+.is-phone img{background:#fff}
+@media (max-width:767px){
+.hero .device{width:100%;max-width:280px;margin:0 auto;padding:9px;border:0;border-radius:40px;background:var(--bezel);box-shadow:0 0 0 1px var(--bezel-ring),var(--shadow-device);overflow:visible}
+.hero .device-screen{border-radius:31px;overflow:hidden;background:#fff}
+.hero .device-bar{display:block;position:relative;height:26px;padding:0;background:#fff;border:0}
+.hero .device-bar>*{display:none}
+.hero .device-bar::after{content:"";position:absolute;top:7px;left:50%;width:76px;height:18px;margin-left:-38px;border-radius:999px;background:var(--bezel)}
+.hero .device img{background:#fff}
+.hero-shot{margin-top:40px}
+}
 .hero-grid>*{min-width:0}
 @media (max-width:960px){.hero-grid{grid-template-columns:minmax(0,1fr)}.hero{padding:40px 0 40px}}
 
@@ -195,6 +231,43 @@ figure button:focus-visible{box-shadow:inset 0 0 0 3px var(--b500)}
 figure img{width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;object-position:top;border-bottom:1px solid var(--s200);background:var(--s100)}
 figcaption{padding:14px 16px 16px;font-size:13.5px;color:var(--s500)}
 figcaption b{display:block;color:var(--s900);font-size:15px;font-weight:600;margin-bottom:2px}
+.shots figure{transition:transform .2s ease,box-shadow .2s ease}
+.shots figure:hover,.shots figure:focus-within{transform:translateY(-3px);box-shadow:var(--shadow-lift)}
+.shots figure button:focus-visible{border-radius:16px 16px 0 0}
+
+/* phone showcase */
+.phones{display:grid;gap:32px;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none;margin:0;padding:8px 0 0}
+.phones figure{overflow:visible;text-align:center}
+.phones figcaption{padding:20px 4px 0;max-width:300px;margin:0 auto}
+.phone-cta{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 16px;margin-top:40px;text-align:center}
+.phone-cta p{margin:0;color:var(--s500);font-size:14px}
+@media (max-width:767px){
+  .phones{display:flex;gap:16px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;margin:0 -16px;padding:8px 16px 20px;scroll-padding-inline:16px;scrollbar-width:thin;scrollbar-color:var(--s300) transparent}
+  .phones>li{flex:0 0 min(240px,74%);scroll-snap-align:center}
+  .phones figcaption{padding-top:16px}
+  .phone-cta{margin-top:20px}
+}
+
+/* get started */
+.gs{list-style:none;padding:0;margin:0;display:grid;gap:16px;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+.gs>li{padding:22px;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.gs>li>*{max-width:100%}
+.gs>li>.cmdbox,.gs>li>.push{width:100%}
+.gs h3{margin:14px 0 6px;font-size:16px;font-weight:700;letter-spacing:-.01em}
+.gs p{margin:0;color:var(--s500);font-size:14px}
+.n{flex:none;width:28px;height:28px;border-radius:8px;background:var(--btn);color:#fff;display:grid;place-items:center;font:700 13px/1 var(--mono)}
+.gs .tabs{padding:14px 0 0;gap:4px}
+.gs .cmdbox{margin-top:6px}
+.gs .more-line{margin-top:12px;font-size:13.5px}
+.gs .push{margin-top:auto;padding-top:16px}
+.url-pill{display:flex;align-items:center;gap:8px;min-width:0;height:36px;padding:0 12px;border-radius:8px;background:var(--s50);box-shadow:inset 0 0 0 1px var(--s200);font:500 13px/1 var(--mono);color:var(--s700);white-space:nowrap;overflow:hidden}
+.url-pill svg{width:14px;height:14px;flex:none;color:var(--s400)}
+.url-pill .caret{flex:none;width:1px;height:16px;background:var(--b500);animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.gs-update{display:flex;gap:12px;align-items:center;margin:16px 0 0;padding:14px 18px;color:var(--s500);font-size:14px}
+.gs-update b{color:var(--s900)}
+.gs-update .ico{width:32px;height:32px}
+@media (max-width:900px){.gs{grid-template-columns:minmax(0,1fr)}}
 
 /* notifications (SettingsCard layout) */
 .sc-head{display:flex;gap:12px;align-items:flex-start;padding:16px 24px;border-bottom:1px solid var(--s100)}
@@ -232,7 +305,6 @@ figcaption b{display:block;color:var(--s900);font-size:15px;font-weight:600;marg
 .steps li{display:flex;gap:14px;padding:16px;min-width:0}
 .steps li>div{flex:1;min-width:0}
 .steps li b{font-weight:600}
-.steps .n{flex:none;width:28px;height:28px;border-radius:8px;background:var(--btn);color:#fff;display:grid;place-items:center;font:700 13px/1 var(--mono)}
 .split>div{min-width:0}
 .cmdbox{display:flex;align-items:stretch;min-width:0;max-width:100%;overflow:hidden;border-radius:8px;background:var(--code-bg);box-shadow:inset 0 0 0 1px var(--code-ring);margin-top:8px}
 .cmdbox code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;padding:10px 12px;font:500 12.5px/1.6 var(--mono);color:var(--code-text);scrollbar-width:thin;scrollbar-color:#334155 transparent}
@@ -278,7 +350,7 @@ dialog img{border-radius:12px;max-height:90vh;width:auto;height:auto;cursor:zoom
 :root[lang=ta] body{line-height:1.7}
 /* right-to-left: code, commands and paths stay left-to-right */
 [dir=rtl] :is(pre,code,.mono,.cmdbox,.tabs){direction:ltr;unicode-bidi:isolate}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}.shots figure:hover{transform:none}}
 </style>
 </head>
 <body>
@@ -291,6 +363,7 @@ dialog img{border-radius:12px;max-height:90vh;width:auto;height:auto;cursor:zoom
       <span class="sh-chip" dir="ltr">self-hosted</span>
       <nav class="links" aria-label="Main">
         <a href="#screens" data-i18n="nav.screens">Screens</a>
+        <a href="#get-started" data-i18n="nav.start">Get started</a>
         <a href="#features" data-i18n="nav.features">Features</a>
         <a href="#notifications" data-i18n="nav.notify">Alerts</a>
         <a href="#languages" data-i18n="nav.languages">Languages</a>
@@ -310,6 +383,7 @@ dialog img{border-radius:12px;max-height:90vh;width:auto;height:auto;cursor:zoom
     </div>
     <nav class="menu" id="menu" aria-label="Main">
       <a href="#screens" data-i18n="nav.screens">Screens</a>
+      <a href="#get-started" data-i18n="nav.start">Get started</a>
       <a href="#features" data-i18n="nav.features">Features</a>
       <a href="#notifications" data-i18n="nav.notify">Alerts</a>
       <a href="#languages" data-i18n="nav.languages">Languages</a>
@@ -330,7 +404,7 @@ dialog img{border-radius:12px;max-height:90vh;width:auto;height:auto;cursor:zoom
         <h1 data-i18n="hero.title">Forms you own. <em>Answers you keep.</em></h1>
         <p class="lede" data-i18n="hero.lede">FormCraft is a self-hosted form builder. Build forms by drag-and-drop, share a link or a QR code, and read every response in a table with charts. It runs on your server, in English, Arabic and Tamil, light or dark.</p>
         <div class="cta">
-          <a class="btn primary" href="#install"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6M12 19h8"/></svg><span data-i18n="hero.ctaInstall">Install in one line</span></a>
+          <a class="btn primary" href="#get-started"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6M12 19h8"/></svg><span data-i18n="hero.ctaInstall">Install in one line</span></a>
           <a class="btn" href="https://github.com/shatheitguy/formcraft"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg><span data-i18n="hero.ctaGithub">View on GitHub</span></a>
           <a class="btn" href="https://github.com/shatheitguy/formcraft/releases/latest/download/FormCraft.apk" download><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg><span data-i18n="hero.ctaApk">Get the Android app</span></a>
         </div>
@@ -353,7 +427,17 @@ dialog img{border-radius:12px;max-height:90vh;width:auto;height:auto;cursor:zoom
         <p class="hero-note" data-i18n="hero.installNote">Then open the address it prints and create your admin account.</p>
       </div>
     </div>
-    <div class="card hero-shot"><img src="img/dashboard.png" alt="FormCraft dashboard with form cards, response counts and sparklines" data-i18n-attr="alt:hero.shotAlt" width="1440" height="900"></div>
+    <div class="hero-shot">
+      <div class="device">
+        <div class="device-screen">
+          <div class="device-bar" dir="ltr" aria-hidden="true"><span class="dots"><i></i><i></i><i></i></span><span class="addr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>forms.example.com</span><span></span></div>
+          <picture>
+            <source media="(max-width: 767px)" srcset="img/m-dashboard.png" width="780" height="1688">
+            <img src="img/dashboard.png" alt="FormCraft dashboard with form cards, response counts and sparklines" data-i18n-attr="alt:hero.shotAlt" width="1440" height="900" fetchpriority="high">
+          </picture>
+        </div>
+      </div>
+    </div>
     <div class="stats">
       <div class="card stat"><b dir="ltr">3</b><span data-i18n="stat.langs">app languages</span></div>
       <div class="card stat"><b dir="ltr">13</b><span data-i18n="stat.templates">ready-made templates</span></div>
@@ -379,6 +463,72 @@ dialog img{border-radius:12px;max-height:90vh;width:auto;height:auto;cursor:zoom
       <figure class="card"><button type="button" data-full="img/translate.png"><img src="img/translate.png" alt="Translation editor" data-i18n-attr="alt:shot.translate.alt" loading="lazy" width="1440" height="900"></button><figcaption data-i18n="shot.translate.cap"><b>Translate</b>Every text side by side with the original, with progress per language.</figcaption></figure>
       <figure class="card"><button type="button" data-full="img/dashboard-dark-tamil.png"><img src="img/dashboard-dark-tamil.png" alt="Dashboard in Tamil, dark mode" data-i18n-attr="alt:shot.dark.alt" loading="lazy" width="1440" height="900"></button><figcaption data-i18n="shot.dark.cap"><b>Dark mode, in Tamil</b>The whole app follows the device's theme, or the one each user chooses.</figcaption></figure>
     </div>
+  </div>
+</section>
+
+<!-- 2b. Phones -->
+<section class="reg" id="phone">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow" data-i18n="phone.kicker">On your phone</span>
+      <h2 data-i18n="phone.title">Works on your phone, too.</h2>
+      <p class="sub" data-i18n="phone.sub">Every screen fits a phone, the builder included. Use it in the browser, or install the Android app and connect it to your server.</p>
+    </div>
+    <ul class="phones">
+      <li><figure>
+        <div class="device is-phone"><div class="device-screen"><div class="device-bar" aria-hidden="true"></div><img src="img/m-form.png" alt="The Event Registration form on a phone screen" data-i18n-attr="alt:phone.form.alt" loading="lazy" decoding="async" width="780" height="1688"></div></div>
+        <figcaption data-i18n="phone.form.cap"><b>Fill in a form</b>Big touch targets, and respondents can switch language as they go.</figcaption>
+      </figure></li>
+      <li><figure>
+        <div class="device is-phone"><div class="device-screen"><div class="device-bar" aria-hidden="true"></div><img src="img/m-builder.png" alt="The form builder on a phone screen" data-i18n-attr="alt:phone.builder.alt" loading="lazy" decoding="async" width="780" height="1688"></div></div>
+        <figcaption data-i18n="phone.builder.cap"><b>Build on the go</b>Add fields, reorder them and change settings from the bottom bar.</figcaption>
+      </figure></li>
+      <li><figure>
+        <div class="device is-phone"><div class="device-screen"><div class="device-bar" aria-hidden="true"></div><img src="img/m-responses.png" alt="The responses table on a phone screen" data-i18n-attr="alt:phone.responses.alt" loading="lazy" decoding="async" width="780" height="1688"></div></div>
+        <figcaption data-i18n="phone.responses.cap"><b>Read responses anywhere</b>Totals at a glance, search and filters, and export to CSV, PDF or Excel.</figcaption>
+      </figure></li>
+    </ul>
+    <div class="phone-cta">
+      <a class="btn primary" href="https://github.com/shatheitguy/formcraft/releases/latest/download/FormCraft.apk" download><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg><span data-i18n="hero.ctaApk">Get the Android app</span></a>
+      <p data-i18n="phone.note">A free APK from GitHub Releases. Enter your server address once, then sign in.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 2c. Get started -->
+<section class="reg" id="get-started">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow" data-i18n="gs.kicker">Get started</span>
+      <h2 data-i18n="gs.title">Up and running in three steps.</h2>
+      <p class="sub" data-i18n="gs.sub">No account with us and no cloud: FormCraft runs on your own server, and your phone connects straight to it.</p>
+    </div>
+    <ol class="gs">
+      <li class="card">
+        <span class="n" dir="ltr">1</span>
+        <h3 data-i18n="gs.s1.h">Install on your server</h3>
+        <p data-i18n="gs.s1.p">Run one line. The installer checks Docker, asks three questions and starts FormCraft.</p>
+        <div class="tabs" role="tablist" dir="ltr" data-target="#gs-cmd">
+          <button type="button" role="tab" aria-selected="true" data-cmd="curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash">Linux / macOS</button>
+          <button type="button" role="tab" aria-selected="false" data-cmd="irm https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.ps1 | iex">Windows (PowerShell)</button>
+        </div>
+        <div class="cmdbox" dir="ltr"><code id="gs-cmd">curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash</code><button type="button" class="copy" data-copy="#gs-cmd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><span data-i18n="install.copy">Copy</span></button></div>
+        <p class="more-line" data-i18n="gs.s1.more">Prefer Docker or Unraid? <a href="#install">See every install option</a>.</p>
+      </li>
+      <li class="card">
+        <span class="n" dir="ltr">2</span>
+        <h3 data-i18n="gs.s2.h">Open it in your browser</h3>
+        <p data-i18n="gs.s2.p">Go to <span class="mono" dir="ltr">http://your-server:3000</span> and create your admin account. There is no default password.</p>
+        <div class="push"><div class="url-pill" dir="ltr" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>http://your-server:3000</span><span class="caret"></span></div></div>
+      </li>
+      <li class="card">
+        <span class="n" dir="ltr">3</span>
+        <h3 data-i18n="gs.s3.h">Get the phone app</h3>
+        <p data-i18n="gs.s3.p">Install the Android app, enter your server address once, then sign in.</p>
+        <div class="push"><a class="btn" href="https://github.com/shatheitguy/formcraft/releases/latest/download/FormCraft.apk" download><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg><span data-i18n="feat.mobile.dl">Download the APK</span></a></div>
+      </li>
+    </ol>
+    <p class="card gs-update"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg></span><span data-i18n="gs.update"><b>Update any time.</b> Settings → About checks for new versions and shows how to update.</span></p>
   </div>
 </section>
 
@@ -469,7 +619,7 @@ dialog img{border-radius:12px;max-height:90vh;width:auto;height:auto;cursor:zoom
         <li class="card"><span class="dot" dir="ltr">4</span><span data-i18n="langs.step4"><b>Set a language in the link</b> with <span class="mono" dir="ltr">?lang=ar</span>. Otherwise the visitor's browser language is used.</span></li>
       </ul>
     </div>
-    <div class="card frame"><img src="img/form-arabic.png" alt="A registration form shown in Arabic, right-to-left" data-i18n-attr="alt:langs.shotAlt" loading="lazy"></div>
+    <div class="card frame"><img src="img/form-arabic.png" alt="A registration form shown in Arabic, right-to-left" data-i18n-attr="alt:langs.shotAlt" loading="lazy" decoding="async" width="1100" height="1000"></div>
   </div>
 </section>
 
@@ -542,6 +692,28 @@ dialog img{border-radius:12px;max-height:90vh;width:auto;height:auto;cursor:zoom
   const EN = { 'js.copied': 'Copied' };
   const DICT = {
     ar: {
+      'nav.start': 'ابدأ',
+      'phone.kicker': 'على الهاتف',
+      'phone.title': 'يعمل على هاتفك أيضًا.',
+      'phone.sub': 'كل شاشة تناسب الهاتف، بما فيها المنشئ. استخدمه من المتصفح، أو ثبّت تطبيق Android واربطه بخادمك.',
+      'phone.form.alt': 'نموذج تسجيل الفعالية على شاشة هاتف',
+      'phone.form.cap': '<b>تعبئة النماذج</b>عناصر كبيرة سهلة اللمس، ويمكن للمستجيب تبديل اللغة أثناء التعبئة.',
+      'phone.builder.alt': 'منشئ النماذج على شاشة هاتف',
+      'phone.builder.cap': '<b>أنشئ نماذجك أينما كنت</b>أضف الحقول وأعد ترتيبها وغيّر الإعدادات من الشريط السفلي.',
+      'phone.responses.alt': 'جدول الردود على شاشة هاتف',
+      'phone.responses.cap': '<b>اقرأ الردود من أي مكان</b>الإجماليات في لمحة، مع البحث والتصفية والتصدير إلى CSV أو PDF أو Excel.',
+      'phone.note': 'ملف APK مجاني من إصدارات GitHub. أدخل عنوان خادمك مرة واحدة، ثم سجّل الدخول.',
+      'gs.kicker': 'ابدأ الآن',
+      'gs.title': 'جاهز للعمل في ثلاث خطوات.',
+      'gs.sub': 'لا حساب لدينا ولا سحابة: يعمل FormCraft على خادمك أنت، ويتصل به هاتفك مباشرة.',
+      'gs.s1.h': 'ثبّته على خادمك',
+      'gs.s1.p': 'شغّل سطرًا واحدًا. يتحقق المثبّت من Docker، ويطرح ثلاثة أسئلة، ثم يشغّل FormCraft.',
+      'gs.s1.more': 'تفضّل Docker أو Unraid؟ <a href="#install">اطّلع على كل خيارات التثبيت</a>.',
+      'gs.s2.h': 'افتحه في المتصفح',
+      'gs.s2.p': 'انتقل إلى <span class="mono" dir="ltr">http://your-server:3000</span> وأنشئ حساب المسؤول. لا توجد كلمة مرور افتراضية.',
+      'gs.s3.h': 'احصل على تطبيق الهاتف',
+      'gs.s3.p': 'ثبّت تطبيق Android، وأدخل عنوان خادمك مرة واحدة، ثم سجّل الدخول.',
+      'gs.update': '<b>حدّثه متى شئت.</b> تتحقق صفحة الإعدادات ← حول من الإصدارات الجديدة وتوضح طريقة التحديث.',
       'meta.title': 'FormCraft — منشئ نماذج باستضافة ذاتية',
       'meta.desc': 'FormCraft منشئ نماذج تستضيفه على خادمك: نماذج بالسحب والإفلات، وقوالب واختبارات، وردود مع رسوم بيانية وتصدير CSV، وأدوار للمستخدمين، وتنبيهات عبر البريد الإلكتروني وTelegram وWhatsApp، وتقارير PDF وExcel، ورفع ملفات، وتطبيق Android، ونماذج متعددة اللغات تدعم العربية من اليمين إلى اليسار، ووضع داكن، ونسخ احتياطية كاملة. تثبيت عبر Docker بسطر واحد.',
       'js.copied': 'تم النسخ',
@@ -665,6 +837,28 @@ dialog img{border-radius:12px;max-height:90vh;width:auto;height:auto;cursor:zoom
       'footer.credit': 'مدعوم من ' + CREDIT
     },
     ta: {
+      'nav.start': 'தொடங்குக',
+      'phone.kicker': 'தொலைபேசியில்',
+      'phone.title': 'உங்கள் தொலைபேசியிலும் இயங்கும்.',
+      'phone.sub': 'உருவாக்கி உட்பட ஒவ்வொரு திரையும் தொலைபேசிக்குப் பொருந்தும். உலாவியிலேயே பயன்படுத்தலாம், அல்லது Android செயலியை நிறுவி உங்கள் சர்வருடன் இணைக்கலாம்.',
+      'phone.form.alt': 'தொலைபேசித் திரையில் நிகழ்வுப் பதிவுப் படிவம்',
+      'phone.form.cap': '<b>படிவத்தை நிரப்புதல்</b>தொடுவதற்கு எளிதான பெரிய புலங்கள்; நிரப்பும்போதே பதிலளிப்பவர் மொழியை மாற்றலாம்.',
+      'phone.builder.alt': 'தொலைபேசித் திரையில் படிவ உருவாக்கி',
+      'phone.builder.cap': '<b>எங்கிருந்தும் உருவாக்குங்கள்</b>கீழ்ப் பட்டையிலிருந்தே புலங்களைச் சேர்க்கலாம், வரிசையை மாற்றலாம், அமைப்புகளைத் திருத்தலாம்.',
+      'phone.responses.alt': 'தொலைபேசித் திரையில் பதில்கள் அட்டவணை',
+      'phone.responses.cap': '<b>எங்கிருந்தும் பதில்களைப் படியுங்கள்</b>மொத்த எண்ணிக்கைகள் ஒரே பார்வையில்; தேடல், வடிகட்டிகள், CSV, PDF அல்லது Excel ஏற்றுமதி.',
+      'phone.note': 'GitHub வெளியீடுகளில் இலவச APK. உங்கள் சர்வர் முகவரியை ஒருமுறை உள்ளிட்டு, பிறகு உள்நுழையுங்கள்.',
+      'gs.kicker': 'தொடங்குங்கள்',
+      'gs.title': 'மூன்று படிகளில் தயார்.',
+      'gs.sub': 'எங்களிடம் கணக்கும் இல்லை, கிளவுடும் இல்லை: FormCraft உங்கள் சொந்த சர்வரில் இயங்குகிறது, உங்கள் தொலைபேசி அதனுடன் நேரடியாக இணைகிறது.',
+      'gs.s1.h': 'உங்கள் சர்வரில் நிறுவுங்கள்',
+      'gs.s1.p': 'ஒரு வரியை இயக்குங்கள். நிறுவி Docker-ஐச் சரிபார்த்து, மூன்று கேள்விகளைக் கேட்டு, FormCraft-ஐத் தொடங்கும்.',
+      'gs.s1.more': 'Docker அல்லது Unraid வேண்டுமா? <a href="#install">எல்லா நிறுவல் வழிகளையும் பாருங்கள்</a>.',
+      'gs.s2.h': 'உலாவியில் திறவுங்கள்',
+      'gs.s2.p': '<span class="mono" dir="ltr">http://your-server:3000</span> முகவரிக்குச் சென்று உங்கள் நிர்வாகி கணக்கை உருவாக்குங்கள். இயல்புநிலைக் கடவுச்சொல் எதுவும் இல்லை.',
+      'gs.s3.h': 'தொலைபேசிச் செயலியைப் பெறுங்கள்',
+      'gs.s3.p': 'Android செயலியை நிறுவி, உங்கள் சர்வர் முகவரியை ஒருமுறை உள்ளிட்டு, பிறகு உள்நுழையுங்கள்.',
+      'gs.update': '<b>எப்போது வேண்டுமானாலும் புதுப்பிக்கலாம்.</b> அமைப்புகள் → பற்றி பக்கம் புதிய பதிப்புகளைச் சரிபார்த்து, புதுப்பிக்கும் வழியைக் காட்டும்.',
       'meta.title': 'FormCraft — சுய-ஹோஸ்டிங் படிவ உருவாக்கி',
       'meta.desc': 'FormCraft ஒரு சுய-ஹோஸ்டிங் படிவ உருவாக்கி: இழுத்து-விடும் படிவங்கள், வார்ப்புருக்கள் மற்றும் வினாடி வினாக்கள், வரைபடங்கள் மற்றும் CSV ஏற்றுமதியுடன் சமர்ப்பிப்புகள், பாத்திரங்கள், மின்னஞ்சல், Telegram மற்றும் WhatsApp அறிவிப்புகள், PDF மற்றும் Excel அறிக்கைகள், கோப்புப் பதிவேற்றங்கள், Android செயலி, அரபு RTL ஆதரவுடன் பன்மொழிப் படிவங்கள், இருள் பயன்முறை மற்றும் முழுமையான காப்புப்பிரதிகள். ஒரே வரியில் Docker நிறுவல்.',
       'js.copied': 'நகலெடுக்கப்பட்டது',
@@ -871,11 +1065,15 @@ dialog img{border-radius:12px;max-height:90vh;width:auto;height:auto;cursor:zoom
   };
 
   /* ---------- page behaviour ---------- */
-  const cmd = document.getElementById('cmd');
-  document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
-    document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
-    cmd.textContent = b.dataset.cmd;
-  }));
+  // Each tab list swaps the command in its own box (data-target, default #cmd).
+  document.querySelectorAll('.tabs').forEach((list) => {
+    const out = document.querySelector(list.dataset.target || '#cmd');
+    const btns = list.querySelectorAll('button');
+    btns.forEach((b) => b.addEventListener('click', () => {
+      btns.forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+      out.textContent = b.dataset.cmd;
+    }));
+  });
   document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
     // The label is a span next to the icon, so only its text changes.
     const label = b.querySelector('[data-i18n]') || b;
