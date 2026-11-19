@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Languages, RotateCcw, Trophy } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, Languages, RotateCcw, Trophy } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { I18nProvider, useI18n } from '@/components/i18n';
 import { Button } from '@/components/ui';
@@ -8,9 +8,9 @@ import { formLayout } from '@/lib/form-layout';
 import { formLanguages, localizeForm } from '@/lib/form-i18n';
 import { dirOf, isLocale, LOCALES, matchLocale } from '@/lib/i18n';
 import { computeScore, type ScoreResult } from '@/lib/scoring';
-import type { AnswerValue, Answers, FormBranding, FormLayout, FormSchema } from '@/lib/types';
+import type { AnswerValue, Answers, FormBranding, FormField, FormLayout, FormSchema } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { validateAnswers, validateField } from '@/lib/validation';
+import { scaleBounds, validateAnswers, validateField } from '@/lib/validation';
 import { FieldInput, FieldLabel } from './field-input';
 import { FormHeader } from './form-frame';
 import { FORM_LANG_EVENT } from './powered-by';
@@ -83,7 +83,7 @@ export function FormRenderer(props: Props) {
   );
 }
 
-type PickerCover = 'card' | 'hero' | null;
+export type PickerCover = 'card' | 'hero' | null;
 
 // Offsets lift the picker onto the cover image: cover heights are h-36 / sm:h-44 (card) and h-44 / sm:h-64 (minimal hero) in FormFrame.
 const PICKER_POS: Record<'card' | 'hero', string> = {
@@ -91,7 +91,7 @@ const PICKER_POS: Record<'card' | 'hero', string> = {
   hero: 'absolute end-3 -top-[10.25rem] z-10 sm:-top-[15.25rem]',
 };
 
-function LanguagePicker({ languages, value, onChange, cover }: { languages: string[]; value: string; onChange: (l: string) => void; cover: PickerCover }) {
+export function LanguagePicker({ languages, value, onChange, cover }: { languages: string[]; value: string; onChange: (l: string) => void; cover: PickerCover }) {
   const { t } = useI18n();
   return (
     // With a cover image the picker floats on the image's top corner, so a logo that overlaps
@@ -121,8 +121,23 @@ function LanguagePicker({ languages, value, onChange, cover }: { languages: stri
   );
 }
 
-/** Split look: cover (or accent gradient), logo, title and description in a side panel; a banner on phones. */
-function SplitPanel({ branding, title, description, narrow }: { branding?: FormBranding; title: string; description: string; narrow?: boolean }) {
+/**
+ * Split look: cover (or accent gradient), logo, title and description in a side panel; a banner on phones.
+ * The builder canvas passes `editing` with its title/description inputs, so it looks exactly like the form.
+ */
+export function SplitPanel({
+  branding,
+  title,
+  description,
+  narrow,
+  editing,
+}: {
+  branding?: FormBranding;
+  title: string;
+  description: string;
+  narrow?: boolean;
+  editing?: { title: ReactNode; description: ReactNode };
+}) {
   const b = branding ?? {};
   const center = b.logoAlign === 'center';
   return (
@@ -157,7 +172,12 @@ function SplitPanel({ branding, title, description, narrow }: { branding?: FormB
             />
           </div>
         )}
-        {(!b.hideTitle || description) && (
+        {editing ? (
+          <div className="min-w-0">
+            <div className={cn(b.hideTitle && 'opacity-40')}>{editing.title}</div>
+            {editing.description}
+          </div>
+        ) : (!b.hideTitle || description) && (
           <div className="min-w-0">
             {!b.hideTitle && <h1 className={cn('break-words text-2xl font-bold leading-tight tracking-tight sm:text-3xl', !narrow && 'lg:text-4xl')}>{title}</h1>}
             {description && <p className="mt-3 whitespace-pre-line text-[15px] leading-relaxed" style={{ opacity: 0.88 }}>{description}</p>}
@@ -230,8 +250,27 @@ function FormBody({ formId, title, description, schema, mode, lang, layout, pick
     return field ? validateField(field, typeof v === 'string' ? v.trim() : v, t) ?? t('Please check this answer.') : null;
   };
 
+  // "Collapse answered questions": a one-tap question (choice, dropdown, scale, rating) folds to one line with the
+  // answer once it's picked; tapping that line opens it again. Not used by Steps (one question per screen already).
+  const collapsible = !!schema.settings.collapseAnswered && !steps;
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const collapseTimer = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const expand = (id: string) => {
+    clearTimeout(collapseTimer.current[id]);
+    setCollapsed((s) => {
+      const n = new Set(s);
+      n.delete(id);
+      return n;
+    });
+  };
+
   const setValue = (id: string, v: AnswerValue) => {
     setAnswers((a) => ({ ...a, [id]: v }));
+    if (collapsible && v !== '' && v !== null && v !== undefined && COLLAPSIBLE_TYPES.has(schema.fields.find((f) => f.id === id)?.type ?? '')) {
+      // A short pause so the respondent sees what they picked before it folds away.
+      clearTimeout(collapseTimer.current[id]);
+      collapseTimer.current[id] = setTimeout(() => setCollapsed((s) => new Set(s).add(id)), 400);
+    }
     if (serverFieldErrors[id]) {
       setServerFieldErrors(({ [id]: _gone, ...rest }) => rest);
       setInvalid((s) => {
@@ -550,6 +589,13 @@ function FormBody({ formId, title, description, schema, mode, lang, layout, pick
         <div className={minimal ? 'divide-y divide-slate-200 border-t border-slate-200' : 'space-y-7'}>
           {fields.map((field) => {
             const err = invalid.has(field.id) ? messageFor(field.id) : null;
+            if (collapsed.has(field.id) && !err && answers[field.id] !== undefined && answers[field.id] !== '') {
+              return (
+                <div key={field.id} id={`q-${field.id}`} className={cn('scroll-mt-24', minimal && 'py-5')}>
+                  <CollapsedAnswer field={field} value={answers[field.id]} onExpand={() => expand(field.id)} />
+                </div>
+              );
+            }
             return (
               <div key={field.id} id={`q-${field.id}`} className={cn('scroll-mt-24', minimal && 'py-8')}>
                 <FieldLabel field={field} htmlFor={`in-${field.id}`} />
@@ -575,6 +621,37 @@ function FormBody({ formId, title, description, schema, mode, lang, layout, pick
         {count > 0 && <span className="text-xs text-rose-600">{count === 1 ? t('1 field needs attention') : t('{n} fields need attention', { n: count })}</span>}
       </div>
     </form>,
+  );
+}
+
+/** Question types answered with a single tap, which "Collapse answered questions" folds away. */
+const COLLAPSIBLE_TYPES = new Set<string>(['radio', 'select', 'scale', 'rating']);
+
+/** A folded, answered question: the question and the chosen answer on one line; tap to change it. */
+function CollapsedAnswer({ field, value, onExpand }: { field: FormField; value: AnswerValue; onExpand: () => void }) {
+  const { t } = useI18n();
+  const option = (field.options ?? []).find((o) => o.label === value);
+  const answer =
+    field.type === 'scale' || field.type === 'rating'
+      ? `${field.type === 'rating' ? '★ ' : ''}${value} / ${scaleBounds(field).max}`
+      : option?.display ?? option?.label ?? String(value);
+  return (
+    <button
+      type="button"
+      onClick={onExpand}
+      aria-expanded={false}
+      title={t('Change answer')}
+      className="group flex w-full animate-fade-in items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-start transition hover:border-slate-300 hover:bg-slate-50"
+    >
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-600 text-onaccent">
+        <Check className="h-3 w-3" strokeWidth={3} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="line-clamp-2 block text-sm font-medium leading-snug text-slate-900">{field.label}</span>
+        <span className="block truncate text-sm text-brand-700">{answer}</span>
+      </span>
+      <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-slate-600" />
+    </button>
   );
 }
 

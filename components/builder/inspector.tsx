@@ -522,6 +522,15 @@ export function FormSettingsPanel({
         />
         <p className="-mt-2 text-xs text-slate-500">{t('Auto follows each respondent’s device setting.')}</p>
 
+        <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-inset ring-slate-100">
+          <ToggleRow
+            label={t('Collapse answered questions')}
+            description={t('After a choice, scale or rating is picked, only the question and answer stay. Tap to change it. (Not in the Steps look.)')}
+            checked={!!settings.collapseAnswered}
+            onChange={(collapseAnswered) => onSettings({ collapseAnswered })}
+          />
+        </div>
+
         <div className="h-px bg-slate-100" />
 
         <div className="space-y-2 rounded-xl bg-slate-50 p-3 ring-1 ring-inset ring-slate-100">

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { LookPicker } from '@/components/form/look-picker';
 import { useT } from '@/components/i18n';
+import { navStart } from '@/components/nav-progress';
 import { FIELD_ICONS, TEMPLATE_ICONS } from '@/components/icons';
 import { useToast } from '@/components/toast';
 import { Button, Modal, Spinner } from '@/components/ui';
@@ -52,6 +53,7 @@ export function TemplatePicker({ open, onClose }: { open: boolean; onClose: () =
         throw new Error(typeof j?.error === 'string' ? j.error : 'Could not create form');
       }
       const form = await res.json();
+      navStart();
       router.push(`/forms/${form.id}/edit`);
     } catch (e) {
       toast(t(e instanceof Error && e.message ? e.message : 'Could not create form'), 'error');

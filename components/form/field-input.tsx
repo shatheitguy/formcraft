@@ -170,9 +170,14 @@ export function FieldInput({ field, value, onChange, error, disabled, formId }: 
             ))}
           </div>
           {(field.minLabel || field.maxLabel) && (
-            <div className="mt-2 flex justify-between text-xs text-slate-500" style={{ maxWidth: steps.length * 58 }}>
+            // Phones: the buttons stretch across the card, so the labels do too (ends under the first / last button).
+            // Wider screens: buttons are at most 52px with 6px gaps, so the labels stop where the last button ends.
+            <div
+              className="mt-2 flex justify-between gap-3 text-xs text-slate-500 sm:max-w-[var(--scale-w)]"
+              style={{ '--scale-w': `${steps.length * 52 + (steps.length - 1) * 6}px` } as React.CSSProperties}
+            >
               <span>{field.minLabel}</span>
-              <span>{field.maxLabel}</span>
+              <span className="text-end">{field.maxLabel}</span>
             </div>
           )}
         </div>

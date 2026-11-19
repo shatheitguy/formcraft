@@ -83,3 +83,84 @@
     background-size: 18px 18px;
   }
 }
+
+/* ------------------------------ Loading & touch feel ------------------------------ */
+
+/* Brand loader (components/brand-loader.tsx). Fades in after a short delay so quick page changes don't flash it. */
+.fc-loader {
+  animation: fc-fade-in 0.25s ease-out 0.12s both;
+}
+@keyframes fc-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+/* The mark's bars fill in one after another, then empty again, like a form being typed. */
+.fc-mark .fc-bar {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: fc-bar 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.fc-mark .fc-bar-2 { animation-delay: 0.15s; }
+.fc-mark .fc-bar-3 { animation-delay: 0.3s; }
+@keyframes fc-bar {
+  0% { transform: scaleX(0.15); opacity: 0.35; }
+  35%, 70% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(0.15); opacity: 0.35; }
+}
+.fc-mark .fc-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fc-dot 0.8s steps(2, jump-none) infinite;
+}
+@keyframes fc-dot {
+  from { opacity: 1; }
+  to { opacity: 0.15; }
+}
+.fc-mark { animation: fc-float 2.4s ease-in-out infinite; }
+@keyframes fc-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+/* Soft accent glow behind the logo. */
+.fc-halo {
+  background: rgb(var(--brand-500) / 0.35);
+  filter: blur(14px);
+  animation: fc-halo 1.6s ease-in-out infinite;
+}
+@keyframes fc-halo {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+.fc-logo-pulse { animation: fc-float 2.4s ease-in-out infinite; }
+/* Indeterminate progress track. */
+.fc-track-fill { animation: fc-track 1.1s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+@keyframes fc-track {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+[dir='rtl'] .fc-track-fill { animation-direction: reverse; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-loader, .fc-mark, .fc-mark .fc-bar, .fc-mark .fc-dot, .fc-halo, .fc-logo-pulse { animation: none !important; }
+  .fc-track-fill { animation-duration: 2.5s; }
+}
+
+@layer base {
+  /* Phones: no grey tap flash, no double-tap-zoom delay on controls. */
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  a, button, [role='button'], label, summary, select, input[type='checkbox'], input[type='radio'] {
+    touch-action: manipulation;
+  }
+}
+
+/* Instant press feedback on touch screens, so a tap visibly "takes" before the next page arrives. */
+@media (hover: none) {
+  a:active:not([aria-disabled='true']),
+  button:active:not(:disabled) {
+    transform: scale(0.97);
+    opacity: 0.85;
+    transition: transform 0.05s, opacity 0.05s;
+  }
+}

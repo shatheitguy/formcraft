@@ -4,6 +4,10 @@
 #   One-liner:  curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash
 #   From repo:  ./install.sh            (add --yes to accept all defaults, --dry-run to only write .env)
 #
+#   UPDATE:     run the same one-liner again, from the same folder. When FormCraft is already
+#               installed it just downloads the new version and restarts it — your settings and
+#               data stay as they are. Add --reconfigure to change the database or ports instead.
+#
 # Asks which database to use (bundled PostgreSQL, your own PostgreSQL, or embedded SQLite),
 # the ports to use, and whether to load demo data. Writes everything to .env and starts
 # the stack with Docker Compose.
@@ -14,9 +18,11 @@ IMAGE="ghcr.io/shatheitguy/formcraft"
 INSTALL_DIR="${FORMCRAFT_DIR:-formcraft}"
 ASSUME_YES=0
 DRY_RUN=0
+RECONFIGURE="${FC_RECONFIGURE:-0}"
 for arg in "$@"; do
   case "$arg" in
     -y|--yes) ASSUME_YES=1 ;;
+    --reconfigure) RECONFIGURE=1 ;;
     --dry-run) DRY_RUN=1 ;;
     -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
   esac
@@ -147,11 +153,13 @@ else
   ok "Downloaded the compose files to $(pwd)"
 fi
 
-if [ -f .env ] && grep -q '^FC_DB_PROVIDER=' .env && [ "$ASSUME_YES" = 0 ]; then
-  warn "An existing configuration was found in .env."
-  if ! yesno "Reconfigure it? (No just rebuilds and restarts with the current settings)" n; then
+if [ -f .env ] && grep -q '^FC_DB_PROVIDER=' .env; then
+  # Already installed: the same one-liner updates it (no questions). --reconfigure changes settings instead.
+  if [ "$RECONFIGURE" = 1 ]; then
+    warn "Reconfiguring the existing installation in $(pwd) — your data stays, the settings are asked again."
+  else
     [ "$DRY_RUN" = 1 ] && exit 0
-    info "Updating and starting FormCraft with the existing configuration…"
+    info "FormCraft is already installed in $(pwd) — updating it with your current settings…"
     if ! docker compose pull; then
       warn "Couldn't download the FormCraft image — it may still be publishing, or the registry is unreachable."
       printf '  Try again in a few minutes:  %scd %s && docker compose pull && docker compose up -d%s
@@ -311,7 +319,7 @@ for _ in $(seq 1 90); do
     printf '\n%s%s✓ FormCraft is running!%s\n\n' "$G" "$B" "$N"
     printf '  Open %shttp://localhost:%s%s and create your admin account.\n' "$B" "$FC_PORT" "$N"
     printf '  Settings and database credentials are in %s/.env\n' "$(pwd)"
-    printf '  Logs: docker compose logs -f   ·   Stop: docker compose down   ·   Reconfigure: ./install.sh\n\n'
+    printf '  Logs: docker compose logs -f   ·   Stop: docker compose down   ·   Update: run the same command again   ·   Reconfigure: add --reconfigure\n\n'
     exit 0
   fi
   sleep 2

@@ -5,8 +5,9 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
   pointerWithin,
+  TouchSensor,
   useDroppable,
   useSensor,
   useSensors,
@@ -16,11 +17,11 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { AlertCircle, ArrowLeft, Check, Eye, Inbox, Languages, LayoutList, Link2, Monitor, MousePointerClick, PenSquare, PlusSquare, Rocket, SlidersHorizontal, Smartphone, Undo2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, Check, Eye, Inbox, Languages, LayoutList, Link2, Monitor, MousePointerClick, PenSquare, PlusSquare, Rocket, SlidersHorizontal, Smartphone, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FormFrame, FormHeader } from '@/components/form/form-frame';
-import { FormRenderer } from '@/components/form/form-renderer';
+import { FormRenderer, LanguagePicker, SplitPanel } from '@/components/form/form-renderer';
 import { AppFooter } from '@/components/app-footer';
 import { ShareDialog, type ShareForm } from '@/components/share-dialog';
 import { useT } from '@/components/i18n';
@@ -225,13 +226,22 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
   /* ------------------------------ drag & drop ------------------------------ */
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    // Mouse: a small move starts the drag. Touch: press and hold ~¼ s, so swiping the canvas scrolls instead of
+    // grabbing a question (which made questions jump up or down on phones).
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   const onDragStart = ({ active }: DragStartEvent) => {
     const data = active.data.current as { fromPalette?: boolean; type?: FieldType } | undefined;
     setActiveDrag(data?.fromPalette ? { kind: 'palette', type: data.type! } : { kind: 'field', id: String(active.id) });
+    // A tiny buzz on phones: the press-and-hold picked the question up.
+    try {
+      navigator.vibrate?.(12);
+    } catch {
+      /* not supported */
+    }
   };
   const onDragOver = ({ over }: DragOverEvent) => setOverId(over ? String(over.id) : null);
   const onDragEnd = ({ active, over }: DragEndEvent) => {
@@ -281,6 +291,104 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
   const formTheme = draft.schema.settings.theme === 'light' || draft.schema.settings.theme === 'dark' ? draft.schema.settings.theme : '';
   // Centered stacked header: center the editable title/description text too.
   const centered = branding?.logoAlign === 'center' && branding?.logoPlacement !== 'inline';
+
+  const requiredNote = fields.some((f) => f.required) ? (
+    <p className={cn('text-xs text-slate-500', layout === 'split' ? 'mb-6' : 'mt-3')}>
+      <span className="text-rose-500">*</span> {t('Required')}
+    </p>
+  ) : undefined;
+
+  // The questions on the canvas, spaced like the published form, followed by its button row.
+  const canvasFields = (
+    <>
+      <CanvasDropZone empty={fields.length === 0} highlight={activeDrag?.kind === 'palette' && overId === CANVAS_ID}>
+        <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+          <div className={layout === 'minimal' ? 'divide-y divide-slate-200 border-t border-slate-200' : layout === 'steps' ? 'space-y-10' : 'space-y-7'}>
+            {fields.map((field, i) => (
+              <div key={field.id} onClick={(e) => e.stopPropagation()} className={cn(layout === 'minimal' && 'py-8')}>
+                <CanvasField
+                  field={field}
+                  index={i}
+                  total={fields.length}
+                  selected={field.id === selectedId}
+                  quiz={draft.schema.settings.quiz}
+                  dropIndicator={activeDrag?.kind === 'palette' && overId === field.id}
+                  large={layout === 'steps'}
+                  stepLabel={
+                    layout === 'steps' ? (
+                      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-brand-700">{t('Step {n} of {total}', { n: i + 1, total: fields.length })}</div>
+                    ) : undefined
+                  }
+                  onSelect={() => {
+                    // On phones, a second tap on the selected field opens its settings.
+                    if (field.id === selectedId && isSmall()) setPanel('settings');
+                    setSelectedId(field.id);
+                  }}
+                  onDuplicate={() => duplicateField(field.id)}
+                  onDelete={() => deleteField(field.id)}
+                  onMove={(dir) => moveField(field.id, dir)}
+                />
+              </div>
+            ))}
+          </div>
+        </SortableContext>
+      </CanvasDropZone>
+      {/* The form's own button row, as respondents see it (not clickable here). */}
+      <div
+        aria-hidden
+        className={cn(
+          'pointer-events-none flex items-center gap-3 pt-6',
+          layout === 'steps' ? 'mt-8 justify-end' : layout === 'minimal' ? 'border-t border-slate-200' : 'mt-8 border-t border-slate-100',
+        )}
+      >
+        <span className={cn(buttonClass('primary', 'md'), layout === 'steps' ? 'min-w-[7rem]' : 'w-full sm:w-auto')}>
+          {layout === 'steps' ? (
+            <>
+              {t('Next')} <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+            </>
+          ) : (
+            draft.schema.settings.submitLabel || t('Submit')
+          )}
+        </span>
+      </div>
+    </>
+  );
+
+  // Multilingual forms show their language switcher where respondents see it (here it stays on the main language).
+  const canvasLanguages = formLanguages(draft.schema);
+  const languagePicker =
+    canvasLanguages.length > 1 ? (
+      <div ref={(el) => el?.setAttribute('inert', '')} className="contents">
+        <LanguagePicker
+          languages={canvasLanguages}
+          value={canvasLanguages[0]}
+          onChange={() => {}}
+          cover={layout === 'split' || !branding?.coverUrl ? null : layout === 'minimal' ? 'hero' : 'card'}
+        />
+      </div>
+    ) : null;
+
+  const titleProps = {
+    value: draft.title,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setMeta({ title: e.target.value }),
+    onFocus: () => setSelectedId(null),
+    placeholder: t('Form title'),
+    'aria-label': t('Form title'),
+  };
+  const descriptionProps = {
+    value: draft.description,
+    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => setMeta({ description: e.target.value }),
+    onFocus: () => setSelectedId(null),
+    placeholder: t('Add a description for respondents…'),
+    rows: 1,
+    // Grows with the text (wrapped lines too), so it takes the same height as the description on the form.
+    ref: (el: HTMLTextAreaElement | null) => {
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    },
+    style: { overflow: 'hidden' } as const,
+  };
 
   return (
     <div className="flex h-screen flex-col bg-slate-50">
@@ -376,7 +484,12 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
           </div>
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => (setActiveDrag(null), setOverId(null))}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={collision}
+          // Gentle edge scrolling while dragging (the default races the page up and down).
+          autoScroll={{ threshold: { x: 0, y: 0.12 }, acceleration: 4 }}
+          onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => (setActiveDrag(null), setOverId(null))}>
           <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
             <aside className={cn('scrollbar-thin min-h-0 overflow-y-auto bg-white lg:block lg:w-64 lg:shrink-0 lg:border-e lg:border-slate-200', panel === 'add' ? 'flex-1' : 'hidden')}>
               <Palette
@@ -388,15 +501,16 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
             </aside>
 
             <main
-              className={cn('scrollbar-thin min-h-0 min-w-0 flex-1 overflow-y-auto lg:block', layout === 'minimal' ? 'bg-white' : 'bg-grid', panel === 'canvas' ? 'block' : 'hidden')}
+              className={cn('scrollbar-thin min-h-0 min-w-0 flex-1 overflow-y-auto lg:block', LAYOUT_PAGE[layout].bg, formTheme, panel === 'canvas' ? 'block' : 'hidden')}
               onClick={() => setSelectedId(null)}
             >
-              {/* The canvas follows the form's look (Classic, Minimal, Steps, Split); Preview shows it exactly. */}
-              <div
-                className={cn('mx-auto px-3 py-5 sm:px-4 sm:py-8', layout === 'split' ? 'max-w-5xl' : layout === 'minimal' ? 'max-w-3xl' : 'max-w-2xl')}
-                style={accentVars(branding?.accent)}
-              >
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600" onClick={(e) => e.stopPropagation()}>
+              {/* The canvas is drawn like Preview and the published form: same page, width, theme, frame, header and
+                  spacing for every look. Only the builder's controls (field toolbars, drop zone) are added on top. */}
+              <div className={cn('mx-auto pb-24', LAYOUT_PAGE[layout].flush ? 'px-0' : 'px-3 sm:px-4', LAYOUT_PAGE[layout].width)} style={accentVars(branding?.accent)}>
+                <div
+                  className={cn('flex flex-wrap items-center justify-between gap-2 py-3 text-xs text-slate-600', LAYOUT_PAGE[layout].flush && 'mx-auto max-w-2xl px-4')}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <span>
                     {t('Look')}: <strong className="font-semibold text-slate-800">{t(LOOK_LABELS[layout].label)}</strong>
                   </span>
@@ -404,75 +518,88 @@ export function FormBuilder({ initial, responses, portRange }: { initial: FormDT
                     {t('See it in Preview')}
                   </button>
                 </div>
-                <div className={cn(layout === 'split' && 'lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-5')}>
-                {/* Form header: a card (Classic / Steps), plain with a full-width banner (Minimal), or a side panel (Split) */}
-                <div onClick={(e) => e.stopPropagation()} className={cn(layout === 'split' && 'lg:sticky lg:top-4')}>
-                <FormFrame
-                  branding={branding}
-                  category={draft.category}
-                  layout={layout === 'minimal' ? 'minimal' : 'classic'}
-                  className={cn('mb-4 transition', layout === 'minimal' && 'rounded-xl', selectedId === null && 'ring-2 ring-brand-500/20')}
-                >
-                  <div className="p-6 [&>header]:mb-0">
-                    <FormHeader
-                      branding={branding}
-                      editing
-                      title={
-                        <input
-                          value={draft.title}
-                          onChange={(e) => setMeta({ title: e.target.value })}
-                          onFocus={() => setSelectedId(null)}
-                          placeholder={t('Form title')}
-                          className={cn('w-full bg-transparent text-2xl font-bold tracking-tight text-slate-900 outline-none placeholder:text-slate-300', centered && 'text-center')}
+                <FormFrame branding={branding} category={draft.category} layout={layout}>
+                  {layout === 'split' ? (
+                    <div className="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <SplitPanel
+                          branding={branding}
+                          title={draft.title}
+                          description={draft.description}
+                          editing={{
+                            title: (
+                              <input
+                                {...titleProps}
+                                className={cn(
+                                  'w-full bg-transparent text-2xl font-bold leading-tight tracking-tight text-inherit outline-none placeholder:text-current placeholder:opacity-50 sm:text-3xl lg:text-4xl',
+                                  branding?.logoAlign === 'center' && 'text-center',
+                                )}
+                              />
+                            ),
+                            description: (
+                              <textarea
+                                {...descriptionProps}
+                                className={cn(
+                                  'mt-3 block w-full resize-none bg-transparent text-[15px] leading-relaxed text-inherit opacity-[.88] outline-none placeholder:text-current placeholder:opacity-50',
+                                  branding?.logoAlign === 'center' && 'text-center',
+                                )}
+                              />
+                            ),
+                          }}
                         />
-                      }
-                      description={
-                        <textarea
-                          value={draft.description}
-                          onChange={(e) => setMeta({ description: e.target.value })}
-                          onFocus={() => setSelectedId(null)}
-                          placeholder={t('Add a description for respondents…')}
-                          rows={Math.max(1, Math.min(4, draft.description.split('\n').length))}
-                          className={cn('mt-2 w-full resize-none bg-transparent text-slate-600 outline-none placeholder:text-slate-300', centered && 'text-center')}
-                        />
-                      }
-                    />
-                  </div>
-                </FormFrame>
-                </div>
-
-                <div className="min-w-0">
-                <CanvasDropZone empty={fields.length === 0} highlight={activeDrag?.kind === 'palette' && overId === CANVAS_ID}>
-                  <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-3">
-                      {fields.map((field, i) => (
-                        <div key={field.id} onClick={(e) => e.stopPropagation()}>
-                          {layout === 'steps' && (
-                            <div className="mb-1 ms-1 text-[11px] font-semibold uppercase tracking-wide text-brand-700">{t('Step {n} of {total}', { n: i + 1, total: fields.length })}</div>
-                          )}
-                          <CanvasField
-                            field={field}
-                            index={i}
-                            total={fields.length}
-                            selected={field.id === selectedId}
-                            quiz={draft.schema.settings.quiz}
-                            dropIndicator={activeDrag?.kind === 'palette' && overId === field.id}
-                            onSelect={() => {
-                              // On phones, a second tap on the selected field opens its settings.
-                              if (field.id === selectedId && isSmall()) setPanel('settings');
-                              setSelectedId(field.id);
-                            }}
-                            onDuplicate={() => duplicateField(field.id)}
-                            onDelete={() => deleteField(field.id)}
-                            onMove={(dir) => moveField(field.id, dir)}
-                          />
+                      </div>
+                      <div className="min-w-0">
+                        {languagePicker}
+                        <div className="px-5 py-7 sm:px-10 sm:py-8">
+                          {requiredNote}
+                          {canvasFields}
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  </SortableContext>
-                </CanvasDropZone>
-                </div>
-                </div>
+                  ) : (
+                    <div className="relative text-start">
+                    {languagePicker}
+                    <div className={layout === 'minimal' ? 'px-5 pb-10 pt-8 sm:px-8 sm:pb-14 sm:pt-12' : layout === 'steps' ? 'px-5 pb-8 pt-6 sm:px-10 sm:py-8' : 'px-5 py-7 sm:px-10 sm:py-8'}>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <FormHeader
+                          branding={branding}
+                          editing
+                          footer={requiredNote}
+                          title={
+                            <input
+                              {...titleProps}
+                              className={cn(
+                                'w-full bg-transparent font-bold tracking-tight text-slate-900 outline-none placeholder:text-slate-300',
+                                layout === 'minimal' ? 'text-3xl sm:text-4xl' : 'text-2xl',
+                                centered && 'text-center',
+                              )}
+                            />
+                          }
+                          description={
+                            <textarea
+                              {...descriptionProps}
+                              className={cn(
+                                'block w-full resize-none bg-transparent text-slate-600 outline-none placeholder:text-slate-300',
+                                layout === 'minimal' ? 'mt-3 text-lg' : 'mt-2',
+                                centered && 'text-center',
+                              )}
+                            />
+                          }
+                        />
+                      </div>
+                      {layout === 'steps' && fields.length > 0 && (
+                        <div className="mb-7">
+                          <div className="mb-2 flex justify-end text-xs font-medium tabular-nums text-slate-500">{t('{n} of {total}', { n: 1, total: fields.length })}</div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                            <div className="h-full rounded-full bg-brand-600" style={{ width: `${100 / fields.length}%` }} />
+                          </div>
+                        </div>
+                      )}
+                      {canvasFields}
+                    </div>
+                    </div>
+                  )}
+                </FormFrame>
               </div>
             </main>
 
@@ -554,11 +681,11 @@ function CanvasDropZone({ children, empty, highlight }: { children: React.ReactN
   const t = useT();
   const { setNodeRef } = useDroppable({ id: CANVAS_ID });
   return (
-    <div ref={setNodeRef} className="min-h-[200px] pb-24">
+    <div ref={setNodeRef} className="min-h-[120px]">
       {children}
       <div
         className={cn(
-          'mt-3 flex flex-col items-center justify-center rounded-xl border-2 border-dashed text-center transition',
+          'mt-6 flex flex-col items-center justify-center rounded-xl border-2 border-dashed text-center transition',
           empty ? 'py-16' : 'py-6',
           highlight ? 'border-brand-400 bg-brand-50/60 text-brand-600' : 'border-slate-200 text-slate-400',
         )}

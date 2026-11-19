@@ -4,6 +4,7 @@ import { ArrowUpCircle, Bell, DatabaseBackup, CheckCheck, FilePlus2, FileX2, Inb
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from './app-context';
+import { navStart } from './nav-progress';
 import { useT } from './i18n';
 import { buttonClass } from './ui';
 import { cn, timeAgo } from '@/lib/utils';
@@ -80,7 +81,10 @@ export function NotificationBell() {
     setOpen(false);
     if (!n.link) return;
     if (/^https?:/.test(n.link)) window.open(n.link, '_blank', 'noopener');
-    else router.push(n.link);
+    else {
+      navStart();
+      router.push(n.link);
+    }
   }
 
   function message(n: Item) {

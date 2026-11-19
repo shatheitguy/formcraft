@@ -84,6 +84,12 @@ public class MainActivity extends BridgeActivity {
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
+        // Smoothness: use the HTTP cache normally (scripts/styles of the web app are cached between pages and
+        // restarts), draw the page ahead of scrolling, and no over-scroll glow fighting the page's own scrolling.
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) settings.setOffscreenPreRaster(true);
+        webView.setOverScrollMode(android.view.View.OVER_SCROLL_NEVER);
+        webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
         // match the page colour of the light / dark theme while pages load
         boolean night = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
             == android.content.res.Configuration.UI_MODE_NIGHT_YES;

@@ -86,6 +86,8 @@ export interface FormSettings {
   theme?: 'auto' | 'light' | 'dark';
   /** Form look for respondents; missing = classic. */
   layout?: FormLayout;
+  /** One-tap questions (choice, dropdown, scale, rating) fold to one line once answered; tap to open again. */
+  collapseAnswered?: boolean;
   /** Language the form opens in; empty = the visitor's browser language (then the primary language). */
   openLanguage?: string;
   /** How many times one person (device, optionally network) may respond; 0 / missing = unlimited. */
