@@ -102,6 +102,8 @@
   .btn, .link { touch-action: manipulation; }
   .btn:active:not([disabled]) { transform: scale(.98); }
   @media (prefers-reduced-motion: reduce) { .mark, .mark .bar, .mark .dot, .mark-wrap .halo { animation: none; } }
+  footer #app-info { margin-top: 6px; }
+  .inline-link { padding: 4px 2px; background: none; border: 0; font: inherit; font-weight: 600; color: var(--link); cursor: pointer; touch-action: manipulation; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -176,7 +178,10 @@
     <button class="link" type="button" data-change>Change server</button>
   </section>
 
-  <footer>Your data stays on your own FormCraft server.</footer>
+  <footer>
+    Your data stays on your own FormCraft server.
+    <div id="app-info" hidden>App <span id="app-version"></span> · <button type="button" class="inline-link" id="check-update">Check for updates</button></div>
+  </footer>
 </main>
 
 <script>
@@ -347,6 +352,15 @@
     $('opening-step').textContent = 'Connecting to your server…';
     open();
   });
+
+  // ---- app version + updates (MainActivity's FormCraftNative bridge) ----
+  try {
+    if (window.FormCraftNative && FormCraftNative.appVersion) {
+      $('app-version').textContent = FormCraftNative.appVersion();
+      $('app-info').hidden = false;
+      $('check-update').addEventListener('click', function () { FormCraftNative.checkForUpdate(); });
+    }
+  } catch (e) {}
 
   // ---- start ----
   var params = new URLSearchParams(location.search);

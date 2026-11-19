@@ -47,6 +47,8 @@ public class MainActivity extends BridgeActivity {
     private static final String KEY_SERVER = "serverUrl";
     /** Static app shortcut (long-press the app icon): "Change server". */
     private static final String ACTION_CHANGE_SERVER = "in.shatheitguy.formcraft.CHANGE_SERVER";
+    /** Static app shortcut: "Check for updates". */
+    private static final String ACTION_CHECK_UPDATE = "in.shatheitguy.formcraft.CHECK_UPDATE";
 
     /**
      * Runs at document start in every page: remembers Blobs passed to URL.createObjectURL so a later
@@ -70,6 +72,7 @@ public class MainActivity extends BridgeActivity {
         "if(a&&save(a))e.preventDefault();},true);})();";
 
     private boolean shimAtDocumentStart = false;
+    private AppUpdater updater;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -114,7 +117,10 @@ public class MainActivity extends BridgeActivity {
                 }
             );
 
+        updater = new AppUpdater(this);
         handleIntent(getIntent());
+        // Once a day: is there a newer FormCraft app on GitHub? (Only says something when there is.)
+        updater.checkDaily();
     }
 
     @Override
@@ -127,6 +133,15 @@ public class MainActivity extends BridgeActivity {
         if (intent != null && ACTION_CHANGE_SERVER.equals(intent.getAction())) {
             bridge.getWebView().loadUrl(bridge.getLocalUrl() + "/?change=1");
         }
+        if (intent != null && ACTION_CHECK_UPDATE.equals(intent.getAction()) && updater != null) {
+            updater.check(true);
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (updater != null) updater.onResume();
     }
 
     @Override
@@ -272,6 +287,20 @@ public class MainActivity extends BridgeActivity {
 
     /** Called from DOWNLOAD_SHIM with the file as a data: URL. */
     private class NativeFiles {
+
+        /** The installed app's version (shown on the connect screen). */
+        @JavascriptInterface
+        public String appVersion() {
+            return updater == null ? "" : updater.currentVersion();
+        }
+
+        /** "Check for updates" on the connect screen. */
+        @JavascriptInterface
+        public void checkForUpdate() {
+            runOnUiThread(() -> {
+                if (updater != null) updater.check(true);
+            });
+        }
 
         @JavascriptInterface
         public void saveFile(String dataUrl, String fileName, String mimeType) {
