@@ -6,7 +6,8 @@ import { formLanguages } from '@/lib/form-i18n';
 import { notifySubmission } from '@/lib/notify';
 import { sendConfirmation } from '@/lib/form-alerts';
 import { notifySubmissionInApp } from '@/lib/activity';
-import { deleteAnswerFiles, responseFileExists } from '@/lib/response-files';
+import { responseFileExists } from '@/lib/response-files';
+import { trashSubmissions } from '@/lib/trash';
 import { computeScore } from '@/lib/scoring';
 import { validateAnswers } from '@/lib/validation';
 import { duplicateAnswers } from '@/lib/unique-answers';
@@ -100,13 +101,7 @@ export async function DELETE(req: Request, { params }: Ctx) {
   const body = await req.json().catch(() => null);
   const ids: string[] = Array.isArray(body?.ids) ? body.ids.filter((x: unknown) => typeof x === 'string') : [];
   if (!ids.length) return NextResponse.json({ error: 'No ids provided' }, { status: 400 });
-  // Remember attached files first so they can be removed with the responses.
-  const doomed = await prisma.submission.findMany({ where: { formId: params.id, id: { in: ids } }, select: { data: true } });
-  const { count } = await prisma.submission.deleteMany({ where: { formId: params.id, id: { in: ids } } });
-  const form = await prisma.form.findUnique({ where: { id: params.id }, select: { schema: true } });
-  if (form) {
-    const answers = doomed.map((d) => { try { return JSON.parse(d.data); } catch { return {}; } });
-    await deleteAnswerFiles(params.id, parseSchema(form.schema).fields, answers).catch(() => {});
-  }
+  // Into the Trash (Settings → Trash) for 30 days; attached files stay until they leave the Trash.
+  const count = await trashSubmissions(params.id, ids, me);
   return NextResponse.json({ deleted: count });
 }

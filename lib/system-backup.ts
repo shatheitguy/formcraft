@@ -27,9 +27,10 @@ const TABLES = {
   setting: ['key', 'value', 'updatedAt'],
   notificationLog: ['id', 'channel', 'target', 'subject', 'status', 'error', 'createdAt'],
   appMeta: ['key', 'value'],
+  trashItem: ['id', 'kind', 'formId', 'itemId', 'title', 'count', 'data', 'deletedById', 'deletedByName', 'deletedAt'],
 } as const;
 type Table = keyof typeof TABLES;
-const DATE_FIELDS = new Set(['createdAt', 'updatedAt', 'lastLoginAt']);
+const DATE_FIELDS = new Set(['createdAt', 'updatedAt', 'lastLoginAt', 'deletedAt']);
 
 export interface BackupFile {
   format: typeof BACKUP_FORMAT;
@@ -72,7 +73,7 @@ async function readResponseFiles(): Promise<NonNullable<BackupFile['responseFile
 }
 
 export async function createSystemBackup({ includeUploads = true }: { includeUploads?: boolean } = {}): Promise<{ buffer: Buffer; counts: BackupFile['counts'] }> {
-  const [user, form, formAccess, submission, setting, notificationLog, appMeta] = await Promise.all([
+  const [user, form, formAccess, submission, setting, notificationLog, appMeta, trashItem] = await Promise.all([
     prisma.user.findMany(),
     prisma.form.findMany(),
     prisma.formAccess.findMany(),
@@ -80,6 +81,7 @@ export async function createSystemBackup({ includeUploads = true }: { includeUpl
     prisma.setting.findMany(),
     prisma.notificationLog.findMany(),
     prisma.appMeta.findMany(),
+    prisma.trashItem.findMany(),
   ]);
 
   const uploads: BackupFile['uploads'] = [];
@@ -93,7 +95,7 @@ export async function createSystemBackup({ includeUploads = true }: { includeUpl
 
   const responseFiles = includeUploads ? await readResponseFiles() : [];
 
-  const tables = { user, form, formAccess, submission, setting, notificationLog, appMeta } as unknown as BackupFile['tables'];
+  const tables = { user, form, formAccess, submission, setting, notificationLog, appMeta, trashItem } as unknown as BackupFile['tables'];
   const counts = { ...Object.fromEntries(Object.entries(tables).map(([k, v]) => [k, v.length])), uploads: uploads.length, responseFiles: responseFiles.length } as BackupFile['counts'];
   const file: BackupFile = { format: BACKUP_FORMAT, version: BACKUP_VERSION, createdAt: new Date().toISOString(), provider: dbProvider(), counts, tables, uploads, responseFiles };
   return { buffer: gzipSync(Buffer.from(JSON.stringify(file)), { level: 9 }), counts };
@@ -151,6 +153,7 @@ export async function restoreSystemBackup(b: BackupFile) {
       await tx.notificationLog.deleteMany();
       await tx.setting.deleteMany();
       await tx.appMeta.deleteMany();
+      await tx.trashItem.deleteMany();
       await tx.form.deleteMany();
       await tx.user.deleteMany();
 
@@ -162,6 +165,7 @@ export async function restoreSystemBackup(b: BackupFile) {
       for (const c of chunks(rows('setting'))) await tx.setting.createMany({ data: c as any });
       for (const c of chunks(rows('notificationLog'))) await tx.notificationLog.createMany({ data: c as any });
       for (const c of chunks(rows('appMeta'))) await tx.appMeta.createMany({ data: c as any });
+      for (const c of chunks(rows('trashItem'))) await tx.trashItem.createMany({ data: c as any });
       /* eslint-enable @typescript-eslint/no-explicit-any */
     },
     { timeout: 180_000, maxWait: 15_000 },

@@ -24,6 +24,10 @@ const nextConfig = {
   experimental: {
     // Starts per-form port listeners on boot (instrumentation.ts).
     instrumentationHook: true,
+    // Every page shows live data (forms, responses, settings). By default the browser re-used a page it had seen
+    // in the last 30 s, so e.g. a form created in the builder was missing on the dashboard until a reload.
+    // 0 = always ask the server on navigation (the branded loading screen covers the wait).
+    staleTimes: { dynamic: 0 },
     serverComponentsExternalPackages: ['@prisma/client', 'nodemailer', '@whiskeysockets/baileys', 'pino', 'pdf-lib'],
   },
 };

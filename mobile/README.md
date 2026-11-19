@@ -33,8 +33,17 @@ Behaviour:
 - **Links.** Pages on your server stay in the app. Links to other websites open in the phone's browser.
   `mailto:`, `tel:`, WhatsApp and other links open in the matching app.
 - **Sign-in.** The session cookie is kept across restarts. Cookies are flushed when the app goes to the background.
-- **File uploads.** `<input type=file>` uses Android's file/photo picker. "Take photo" uses the camera app. The
-  app asks for no permissions except Internet.
+- **File uploads.** `<input type=file>` uses Android's file/photo picker. "Take photo" uses the camera app. No
+  storage or camera permission is needed.
+- **App updates.** Once a day when the app opens, it asks GitHub for the latest release
+  (`shatheitguy/formcraft`). If that release has a newer version with a `FormCraft.apk` file, the app offers
+  **Update / Later**. Update downloads the APK (with a notification) and opens Android's installer. The first
+  time, Android asks to allow *Install unknown apps* for FormCraft. To check by hand, long-press the app icon →
+  **Check for updates**, or tap *Check for updates* under the connect screen. Permissions: Internet, plus
+  *install packages* for updates (Android asks before anything is installed).
+  To publish an update: raise `VERSION`, build, and attach the APK as `FormCraft.apk` to a new GitHub release.
+  It must be signed with the same key as the installed app (the same release keystore, or for debug builds the
+  same PC's debug key), or Android refuses to install it over the old one.
 - **Downloads.**
   - Normal `http(s)` downloads go through Android's DownloadManager with your session cookie and land in
     *Downloads* with a notification. These include attachments, backups and files sent as

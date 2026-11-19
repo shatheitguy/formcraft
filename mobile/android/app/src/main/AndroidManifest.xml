@@ -44,6 +44,9 @@
     <!-- Permissions: only the network. File uploads use Android's file / photo picker (no storage permission) and
          "take a photo" uses the camera app (no CAMERA permission needed while the app itself does not declare it). -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- In-app updates (AppUpdater): open Android's installer for a downloaded FormCraft update. Android asks the
+         person once to allow "Install unknown apps" for FormCraft; nothing is installed without their tap. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Android 11+: let the app see which apps can open camera capture, links (mailto/tel/whatsapp) and files -->
     <queries>

@@ -4,9 +4,10 @@
 #   One-liner:  curl -fsSL https://raw.githubusercontent.com/shatheitguy/formcraft/main/install.sh | bash
 #   From repo:  ./install.sh            (add --yes to accept all defaults, --dry-run to only write .env)
 #
-#   UPDATE:     run the same one-liner again, from the same folder. When FormCraft is already
-#               installed it just downloads the new version and restarts it — your settings and
-#               data stay as they are. Add --reconfigure to change the database or ports instead.
+#   UPDATE:     run the same one-liner again, from any folder. It finds the existing installation
+#               (the running FormCraft container, this folder, ./formcraft, ~/formcraft, /opt/formcraft …),
+#               refreshes its compose files, pulls the new image and restarts it — settings and data stay
+#               as they are. Add --reconfigure to change the database or ports instead.
 #
 # Asks which database to use (bundled PostgreSQL, your own PostgreSQL, or embedded SQLite),
 # the ports to use, and whether to load demo data. Writes everything to .env and starts
@@ -137,8 +138,95 @@ if [ "$DRY_RUN" = 0 ]; then
   ok "Docker $(docker version --format '{{.Server.Version}}' 2>/dev/null || echo '') with Compose $(docker compose version --short 2>/dev/null || echo '')"
 fi
 
+# ---------- find an existing installation ----------
+# A folder is a FormCraft installation when it has the compose file and an installer-written .env.
+is_install() { [ -n "${1:-}" ] && [ -f "$1/docker-compose.yml" ] && [ -f "$1/.env" ] && grep -q '^FC_DB_PROVIDER=' "$1/.env" 2>/dev/null; }
+
+# Where FormCraft is already installed, so the same one-liner updates it from any folder.
+find_install() {
+  local d
+  # 1. The running (or stopped) FormCraft container knows the folder it was started from.
+  if [ "$DRY_RUN" = 0 ]; then
+    d=$(docker inspect formcraft --format '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}' 2>/dev/null || true)
+    if is_install "$d"; then printf '%s' "$d"; return; fi
+  fi
+  # 2. The usual places.
+  for d in "$PWD" "$PWD/$INSTALL_DIR" "$INSTALL_DIR" "${HOME:-/root}/$INSTALL_DIR" "${HOME:-/root}/formcraft" /root/formcraft /opt/formcraft /srv/formcraft; do
+    if is_install "$d"; then (cd "$d" && pwd); return; fi
+  done
+}
+
+EXISTING=$(find_install || true)
+
+# ---------- update an existing installation ----------
+update_existing() {
+  info "FormCraft is already installed in $(pwd) — updating it with your current settings…"
+
+  # Fresh compose files (installs made from a git checkout keep theirs: they come with the source).
+  if [ ! -f Dockerfile ] && command -v curl > /dev/null; then
+    local f changed=0
+    for f in docker-compose.yml docker-compose.db.yml docker-compose.ports.yml; do
+      if curl -fsSL "$RAW_URL/$f" -o "$f.new" 2>/dev/null; then
+        if [ -f "$f" ] && cmp -s "$f" "$f.new"; then rm -f "$f.new"; else
+          [ -f "$f" ] && cp -f "$f" "$f.bak"
+          mv -f "$f.new" "$f"; changed=1
+        fi
+      else
+        rm -f "$f.new"; warn "Couldn't download the latest $f — keeping the current one."
+      fi
+    done
+    [ "$changed" = 1 ] && ok "Updated the compose files (the previous ones are kept as *.bak)"
+  fi
+
+  local tag before after port
+  tag=$(grep -E '^FC_IMAGE_TAG=' .env | tail -1 | cut -d= -f2-); tag=${tag:-latest}
+  port=$(grep -E '^FC_PORT=' .env | tail -1 | cut -d= -f2-); port=${port:-3000}
+  before=$(docker image inspect "$IMAGE:$tag" --format '{{.Id}}' 2>/dev/null || true)
+
+  info "Downloading the latest FormCraft ($IMAGE:$tag)…"
+  if ! docker compose pull; then
+    warn "Couldn't download the FormCraft image — it may still be publishing, or the registry is unreachable."
+    printf '  Nothing was changed. Try again in a few minutes with the same command.\n'
+    exit 1
+  fi
+  after=$(docker image inspect "$IMAGE:$tag" --format '{{.Id}}' 2>/dev/null || true)
+
+  docker compose up -d --remove-orphans || die "Docker Compose couldn't start FormCraft — see the messages above (docker compose logs -f formcraft)."
+  # The replaced image is no longer used by anything: free its disk space.
+  if [ -n "$before" ] && [ "$before" != "$after" ]; then docker image rm "$before" > /dev/null 2>&1 || true; fi
+
+  info "Waiting for FormCraft to start…"
+  local _
+  for _ in $(seq 1 90); do
+    if curl -fsS "http://localhost:$port/api/health" > /dev/null 2>&1; then
+      if [ -n "$before" ] && [ "$before" = "$after" ]; then
+        printf '\n%s%s✓ FormCraft is already the newest version%s and running on http://localhost:%s\n\n' "$G" "$B" "$N" "$port"
+      else
+        printf '\n%s%s✓ FormCraft is updated%s and running on http://localhost:%s\n' "$G" "$B" "$N" "$port"
+        printf '  Reload FormCraft in your browser (and close/reopen the phone app) to get the new version.\n\n'
+      fi
+      exit 0
+    fi
+    sleep 2
+  done
+  warn "FormCraft didn't report healthy within 3 minutes. Check the logs with: cd $(pwd) && docker compose logs -f formcraft"
+  exit 1
+}
+
+if [ -n "$EXISTING" ]; then
+  cd "$EXISTING"
+  if [ "$RECONFIGURE" = 1 ]; then
+    warn "Reconfiguring the existing installation in $(pwd) — your data stays, the settings are asked again."
+  else
+    [ "$DRY_RUN" = 1 ] && { ok "Found FormCraft in $(pwd) — a real run would update it."; exit 0; }
+    update_existing
+  fi
+fi
+
 # ---------- get the source ----------
-if [ -f docker-compose.yml ] && [ -f Dockerfile ] && grep -q formcraft docker-compose.yml 2>/dev/null; then
+if [ -n "$EXISTING" ]; then
+  ok "Using FormCraft in $(pwd)"
+elif [ -f docker-compose.yml ] && [ -f Dockerfile ] && grep -q formcraft docker-compose.yml 2>/dev/null; then
   ok "Using FormCraft in $(pwd)"
 elif [ -f "$INSTALL_DIR/docker-compose.yml" ]; then
   cd "$INSTALL_DIR" && ok "Using existing $(pwd)"
@@ -151,25 +239,6 @@ else
     curl -fsSL "$RAW_URL/$f" -o "$f" || die "Could not download $f from $RAW_URL."
   done
   ok "Downloaded the compose files to $(pwd)"
-fi
-
-if [ -f .env ] && grep -q '^FC_DB_PROVIDER=' .env; then
-  # Already installed: the same one-liner updates it (no questions). --reconfigure changes settings instead.
-  if [ "$RECONFIGURE" = 1 ]; then
-    warn "Reconfiguring the existing installation in $(pwd) — your data stays, the settings are asked again."
-  else
-    [ "$DRY_RUN" = 1 ] && exit 0
-    info "FormCraft is already installed in $(pwd) — updating it with your current settings…"
-    if ! docker compose pull; then
-      warn "Couldn't download the FormCraft image — it may still be publishing, or the registry is unreachable."
-      printf '  Try again in a few minutes:  %scd %s && docker compose pull && docker compose up -d%s
-' "$B" "$(pwd)" "$N"
-      exit 1
-    fi
-    docker compose up -d || die "Docker Compose couldn't start FormCraft — see the messages above."
-    ok "FormCraft is up to date and running on http://localhost:$(grep -E '^FC_PORT=' .env | cut -d= -f2 || echo 3000)"
-    exit 0
-  fi
 fi
 
 # ---------- database ----------
@@ -319,7 +388,7 @@ for _ in $(seq 1 90); do
     printf '\n%s%s✓ FormCraft is running!%s\n\n' "$G" "$B" "$N"
     printf '  Open %shttp://localhost:%s%s and create your admin account.\n' "$B" "$FC_PORT" "$N"
     printf '  Settings and database credentials are in %s/.env\n' "$(pwd)"
-    printf '  Logs: docker compose logs -f   ·   Stop: docker compose down   ·   Update: run the same command again   ·   Reconfigure: add --reconfigure\n\n'
+    printf '  Logs: docker compose logs -f   ·   Stop: docker compose down   ·   Update: run the same command again (from any folder)   ·   Reconfigure: add --reconfigure\n\n'
     exit 0
   fi
   sleep 2

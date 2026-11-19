@@ -386,8 +386,8 @@ export function HubClient({ forms, canCreate, portRange }: { forms: HubForm[]; c
             <strong className="text-slate-900">{toDelete?.title}</strong>
             {' — '}
             {toDelete?.responses === 1
-              ? t('This form and its 1 response will be permanently deleted. This can’t be undone.')
-              : t('This form and all of its {n} responses will be permanently deleted. This can’t be undone.', { n: fmtNumber(toDelete?.responses ?? 0, locale) })}
+              ? t('This form and its 1 response will move to the Trash. An admin can restore them from Settings → Trash for 30 days.')
+              : t('This form and all of its {n} responses will move to the Trash. An admin can restore them from Settings → Trash for 30 days.', { n: fmtNumber(toDelete?.responses ?? 0, locale) })}
           </>
         }
       />

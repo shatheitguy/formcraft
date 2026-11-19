@@ -5,7 +5,7 @@ import { DOMAIN_RE, nextFreePort, portRange, SLUG_RE } from '@/lib/form-links';
 import { syncPortListeners } from '@/lib/port-router';
 import { isValidSchema, normalizeTags, sanitizeBranding, sanitizeLayout, toFormDTO } from '@/lib/forms';
 import { formAudience, notifyFormEvent } from '@/lib/activity';
-import { deleteFormFiles } from '@/lib/response-files';
+import { trashForm } from '@/lib/trash';
 import { sanitizeFormNotify } from '@/lib/form-alerts';
 import { getSettings } from '@/lib/settings';
 
@@ -102,9 +102,10 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   if (!canEditForm(me, params.id)) return forbidden();
   try {
     const audience = await formAudience(params.id);
-    const form = await prisma.form.delete({ where: { id: params.id } });
+    // Into the Trash (Settings → Trash) for 30 days; its uploaded files stay until it leaves the Trash.
+    const form = await trashForm(params.id, me);
+    if (!form) throw new Error('not found');
     await syncPortListeners();
-    void deleteFormFiles(form.id);
     void notifyFormEvent('form.deleted', me, form, audience);
     return NextResponse.json({ ok: true });
   } catch {

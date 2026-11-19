@@ -11,4 +11,17 @@
     <string name="download_failed">The download failed.</string>
     <string name="download_unsupported">This download can\'t be saved in the app. Open FormCraft in your browser to download it.</string>
     <string name="no_app_for_link">No app on this phone can open that link.</string>
+    <string name="shortcut_check_update_short">Check for updates</string>
+    <string name="shortcut_check_update_long">Check for a new FormCraft app version</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_check_failed">Couldn\'t check for updates. Check your internet connection and try again.</string>
+    <string name="update_latest">You have the latest version (%1$s).</string>
+    <string name="update_available_title">FormCraft %1$s is available</string>
+    <string name="update_available_text">You have %1$s. Update to %2$s now? It downloads in the background, then Android asks you to install it. Your server and sign-in stay as they are.</string>
+    <string name="update_now">Update</string>
+    <string name="update_later">Later</string>
+    <string name="update_download_title">FormCraft update</string>
+    <string name="update_downloading">Downloading the update…</string>
+    <string name="update_failed">The update couldn\'t be downloaded or opened. Try again later.</string>
+    <string name="update_allow_install">Allow FormCraft to install apps, then go back to finish the update.</string>
 </resources>

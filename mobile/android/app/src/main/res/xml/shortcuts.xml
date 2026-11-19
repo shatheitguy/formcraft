@@ -12,4 +12,16 @@
             android:targetPackage="in.shatheitguy.formcraft"
             android:targetClass="in.shatheitguy.formcraft.MainActivity" />
     </shortcut>
+    <!-- long-press the app icon: "Check for updates" -->
+    <shortcut
+        android:shortcutId="check_update"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_check_update_short"
+        android:shortcutLongLabel="@string/shortcut_check_update_long">
+        <intent
+            android:action="in.shatheitguy.formcraft.CHECK_UPDATE"
+            android:targetPackage="in.shatheitguy.formcraft"
+            android:targetClass="in.shatheitguy.formcraft.MainActivity" />
+    </shortcut>
 </shortcuts>

@@ -481,7 +481,7 @@ export function SubmissionsView({
         onConfirm={doDelete}
         loading={deleting}
         title={confirm && confirm.length > 1 ? t('Delete {n} responses?', { n: confirm.length }) : t('Delete response?')}
-        description={t('This permanently removes the selected response data. This can’t be undone.')}
+        description={t('The selected responses will move to the Trash. An admin can restore them from Settings → Trash for 30 days.')}
         confirmLabel={t('Delete')}
       />
     </div>
