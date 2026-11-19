@@ -229,9 +229,15 @@ export async function buildPdf(input: ReportInput): Promise<Buffer> {
   let page: PDFPage = pdf.addPage([W, H]);
   let y = H - M;
 
-  const header = () => {
+  const header = (withTitle = true) => {
     page.drawRectangle({ x: 0, y: H - 6, width: W, height: 6, color: BRAND });
     page.drawText(pdfSafe(input.appName).toUpperCase(), { x: M, y: H - M + 8, size: 8, font: bold, color: MUTED });
+    // The form's name on every later page, so a page printed or shared on its own still says which form it's from.
+    if (!withTitle) return;
+    let title = pdfSafe(input.formTitle);
+    while (title.length > 1 && font.widthOfTextAtSize(title, 8) > W / 2 - M) title = title.slice(0, -2) + '…';
+    title = pdfSafe(title);
+    page.drawText(title, { x: W - M - font.widthOfTextAtSize(title, 8), y: H - M + 8, size: 8, font, color: MUTED });
   };
   const newPage = () => {
     page = pdf.addPage([W, H]);
@@ -242,7 +248,7 @@ export async function buildPdf(input: ReportInput): Promise<Buffer> {
     if (y - h < M + 20) newPage();
   };
 
-  header();
+  header(false);
   y -= 14;
   for (const line of wrap(input.formTitle, bold, 18, W - 2 * M)) {
     page.drawText(line, { x: M, y: y - 18, size: 18, font: bold, color: INK });
@@ -253,6 +259,8 @@ export async function buildPdf(input: ReportInput): Promise<Buffer> {
   y -= 30;
 
   input.submissions.forEach((s, idx) => {
+    // Each response starts on a page of its own (the first one under the title).
+    if (idx > 0) newPage();
     need(60);
     page.drawRectangle({ x: M, y: y - 22, width: W - 2 * M, height: 22, color: rgb(0.97, 0.95, 0.95) });
     page.drawText(pdfSafe(`Response ${n > 1 ? `${idx + 1} of ${n}` : ''}`.trim()), { x: M + 8, y: y - 15, size: 10.5, font: bold, color: BRAND });
