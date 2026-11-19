@@ -211,3 +211,26 @@ model AppMeta {
   key   String @id
   value String
 }
+
+/// Deleted forms and responses, kept for 30 days (Settings → Trash) so they can be restored.
+/// `data` is a full JSON copy: a form with its responses and access list, or one response.
+model TrashItem {
+  id            String   @id @default(cuid())
+  /// "form" | "submission"
+  kind          String
+  /// The form (for a response: the form it belongs to)
+  formId        String
+  /// The deleted form's or response's own id
+  itemId        String
+  /// Form title at the time it was deleted
+  title         String   @default("")
+  /// Number of responses in a deleted form (1 for a response)
+  count         Int      @default(0)
+  data          String
+  deletedById   String?
+  deletedByName String   @default("")
+  deletedAt     DateTime @default(now())
+
+  @@index([deletedAt])
+  @@index([formId])
+}

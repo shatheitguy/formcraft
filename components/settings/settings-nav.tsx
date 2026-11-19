@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Database, Info, Palette, UserCircle2, Users } from 'lucide-react';
+import { Bell, Database, Info, Palette, Trash2, UserCircle2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
@@ -13,6 +13,7 @@ const WORKSPACE = [
   { href: '/settings/users', label: 'Users & roles', icon: Users },
   { href: '/settings/notifications', label: 'Notifications', icon: Bell },
   { href: '/settings/database', label: 'Database & Backup', icon: Database },
+  { href: '/settings/trash', label: 'Trash', icon: Trash2 },
   { href: '/settings/about', label: 'About', icon: Info },
 ];
 
