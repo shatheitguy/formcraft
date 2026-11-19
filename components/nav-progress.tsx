@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 const START_EVENT = 'fc:navstart';
@@ -21,6 +21,23 @@ export function NavProgress() {
   const [width, setWidth] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval>>();
   const doneTimer = useRef<ReturnType<typeof setTimeout>>();
+  const router = useRouter();
+
+  // Back / Forward (browser, or the phone's back button in the app): Next.js always shows its saved copy of that
+  // page, from before any change (e.g. a form created since). Show it instantly, then fetch the fresh page.
+  // The refresh is queued after Next.js has handled the same popstate (it may show the saved page right away).
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const onPop = () => {
+      clearTimeout(t);
+      t = setTimeout(() => router.refresh(), 0);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      clearTimeout(t);
+    };
+  }, [router]);
 
   useEffect(() => {
     const start = () => {
