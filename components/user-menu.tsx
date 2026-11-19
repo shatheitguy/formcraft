@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ROLE_INFO, initials } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import { useApp } from './app-context';
+import { navStart } from './nav-progress';
 import { useT } from './i18n';
 import { ThemeSwitch } from './preferences';
 import { Dropdown, type MenuItem } from './ui';
@@ -27,18 +28,24 @@ export function UserMenu() {
   const t = useT();
   if (!user) return null;
 
+  const go = (path: string) => {
+    navStart();
+    router.push(path);
+  };
+
   const signOut = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
+    navStart();
     router.push('/login');
     router.refresh();
   };
 
   const items: MenuItem[] = [
-    { label: t('My profile'), icon: <UserCircle2 />, onClick: () => router.push('/settings/profile') },
+    { label: t('My profile'), icon: <UserCircle2 />, onClick: () => go('/settings/profile') },
     ...(user.role === 'ADMIN'
       ? [
-          { label: t('Settings'), icon: <Settings />, onClick: () => router.push('/settings/general') },
-          { label: t('Users & roles'), icon: <Users />, onClick: () => router.push('/settings/users') },
+          { label: t('Settings'), icon: <Settings />, onClick: () => go('/settings/general') },
+          { label: t('Users & roles'), icon: <Users />, onClick: () => go('/settings/users') },
         ]
       : []),
     { label: t('Sign out'), icon: <LogOut />, onClick: signOut, divider: true, danger: true },

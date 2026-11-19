@@ -72,6 +72,9 @@ const dict: AreaDict = {
     'Light only': 'فاتح فقط',
     'Dark only': 'داكن فقط',
     'Auto follows each respondent’s device setting.': 'الوضع التلقائي يتبع إعداد جهاز كل مستجيب.',
+    'Collapse answered questions': 'طيّ الأسئلة المُجاب عنها',
+    'After a choice, scale or rating is picked, only the question and answer stay. Tap to change it. (Not in the Steps look.)': 'بعد اختيار خيار أو مقياس أو تقييم، يبقى السؤال والإجابة فقط. انقر لتغييرها. (ليس في شكل الخطوات.)',
+    'Change answer': 'تغيير الإجابة',
     // Translation editor
     'Translations': 'الترجمات',
     'Written in {lang}. Anything left empty is shown in {lang} instead.': 'مكتوب باللغة {lang}. أي نص يُترك فارغًا يُعرض باللغة {lang} بدلًا منه.',
@@ -207,6 +210,9 @@ const dict: AreaDict = {
     'Light only': 'வெளிர் மட்டும்',
     'Dark only': 'இருள் மட்டும்',
     'Auto follows each respondent’s device setting.': 'தானியங்கு ஒவ்வொரு பதிலளிப்பவரின் சாதன அமைப்பைப் பின்பற்றும்.',
+    'Collapse answered questions': 'பதிலளித்த கேள்விகளை மடக்கு',
+    'After a choice, scale or rating is picked, only the question and answer stay. Tap to change it. (Not in the Steps look.)': 'ஒரு தேர்வு, அளவுகோல் அல்லது மதிப்பீடு தேர்ந்தெடுக்கப்பட்டதும், கேள்வியும் பதிலும் மட்டும் இருக்கும். மாற்ற தட்டவும். (படிகள் தோற்றத்தில் இல்லை.)',
+    'Change answer': 'பதிலை மாற்று',
     // Translation editor
     'Translations': 'மொழிபெயர்ப்புகள்',
     'Written in {lang}. Anything left empty is shown in {lang} instead.': '{lang} மொழியில் எழுதப்பட்டது. காலியாக விடப்பட்டவை {lang} மொழியில் காட்டப்படும்.',

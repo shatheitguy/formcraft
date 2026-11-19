@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
+import { Suspense } from 'react';
 import { AppProvider } from '@/components/app-context';
+import { NavProgress } from '@/components/nav-progress';
 import { I18nProvider } from '@/components/i18n';
 import { ToastProvider } from '@/components/toast';
 import { getCurrentUser } from '@/lib/auth';
@@ -38,6 +40,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen font-sans">
         <AppProvider value={{ app, user, theme }}>
           <I18nProvider locale={locale}>
+            <Suspense fallback={null}>
+              <NavProgress />
+            </Suspense>
             <ToastProvider>{children}</ToastProvider>
           </I18nProvider>
         </AppProvider>
